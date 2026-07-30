@@ -13,39 +13,33 @@ export async function signInAction(formData: FormData) {
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
-  // Fallback if Supabase URL is placeholder
+  // If Supabase env is not configured yet
   if (!supabaseUrl || supabaseUrl.includes("placeholder")) {
-    return { success: true };
+    return { error: "Supabase Environment belum dikonfigurasi di server." };
   }
 
   try {
     const supabase = await createClient();
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
     if (error) {
-      // Fallback for demo login credentials
-      if (
-        (email === "owner@sultansf.id" || email === "admin@sultansf.id" || email.endsWith("@sultansf.id")) &&
-        password.length >= 4
-      ) {
-        return { success: true };
+      if (error.message.includes("Invalid login credentials")) {
+        return { error: "Email atau password yang Anda masukkan salah." };
       }
       return { error: error.message };
+    }
+
+    if (!data.user) {
+      return { error: "Pengguna tidak ditemukan." };
     }
 
     return { success: true };
   } catch (err: unknown) {
     const e = err as { message?: string };
-    if (
-      (email === "owner@sultansf.id" || email === "admin@sultansf.id" || email.endsWith("@sultansf.id")) &&
-      password.length >= 4
-    ) {
-      return { success: true };
-    }
-    return { error: e.message || "Gagal melakukan verifikasi akun." };
+    return { error: e.message || "Gagal verifikasi login Supabase." };
   }
 }
 
@@ -62,4 +56,28 @@ export async function signOutAction() {
   }
 
   redirect("/login");
+}
+
+export async function getCurrentUserAction() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!supabaseUrl || supabaseUrl.includes("placeholder")) {
+    return { email: "owner@sultansf.id", role: "Owner" };
+  }
+
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) return null;
+
+    return {
+      id: user.id,
+      email: user.email || "user@sultansf.id",
+      role: (user.user_metadata?.role as string) || "User",
+    };
+  } catch {
+    return null;
+  }
 }
