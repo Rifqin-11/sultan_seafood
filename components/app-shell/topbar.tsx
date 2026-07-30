@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { signOutAction } from "@/lib/actions/auth";
 
 const pathLabels: Record<string, string> = {
@@ -35,12 +35,25 @@ const pathLabels: Record<string, string> = {
   "/settings/audit-logs": "Audit Log",
 };
 
-interface TopbarProps {
-  onMobileMenuToggle: () => void;
+export interface UserProfileInfo {
+  name: string;
+  email: string;
+  role: string;
+  initial: string;
 }
 
-export function Topbar({ onMobileMenuToggle }: TopbarProps) {
+interface TopbarProps {
+  onMobileMenuToggle: () => void;
+  user?: UserProfileInfo;
+}
+
+export function Topbar({ onMobileMenuToggle, user }: TopbarProps) {
   const pathname = usePathname();
+  const router = useRouter();
+
+  const userName = user?.name || "Owner";
+  const userEmail = user?.email || "owner@sultansf.id";
+  const userInitial = user?.initial || userName.charAt(0).toUpperCase();
 
   // Build breadcrumb from pathname
   const segments = pathname.split("/").filter(Boolean);
@@ -97,26 +110,30 @@ export function Topbar({ onMobileMenuToggle }: TopbarProps) {
             >
               <Avatar className="w-7 h-7">
                 <AvatarFallback className="text-xs font-semibold bg-foreground text-background">
-                  O
+                  {userInitial}
                 </AvatarFallback>
               </Avatar>
-              <div className="text-left hidden sm:block">
-                <p className="text-xs font-medium leading-tight">Owner</p>
-                <p className="text-xs text-muted-foreground leading-tight">
-                  owner@sultansf.id
+              <div className="text-left hidden sm:block max-w-[150px]">
+                <p className="text-xs font-medium leading-tight truncate">{userName}</p>
+                <p className="text-[11px] text-muted-foreground leading-tight truncate">
+                  {userEmail}
                 </p>
               </div>
               <ChevronDown className="w-3 h-3 text-muted-foreground hidden sm:block" />
             </div>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
+          <DropdownMenuContent align="end" className="w-52">
             <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
               Masuk sebagai
-              <div className="font-semibold text-foreground mt-0.5">Owner</div>
+              <div className="font-semibold text-foreground mt-0.5 truncate">{userEmail}</div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Profil</DropdownMenuItem>
-            <DropdownMenuItem>Pengaturan</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => router.push("/settings/users")}>
+              Profil & Pengguna
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => router.push("/settings/company")}>
+              Pengaturan Bisnis
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
               className="text-red-600 cursor-pointer"

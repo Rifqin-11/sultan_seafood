@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { signOutAction } from "@/lib/actions/auth";
+import type { UserProfileInfo } from "@/components/app-shell/topbar";
 import {
   Tooltip,
   TooltipContent,
@@ -143,12 +144,17 @@ function NavLink({
 interface SidebarProps {
   collapsed: boolean;
   onToggle: () => void;
+  user?: UserProfileInfo;
 }
 
-export function Sidebar({ collapsed, onToggle }: SidebarProps) {
+export function Sidebar({ collapsed, onToggle, user }: SidebarProps) {
   const pathname = usePathname();
   const isActive = (href: string) =>
     pathname === href || pathname.startsWith(href + "/");
+
+  const userName = user?.name || "Owner";
+  const userEmail = user?.email || "owner@sultansf.id";
+  const userInitial = user?.initial || userName.charAt(0).toUpperCase();
 
   return (
     <aside
@@ -213,24 +219,21 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
             </div>
           ))
         )}
+        
+        {/* Bottom items */}
+        <div className="pt-3 border-t border-[#262626] mt-3">
+          {bottomItems.map((item) => (
+            <NavLink
+              key={item.href}
+              href={item.href}
+              label={item.label}
+              icon={item.icon}
+              active={isActive(item.href)}
+              collapsed={collapsed}
+            />
+          ))}
+        </div>
       </nav>
-
-      {/* Divider */}
-      <div className="h-px bg-[#262626] mx-2" />
-
-      {/* Bottom nav */}
-      <div className="py-2 px-2 space-y-0.5">
-        {bottomItems.map((item) => (
-          <NavLink
-            key={item.href}
-            href={item.href}
-            label={item.label}
-            icon={item.icon}
-            active={isActive(item.href)}
-            collapsed={collapsed}
-          />
-        ))}
-      </div>
 
       {/* User profile */}
       <div className="border-t border-[#262626] p-3">
@@ -243,21 +246,21 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
               />
             }>
               <div className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center text-xs font-medium text-white">
-                O
+                {userInitial}
               </div>
             </TooltipTrigger>
             <TooltipContent side="right" className="text-xs">
-              Owner — Keluar
+              {userName} — Keluar
             </TooltipContent>
           </Tooltip>
         ) : (
           <div className="flex items-center gap-3 px-1">
             <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-xs font-semibold text-white flex-shrink-0">
-              O
+              {userInitial}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-white text-xs font-medium truncate">Owner</p>
-              <p className="text-[#666666] text-xs truncate">owner@sultansf.id</p>
+              <p className="text-white text-xs font-medium truncate">{userName}</p>
+              <p className="text-[#666666] text-xs truncate">{userEmail}</p>
             </div>
             <button
               onClick={async () => { await signOutAction(); }}
@@ -289,12 +292,17 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
 interface MobileSidebarProps {
   open: boolean;
   onClose: () => void;
+  user?: UserProfileInfo;
 }
 
-export function MobileSidebar({ open, onClose }: MobileSidebarProps) {
+export function MobileSidebar({ open, onClose, user }: MobileSidebarProps) {
   const pathname = usePathname();
   const isActive = (href: string) =>
     pathname === href || pathname.startsWith(href + "/");
+
+  const userName = user?.name || "Owner";
+  const userEmail = user?.email || "owner@sultansf.id";
+  const userInitial = user?.initial || userName.charAt(0).toUpperCase();
 
   return (
     <>
@@ -356,13 +364,17 @@ export function MobileSidebar({ open, onClose }: MobileSidebarProps) {
         <div className="border-t border-[#262626] p-3">
           <div className="flex items-center gap-3 px-1">
             <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-xs font-semibold text-white flex-shrink-0">
-              O
+              {userInitial}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-white text-xs font-medium">Owner</p>
-              <p className="text-[#666666] text-xs truncate">owner@sultansf.id</p>
+              <p className="text-white text-xs font-medium truncate">{userName}</p>
+              <p className="text-[#666666] text-xs truncate">{userEmail}</p>
             </div>
-            <button className="text-[#666666] hover:text-white transition-colors">
+            <button
+              onClick={async () => { await signOutAction(); }}
+              title="Keluar"
+              className="text-[#666666] hover:text-white transition-colors cursor-pointer"
+            >
               <LogOut className="w-4 h-4" />
             </button>
           </div>
