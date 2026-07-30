@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Trash2, Lock, AlertCircle, CheckCircle } from "lucide-react";
+import { Plus, Trash2, Lock, AlertCircle, CheckCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
 import {
   Select,
   SelectContent,
@@ -198,6 +199,12 @@ export function InvoiceForm({ customers, products }: InvoiceFormProps) {
     }
 
     setSubmitting(true);
+    const toastId = toast.loading(
+      status === "ISSUED"
+        ? "Sedang menerbitkan invoice ke database..."
+        : "Sedang menyimpan draft invoice..."
+    );
+
     const res = await createInvoiceAction({
       customerId,
       issueDate,
@@ -222,9 +229,16 @@ export function InvoiceForm({ customers, products }: InvoiceFormProps) {
     });
 
     setSubmitting(false);
+    toast.dismiss(toastId);
+
     if (res.error) {
       setFormError(res.error);
+      toast.error(`Gagal: ${res.error}`);
     } else if (res.success) {
+      toast.success(
+        status === "ISSUED" ? "Invoice berhasil diterbitkan!" : "Draft invoice berhasil disimpan!"
+      );
+      setPublishDialogOpen(false);
       const invoiceId = res.invoiceId || "inv_1";
       router.push(`/invoices/${invoiceId}`);
     }
@@ -238,7 +252,6 @@ export function InvoiceForm({ customers, products }: InvoiceFormProps) {
   };
 
   const handlePublish = async () => {
-    setPublishDialogOpen(false);
     await submitInvoice("ISSUED");
   };
 
@@ -620,6 +633,7 @@ export function InvoiceForm({ customers, products }: InvoiceFormProps) {
             Preview
           </Button>
           <Button
+            disabled={submitting || saveState === "saving"}
             onClick={() => {
               if (!customerId || items.length === 0) {
                 submitInvoice("ISSUED");
@@ -629,7 +643,14 @@ export function InvoiceForm({ customers, products }: InvoiceFormProps) {
             }}
             size="sm"
           >
-            Terbitkan Invoice
+            {submitting ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                Memproses...
+              </>
+            ) : (
+              "Terbitkan Invoice"
+            )}
           </Button>
         </div>
       </div>
@@ -734,7 +755,7 @@ export function InvoiceForm({ customers, products }: InvoiceFormProps) {
       </div>
 
       {/* Publish confirmation dialog */}
-      <Dialog open={publishDialogOpen} onOpenChange={setPublishDialogOpen}>
+      <Dialog open={publishDialogOpen} onOpenChange={(op) => !submitting && setPublishDialogOpen(op)}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Terbitkan Invoice?</DialogTitle>
@@ -763,11 +784,21 @@ export function InvoiceForm({ customers, products }: InvoiceFormProps) {
           <DialogFooter>
             <Button
               variant="outline"
+              disabled={submitting}
               onClick={() => setPublishDialogOpen(false)}
             >
               Batal
             </Button>
-            <Button onClick={handlePublish}>Terbitkan Invoice</Button>
+            <Button onClick={handlePublish} disabled={submitting}>
+              {submitting ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                  Menerbitkan Invoice...
+                </>
+              ) : (
+                "Terbitkan Invoice"
+              )}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
