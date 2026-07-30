@@ -14,8 +14,10 @@ export const metadata: Metadata = {
 export default async function InvoicesPage() {
   const invoices = await getInvoicesAction();
 
-  const totalInvoiceCount = invoices.length;
-  const totalInvoiceAmount = invoices.reduce((acc, inv) => acc + inv.total, 0);
+  // Filter out VOID (Dibatalkan) invoices from total active billings calculation
+  const activeInvoices = invoices.filter((inv) => inv.status !== "VOID");
+  const totalInvoiceCount = activeInvoices.length;
+  const totalInvoiceAmount = activeInvoices.reduce((acc, inv) => acc + inv.total, 0);
 
   const unpaidInvoices = invoices.filter(
     (inv) => inv.status === "ISSUED" || inv.status === "PARTIALLY_PAID" || inv.status === "OVERDUE"

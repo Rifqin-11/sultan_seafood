@@ -214,7 +214,9 @@ export function InvoiceListTable({ initialInvoices }: InvoiceListTableProps) {
                     {inv.totalPaid > 0 ? formatCurrency(inv.totalPaid) : "—"}
                   </TableCell>
                   <TableCell className="text-right text-sm tabular-nums">
-                    {inv.remainingBalance > 0 ? (
+                    {inv.status === "VOID" ? (
+                      <span className="text-muted-foreground/40 font-mono">—</span>
+                    ) : inv.remainingBalance > 0 ? (
                       <span
                         className={
                           inv.status === "OVERDUE"

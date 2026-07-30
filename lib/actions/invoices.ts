@@ -301,7 +301,7 @@ export async function voidInvoiceAction(id: string) {
   try {
     const { error } = await supabase
       .from("invoices")
-      .update({ status: "VOID" })
+      .update({ status: "VOID", remaining_balance: 0 })
       .eq("id", id);
 
     if (error) throw error;
