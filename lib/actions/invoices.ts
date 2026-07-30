@@ -185,3 +185,86 @@ export async function getInvoicesAction(): Promise<Invoice[]> {
     return mockInvoices;
   }
 }
+
+export async function getInvoiceByIdAction(id: string): Promise<(Invoice & { customerPhone?: string }) | null> {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+  if (!supabaseUrl || supabaseUrl.includes("placeholder")) {
+    const mock = mockInvoices.find((i) => i.id === id);
+    if (!mock) return null;
+    return { ...mock, customerPhone: "081234567890" };
+  }
+
+  try {
+    const supabase = await createClient();
+    const { data: inv, error: invErr } = await supabase
+      .from("invoices")
+      .select(
+        `
+        *,
+        customers ( name, phone ),
+        invoice_items ( * ),
+        invoice_direct_costs ( * )
+      `
+      )
+      .eq("id", id)
+      .single();
+
+    if (invErr || !inv) {
+      const mock = mockInvoices.find((i) => i.id === id);
+      if (!mock) return null;
+      return { ...mock, customerPhone: "081234567890" };
+    }
+
+    return {
+      id: inv.id,
+      invoiceNumber: inv.invoice_number,
+      customerId: inv.customer_id,
+      customerName: inv.customers?.name || "Restoran",
+      customerPhone: inv.customers?.phone || undefined,
+      issueDate: inv.issue_date,
+      dueDate: inv.due_date,
+      status: inv.status,
+      subtotal: Number(inv.subtotal),
+      discount: Number(inv.discount),
+      total: Number(inv.total),
+      totalPaid: Number(inv.total_paid),
+      remainingBalance: Number(inv.remaining_balance),
+      totalProductCost: Number(inv.total_product_cost),
+      totalDirectCost: Number(inv.total_direct_cost),
+      productProfit: Number(inv.product_profit),
+      transactionProfit: Number(inv.transaction_profit),
+      transactionMargin: Number(inv.transaction_margin),
+      items: (inv.invoice_items || []).map((item: any) => ({
+        id: item.id,
+        invoiceId: item.invoice_id,
+        productId: item.product_id,
+        descriptionSnapshot: item.description_snapshot,
+        quantity: Number(item.quantity),
+        unit: item.unit,
+        sellingPriceSnapshot: Number(item.selling_price_snapshot),
+        purchasePriceSnapshot: Number(item.purchase_price_snapshot),
+        subtotal: Number(item.subtotal),
+        productCostTotal: Number(item.product_cost_total),
+        profit: Number(item.profit),
+      })),
+      directCosts: (inv.invoice_direct_costs || []).map((cost: any) => ({
+        id: cost.id,
+        invoiceId: cost.invoice_id,
+        category: cost.category,
+        name: cost.name,
+        amount: Number(cost.amount),
+        notes: cost.notes,
+      })),
+      notes: inv.notes,
+      createdBy: inv.created_by || "system",
+      createdAt: inv.created_at,
+      updatedAt: inv.updated_at,
+    };
+  } catch {
+    const mock = mockInvoices.find((i) => i.id === id);
+    if (!mock) return null;
+    return { ...mock, customerPhone: "081234567890" };
+  }
+}
+

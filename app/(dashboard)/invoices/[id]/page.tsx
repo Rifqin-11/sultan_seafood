@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { mockInvoices } from "@/lib/mock-data";
+import { getInvoiceByIdAction } from "@/lib/actions/invoices";
 import {
   formatCurrency,
   formatDate,
@@ -9,6 +9,7 @@ import {
 } from "@/lib/utils";
 import { InvoiceStatusBadge } from "@/components/invoices/invoice-status-badge";
 import { InvoicePdfDownload } from "@/components/invoices/invoice-pdf-download";
+import { WhatsAppButton } from "@/components/invoices/whatsapp-button";
 import { RecordPaymentDialog } from "@/components/payments/record-payment-dialog";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
@@ -24,7 +25,7 @@ export const metadata: Metadata = {
 
 export default async function InvoiceDetailPage(props: PageProps<"/invoices/[id]">) {
   const { id } = await props.params;
-  const invoice = mockInvoices.find((inv) => inv.id === id);
+  const invoice = await getInvoiceByIdAction(id);
   if (!invoice) notFound();
 
   const isInternal =
@@ -54,10 +55,7 @@ export default async function InvoiceDetailPage(props: PageProps<"/invoices/[id]
           </div>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
-          <Button variant="outline" size="sm">
-            <Copy className="w-3.5 h-3.5 mr-1.5" />
-            Duplikasi
-          </Button>
+          <WhatsAppButton invoice={invoice} customerPhone={invoice.customerPhone} />
           <InvoicePdfDownload invoice={invoice} />
           {(invoice.status === "ISSUED" ||
             invoice.status === "PARTIALLY_PAID" ||

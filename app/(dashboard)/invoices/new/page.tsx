@@ -3,12 +3,19 @@ import { ArrowLeft } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { InvoiceForm } from "@/components/invoices/invoice-form";
 import Link from "next/link";
+import { getCustomersAction } from "@/lib/actions/customers";
+import { getProductsAction } from "@/lib/actions/products";
 
 export const metadata: Metadata = {
   title: "Buat Invoice",
 };
 
-export default function NewInvoicePage() {
+export default async function NewInvoicePage() {
+  const [customers, products] = await Promise.all([
+    getCustomersAction(),
+    getProductsAction(),
+  ]);
+
   return (
     <div className="space-y-5">
       <div className="flex items-center gap-3">
@@ -26,7 +33,7 @@ export default function NewInvoicePage() {
         </div>
       </div>
 
-      <InvoiceForm />
+      <InvoiceForm customers={customers} products={products} />
     </div>
   );
 }

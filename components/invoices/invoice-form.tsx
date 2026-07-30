@@ -31,6 +31,8 @@ import { cn } from "@/lib/utils";
 import { createInvoiceAction } from "@/lib/actions/invoices";
 import { useRouter } from "next/navigation";
 
+import type { Customer, Product } from "@/types";
+
 interface InvoiceItemRow {
   id: string;
   productId: string;
@@ -61,7 +63,15 @@ const DIRECT_COST_CATEGORIES: DirectCostCategory[] = [
   "OTHER",
 ];
 
-export function InvoiceForm() {
+interface InvoiceFormProps {
+  customers?: Customer[];
+  products?: Product[];
+}
+
+export function InvoiceForm({ customers, products }: InvoiceFormProps) {
+  const customersList = customers && customers.length > 0 ? customers : mockCustomers;
+  const productsList = products && products.length > 0 ? products : mockProducts;
+
   const [customerId, setCustomerId] = useState("");
   const [issueDate, setIssueDate] = useState(
     new Date().toISOString().slice(0, 10)
@@ -75,8 +85,9 @@ export function InvoiceForm() {
 
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
+  const [formError, setFormError] = useState("");
 
-  const selectedCustomer = mockCustomers.find((c) => c.id === customerId);
+  const selectedCustomer = customersList.find((c) => c.id === customerId);
 
   // Auto-fill due date from payment terms
   useEffect(() => {
@@ -116,7 +127,7 @@ export function InvoiceForm() {
       prev.map((item) => {
         if (item.id !== id) return item;
         if (field === "productId") {
-          const product = mockProducts.find((p) => p.id === value);
+          const product = productsList.find((p) => p.id === value);
           if (product) {
             return {
               ...item,
@@ -176,7 +187,16 @@ export function InvoiceForm() {
   const [submitting, setSubmitting] = useState(false);
 
   const submitInvoice = async (status: "DRAFT" | "ISSUED") => {
-    if (!customerId || items.length === 0) return;
+    setFormError("");
+    if (!customerId) {
+      setFormError("Pilih restoran pelanggan terlebih dahulu.");
+      return;
+    }
+    if (items.length === 0) {
+      setFormError("Tambahkan minimal 1 item produk ke dalam invoice.");
+      return;
+    }
+
     setSubmitting(true);
     const res = await createInvoiceAction({
       customerId,
@@ -202,8 +222,11 @@ export function InvoiceForm() {
     });
 
     setSubmitting(false);
-    if (res.success) {
-      router.push("/invoices");
+    if (res.error) {
+      setFormError(res.error);
+    } else if (res.success) {
+      const invoiceId = res.invoiceId || "inv_1";
+      router.push(`/invoices/${invoiceId}`);
     }
   };
 
@@ -223,6 +246,12 @@ export function InvoiceForm() {
     <div className="flex gap-6 items-start">
       {/* Left Panel — Main Form */}
       <div className="flex-1 min-w-0 space-y-5">
+        {formError && (
+          <div className="flex items-center gap-2 p-3 text-xs text-red-600 bg-red-50 border border-red-200 rounded-xl">
+            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            <span>{formError}</span>
+          </div>
+        )}
         {/* Customer info */}
         <div className="bg-white rounded-2xl border border-border shadow-card p-5">
           <h3 className="text-sm font-semibold text-foreground mb-4">
@@ -240,7 +269,7 @@ export function InvoiceForm() {
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  {mockCustomers
+                  {customersList
                     .filter((c) => c.status === "ACTIVE")
                     .map((c) => (
                       <SelectItem key={c.id} value={c.id}>
@@ -344,13 +373,13 @@ export function InvoiceForm() {
                           <SelectTrigger className="h-8 text-xs">
                             <SelectValue placeholder="Pilih produk...">
                               {(() => {
-                                const p = mockProducts.find((prod) => prod.id === item.productId);
+                                const p = productsList.find((prod) => prod.id === item.productId);
                                 return p ? `${p.name} ${p.size ? `[${p.size}]` : ""}` : undefined;
                               })()}
                             </SelectValue>
                           </SelectTrigger>
                           <SelectContent>
-                            {mockProducts
+                            {productsList
                               .filter((p) => p.status === "ACTIVE")
                               .map((p) => (
                                 <SelectItem key={p.id} value={p.id}>
