@@ -23,13 +23,9 @@ export function WhatsAppButton({ invoice, customerPhone }: WhatsAppButtonProps) 
     }
 
     // 2. Build public preview link
-    let origin = typeof window !== "undefined" ? window.location.origin : "";
-    if (process.env.NEXT_PUBLIC_APP_URL) {
-      origin = process.env.NEXT_PUBLIC_APP_URL;
-    }
-    // Force HTTP for localhost/127.0.0.1 in local development to avoid Safari HTTPS upgrade error
-    if (origin.includes("localhost") || origin.includes("127.0.0.1")) {
-      origin = origin.replace(/^https:\/\//, "http://");
+    let origin = process.env.NEXT_PUBLIC_APP_URL || "https://sultan-seafood.vercel.app";
+    if (typeof window !== "undefined" && window.location.origin && !window.location.origin.includes("localhost")) {
+      origin = window.location.origin;
     }
     const previewUrl = `${origin}/preview/invoices/${invoice.id}`;
 
