@@ -6,6 +6,7 @@ import {
   formatDate,
   formatDateShort,
   formatPercent,
+  parseProductDescription,
 } from "@/lib/utils";
 import { InvoiceStatusBadge } from "@/components/invoices/invoice-status-badge";
 import { InvoicePdfDownload } from "@/components/invoices/invoice-pdf-download";
@@ -111,6 +112,9 @@ export default async function InvoiceDetailPage(props: PageProps<"/invoices/[id]
                     <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-2.5">
                       Produk
                     </th>
+                    <th className="text-left text-xs font-semibold text-muted-foreground px-3 py-2.5">
+                      Ukuran / Size
+                    </th>
                     <th className="text-right text-xs font-semibold text-muted-foreground px-3 py-2.5">
                       Qty
                     </th>
@@ -126,31 +130,43 @@ export default async function InvoiceDetailPage(props: PageProps<"/invoices/[id]
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {invoice.items.map((item) => (
-                    <tr key={item.id}>
-                      <td className="px-5 py-3 font-medium">
-                        {item.descriptionSnapshot}
-                      </td>
-                      <td className="px-3 py-3 text-right tabular-nums">
-                        {item.quantity}
-                      </td>
-                      <td className="px-3 py-3 text-muted-foreground">
-                        {item.unit}
-                      </td>
-                      <td className="px-3 py-3 text-right tabular-nums">
-                        {formatCurrency(item.sellingPriceSnapshot)}
-                      </td>
-                      <td className="px-5 py-3 text-right font-semibold tabular-nums">
-                        {formatCurrency(item.subtotal)}
-                      </td>
-                    </tr>
-                  ))}
+                  {invoice.items.map((item) => {
+                    const { name, size } = parseProductDescription(item.descriptionSnapshot);
+                    return (
+                      <tr key={item.id}>
+                        <td className="px-5 py-3 font-medium">
+                          {name}
+                        </td>
+                        <td className="px-3 py-3 text-xs">
+                          {size !== "—" ? (
+                            <span className="inline-block px-2 py-0.5 bg-blue-50 text-blue-700 font-semibold rounded border border-blue-200">
+                              {size}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground/40">—</span>
+                          )}
+                        </td>
+                        <td className="px-3 py-3 text-right tabular-nums">
+                          {item.quantity}
+                        </td>
+                        <td className="px-3 py-3 text-muted-foreground">
+                          {item.unit}
+                        </td>
+                        <td className="px-3 py-3 text-right tabular-nums">
+                          {formatCurrency(item.sellingPriceSnapshot)}
+                        </td>
+                        <td className="px-5 py-3 text-right font-semibold tabular-nums">
+                          {formatCurrency(item.subtotal)}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
                 <tfoot className="border-t-2 border-border">
                   {invoice.discount > 0 && (
                     <tr>
                       <td
-                        colSpan={4}
+                        colSpan={5}
                         className="px-5 py-2 text-right text-sm text-muted-foreground"
                       >
                         Diskon
@@ -162,7 +178,7 @@ export default async function InvoiceDetailPage(props: PageProps<"/invoices/[id]
                   )}
                   <tr>
                     <td
-                      colSpan={4}
+                      colSpan={5}
                       className="px-5 py-3 text-right font-semibold"
                     >
                       Total

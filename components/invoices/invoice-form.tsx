@@ -355,8 +355,11 @@ export function InvoiceForm({ customers, products }: InvoiceFormProps) {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-muted/30 border-b border-border">
-                    <th className="text-left text-xs font-semibold text-muted-foreground px-4 py-2.5 min-w-[200px]">
+                    <th className="text-left text-xs font-semibold text-muted-foreground px-4 py-2.5 min-w-[160px]">
                       Produk
+                    </th>
+                    <th className="text-left text-xs font-semibold text-muted-foreground px-3 py-2.5 w-24">
+                      Size
                     </th>
                     <th className="text-right text-xs font-semibold text-muted-foreground px-3 py-2.5 w-20">
                       Qty
@@ -392,7 +395,7 @@ export function InvoiceForm({ customers, products }: InvoiceFormProps) {
                             <SelectValue placeholder="Pilih produk...">
                               {(() => {
                                 const p = productsList.find((prod) => prod.id === item.productId);
-                                return p ? `${p.name} ${p.size ? `[${p.size}]` : ""}` : undefined;
+                                return p ? p.name : undefined;
                               })()}
                             </SelectValue>
                           </SelectTrigger>
@@ -406,6 +409,18 @@ export function InvoiceForm({ customers, products }: InvoiceFormProps) {
                               ))}
                           </SelectContent>
                         </Select>
+                      </td>
+                      <td className="px-3 py-2 text-xs">
+                        {(() => {
+                          const p = productsList.find((prod) => prod.id === item.productId);
+                          return p?.size ? (
+                            <span className="inline-block px-2 py-0.5 bg-blue-50 text-blue-700 font-semibold rounded border border-blue-200">
+                              {p.size}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground/40">—</span>
+                          );
+                        })()}
                       </td>
                       <td className="px-3 py-2">
                         <Input

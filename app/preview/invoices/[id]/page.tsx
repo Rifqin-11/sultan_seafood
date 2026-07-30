@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getInvoiceByIdAction } from "@/lib/actions/invoices";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatCurrency, formatDate, parseProductDescription } from "@/lib/utils";
 import { InvoiceStatusBadge } from "@/components/invoices/invoice-status-badge";
 import { InvoicePdfDownload } from "@/components/invoices/invoice-pdf-download";
 import { Building2, CreditCard, ShieldCheck } from "lucide-react";
@@ -84,6 +84,7 @@ export default async function CustomerInvoicePreviewPage({ params }: PageProps) 
                 <tr className="border-b border-border text-muted-foreground text-xs uppercase font-semibold">
                   <th className="text-left py-3 px-2">No</th>
                   <th className="text-left py-3 px-4">Deskripsi Produk</th>
+                  <th className="text-left py-3 px-3">Ukuran / Size</th>
                   <th className="text-right py-3 px-3">Qty</th>
                   <th className="text-left py-3 px-3">Satuan</th>
                   <th className="text-right py-3 px-3">Harga Jual</th>
@@ -91,28 +92,40 @@ export default async function CustomerInvoicePreviewPage({ params }: PageProps) 
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {invoice.items.map((item, idx) => (
-                  <tr key={item.id} className="hover:bg-slate-50/50">
-                    <td className="py-3 px-2 text-xs text-muted-foreground">{idx + 1}</td>
-                    <td className="py-3 px-4 font-semibold text-slate-800">
-                      {item.descriptionSnapshot}
-                    </td>
-                    <td className="py-3 px-3 text-right tabular-nums font-medium">{item.quantity}</td>
-                    <td className="py-3 px-3 text-muted-foreground">{item.unit}</td>
-                    <td className="py-3 px-3 text-right tabular-nums">{formatCurrency(item.sellingPriceSnapshot)}</td>
-                    <td className="py-3 px-4 text-right tabular-nums font-bold text-slate-900">{formatCurrency(item.subtotal)}</td>
-                  </tr>
-                ))}
+                {invoice.items.map((item, idx) => {
+                  const { name, size } = parseProductDescription(item.descriptionSnapshot);
+                  return (
+                    <tr key={item.id} className="hover:bg-slate-50/50">
+                      <td className="py-3 px-2 text-xs text-muted-foreground">{idx + 1}</td>
+                      <td className="py-3 px-4 font-semibold text-slate-800">
+                        {name}
+                      </td>
+                      <td className="py-3 px-3 text-xs font-medium">
+                        {size !== "—" ? (
+                          <span className="inline-block px-2 py-0.5 bg-blue-50 text-blue-700 font-bold rounded border border-blue-200">
+                            {size}
+                          </span>
+                        ) : (
+                          <span className="text-slate-300">—</span>
+                        )}
+                      </td>
+                      <td className="py-3 px-3 text-right tabular-nums font-medium">{item.quantity}</td>
+                      <td className="py-3 px-3 text-muted-foreground">{item.unit}</td>
+                      <td className="py-3 px-3 text-right tabular-nums">{formatCurrency(item.sellingPriceSnapshot)}</td>
+                      <td className="py-3 px-4 text-right tabular-nums font-bold text-slate-900">{formatCurrency(item.subtotal)}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
               <tfoot className="border-t-2 border-slate-900">
                 {invoice.discount > 0 && (
                   <tr>
-                    <td colSpan={5} className="py-2 px-4 text-right text-xs text-muted-foreground font-medium">Diskon:</td>
+                    <td colSpan={6} className="py-2 px-4 text-right text-xs text-muted-foreground font-medium">Diskon:</td>
                     <td className="py-2 px-4 text-right text-xs font-semibold text-red-600 tabular-nums">-{formatCurrency(invoice.discount)}</td>
                   </tr>
                 )}
                 <tr>
-                  <td colSpan={5} className="py-4 px-4 text-right text-base font-bold text-slate-900">Total Tagihan:</td>
+                  <td colSpan={6} className="py-4 px-4 text-right text-base font-bold text-slate-900">Total Tagihan:</td>
                   <td className="py-4 px-4 text-right text-xl font-extrabold text-blue-600 tabular-nums">{formatCurrency(invoice.total)}</td>
                 </tr>
               </tfoot>

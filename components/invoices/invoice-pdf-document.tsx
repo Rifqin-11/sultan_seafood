@@ -7,7 +7,7 @@ import {
   StyleSheet,
 } from "@react-pdf/renderer";
 import type { Invoice } from "@/types";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatCurrency, formatDate, parseProductDescription } from "@/lib/utils";
 
 // Create styles for clean monochrome invoice PDF
 const styles = StyleSheet.create({
@@ -89,11 +89,12 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 8,
   },
-  colDesc: { width: "45%" },
-  colQty: { width: "15%", textAlign: "right" },
+  colDesc: { width: "34%" },
+  colSize: { width: "16%" },
+  colQty: { width: "12%", textAlign: "right" },
   colUnit: { width: "10%", textAlign: "center" },
-  colPrice: { width: "15%", textAlign: "right" },
-  colSubtotal: { width: "15%", textAlign: "right" },
+  colPrice: { width: "14%", textAlign: "right" },
+  colSubtotal: { width: "14%", textAlign: "right" },
   th: {
     fontSize: 8,
     fontFamily: "Helvetica-Bold",
@@ -203,6 +204,7 @@ export function InvoicePdfDocument({ invoice }: InvoicePdfDocumentProps) {
         <View style={styles.table}>
           <View style={styles.tableHeader}>
             <Text style={[styles.colDesc, styles.th]}>DESKRIPSI PRODUK</Text>
+            <Text style={[styles.colSize, styles.th]}>UKURAN / SIZE</Text>
             <Text style={[styles.colQty, styles.th]}>QTY</Text>
             <Text style={[styles.colUnit, styles.th]}>SATUAN</Text>
             <Text style={[styles.colPrice, styles.th]}>HARGA</Text>
@@ -210,21 +212,23 @@ export function InvoicePdfDocument({ invoice }: InvoicePdfDocumentProps) {
           </View>
 
           {/* Table Items */}
-          {invoice.items.map((item) => (
-            <View key={item.id} style={styles.tableRow}>
-              <Text style={[styles.colDesc, styles.td]}>
-                {item.descriptionSnapshot}
-              </Text>
-              <Text style={[styles.colQty, styles.td]}>{item.quantity}</Text>
-              <Text style={[styles.colUnit, styles.td]}>{item.unit}</Text>
-              <Text style={[styles.colPrice, styles.td]}>
-                {formatCurrency(item.sellingPriceSnapshot)}
-              </Text>
-              <Text style={[styles.colSubtotal, styles.td, { fontFamily: "Helvetica-Bold" }]}>
-                {formatCurrency(item.subtotal)}
-              </Text>
-            </View>
-          ))}
+          {invoice.items.map((item) => {
+            const { name, size } = parseProductDescription(item.descriptionSnapshot);
+            return (
+              <View key={item.id} style={styles.tableRow}>
+                <Text style={[styles.colDesc, styles.td]}>{name}</Text>
+                <Text style={[styles.colSize, styles.td]}>{size}</Text>
+                <Text style={[styles.colQty, styles.td]}>{item.quantity}</Text>
+                <Text style={[styles.colUnit, styles.td]}>{item.unit}</Text>
+                <Text style={[styles.colPrice, styles.td]}>
+                  {formatCurrency(item.sellingPriceSnapshot)}
+                </Text>
+                <Text style={[styles.colSubtotal, styles.td, { fontFamily: "Helvetica-Bold" }]}>
+                  {formatCurrency(item.subtotal)}
+                </Text>
+              </View>
+            );
+          })}
         </View>
 
         {/* Summary (Public Only) */}

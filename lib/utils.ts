@@ -137,3 +137,14 @@ export function getDirectCostLabel(category: DirectCostCategory): string {
   };
   return map[category];
 }
+
+export function parseProductDescription(desc: string, itemSize?: string) {
+  if (itemSize && itemSize.trim()) {
+    return { name: desc.replace(/\s*\[.*?\]\s*/g, "").trim(), size: itemSize };
+  }
+  const match = desc.match(/^(.*?)\s*\[(.*?)\]$/);
+  if (match) {
+    return { name: match[1].trim(), size: match[2].trim() };
+  }
+  return { name: desc, size: "—" };
+}
