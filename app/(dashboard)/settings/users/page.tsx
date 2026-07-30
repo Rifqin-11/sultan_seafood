@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { PageHeader } from "@/components/app-shell/page-header";
 import { Badge } from "@/components/ui/badge";
 import { getCurrentUserAction } from "@/lib/actions/auth";
+import { ChangePasswordCard } from "@/components/settings/change-password-card";
 import {
   Table,
   TableBody,
@@ -59,7 +60,7 @@ export default async function ProfileUsersSettingsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Profil & Pengguna"
-        description="Informasi profil akun Anda dan daftar pengguna terdaftar sistem ERP"
+        description="Informasi profil akun Anda, opsi ganti password, dan daftar pengguna terdaftar sistem ERP"
       />
 
       {/* Profile Section */}
@@ -101,6 +102,9 @@ export default async function ProfileUsersSettingsPage() {
           </div>
         </div>
       </div>
+
+      {/* Change Password Card */}
+      <ChangePasswordCard />
 
       {/* Registered Users Section (Read Only) */}
       <div className="bg-white rounded-2xl border border-border shadow-card overflow-hidden space-y-0">

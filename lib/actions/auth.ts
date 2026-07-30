@@ -81,3 +81,31 @@ export async function getCurrentUserAction() {
     return null;
   }
 }
+
+export async function updatePasswordAction(newPassword: string) {
+  if (!newPassword || newPassword.length < 6) {
+    return { error: "Password minimal harus 6 karakter." };
+  }
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+  if (!supabaseUrl || supabaseUrl.includes("placeholder")) {
+    return { success: true, message: "Password berhasil diperbarui (Demo Mode)." };
+  }
+
+  try {
+    const supabase = await createClient();
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword,
+    });
+
+    if (error) {
+      return { error: error.message };
+    }
+
+    return { success: true, message: "Password akun Supabase Auth berhasil diperbarui." };
+  } catch (err: unknown) {
+    const e = err as { message?: string };
+    return { error: e.message || "Gagal memperbarui password." };
+  }
+}
