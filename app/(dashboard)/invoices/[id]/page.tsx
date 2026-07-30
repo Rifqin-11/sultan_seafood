@@ -131,19 +131,22 @@ export default async function InvoiceDetailPage(props: PageProps<"/invoices/[id]
                 </thead>
                 <tbody className="divide-y divide-border">
                   {invoice.items.map((item) => {
-                    const { name, size } = parseProductDescription(item.descriptionSnapshot);
+                    const { name, size } = parseProductDescription(
+                      item.descriptionSnapshot,
+                      (item as unknown as { size?: string }).size
+                    );
                     return (
                       <tr key={item.id}>
-                        <td className="px-5 py-3 font-medium">
+                        <td className="px-5 py-3 font-semibold text-slate-900">
                           {name}
                         </td>
                         <td className="px-3 py-3 text-xs">
                           {size !== "—" ? (
-                            <span className="inline-block px-2 py-0.5 bg-blue-50 text-blue-700 font-semibold rounded border border-blue-200">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded bg-blue-50 text-blue-800 font-mono font-bold border border-blue-200">
                               {size}
                             </span>
                           ) : (
-                            <span className="text-muted-foreground/40">—</span>
+                            <span className="text-muted-foreground/40 font-mono">—</span>
                           )}
                         </td>
                         <td className="px-3 py-3 text-right tabular-nums">

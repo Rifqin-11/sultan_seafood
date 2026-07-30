@@ -139,12 +139,36 @@ export function getDirectCostLabel(category: DirectCostCategory): string {
 }
 
 export function parseProductDescription(desc: string, itemSize?: string) {
-  if (itemSize && itemSize.trim()) {
-    return { name: desc.replace(/\s*\[.*?\]\s*/g, "").trim(), size: itemSize };
+  if (!desc) return { name: "", size: "—" };
+
+  // If itemSize is explicitly provided from database/model
+  if (itemSize && itemSize.trim() && itemSize !== "—") {
+    const cleanName = desc
+      .replace(/\s*\[.*?\]\s*/g, " ")
+      .replace(/\s*\(.*?\)\s*/g, " ")
+      .trim();
+    return { name: cleanName || desc, size: itemSize.trim() };
   }
-  const match = desc.match(/^(.*?)\s*\[(.*?)\]$/);
-  if (match) {
-    return { name: match[1].trim(), size: match[2].trim() };
+
+  const str = desc.trim();
+
+  // 1. Check for [...] at end
+  const bracketMatch = str.match(/^(.*?)\s*\[(.*?)\]$/);
+  if (bracketMatch) {
+    return { name: bracketMatch[1].trim(), size: bracketMatch[2].trim() };
   }
-  return { name: desc, size: "—" };
+
+  // 2. Check for (...) at end
+  const parenMatch = str.match(/^(.*?)\s*\((.*?)\)$/);
+  if (parenMatch) {
+    return { name: parenMatch[1].trim(), size: parenMatch[2].trim() };
+  }
+
+  // 3. Fallback for any trailing [size] or (size) in string
+  const trailingMatch = str.match(/^(.*?)\s*[\(\[](.*?)[\)\]]\s*$/);
+  if (trailingMatch) {
+    return { name: trailingMatch[1].trim(), size: trailingMatch[2].trim() };
+  }
+
+  return { name: str, size: "—" };
 }
