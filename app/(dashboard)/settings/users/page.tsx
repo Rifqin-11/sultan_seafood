@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { PageHeader } from "@/components/app-shell/page-header";
 import { Badge } from "@/components/ui/badge";
 import { getCurrentUserAction } from "@/lib/actions/auth";
-import { ChangePasswordCard } from "@/components/settings/change-password-card";
+import { UserProfileCard } from "@/components/settings/user-profile-card";
 import {
   Table,
   TableBody,
@@ -11,7 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { User, Shield, Info, CheckCircle2 } from "lucide-react";
+import { User, Info, CheckCircle2 } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Profil & Pengguna",
@@ -63,48 +63,8 @@ export default async function ProfileUsersSettingsPage() {
         description="Informasi profil akun Anda, opsi ganti password, dan daftar pengguna terdaftar sistem ERP"
       />
 
-      {/* Profile Section */}
-      <div className="bg-white rounded-2xl border border-border shadow-card p-6 space-y-4">
-        <div className="flex items-center gap-3 border-b border-border pb-4">
-          <div className="w-12 h-12 rounded-xl bg-slate-900 text-white flex items-center justify-center font-bold text-lg">
-            {userEmail.charAt(0).toUpperCase()}
-          </div>
-          <div>
-            <h3 className="text-base font-bold text-slate-900">{userEmail.split("@")[0]}</h3>
-            <p className="text-xs text-muted-foreground">{userEmail}</p>
-          </div>
-          <div className="ml-auto flex items-center gap-2">
-            <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-xs font-semibold px-2.5 py-1">
-              <CheckCircle2 className="w-3 h-3 mr-1 text-emerald-600" />
-              Aktif
-            </Badge>
-            <Badge className="bg-slate-900 text-white text-xs px-2.5 py-1">
-              {userRole}
-            </Badge>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
-          <div className="space-y-1">
-            <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider">Email Utama</p>
-            <p className="text-sm font-semibold text-slate-900">{userEmail}</p>
-          </div>
-          <div className="space-y-1">
-            <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider">Role & Otoritas</p>
-            <p className="text-sm font-semibold text-slate-900">{userRole}</p>
-          </div>
-          <div className="space-y-1">
-            <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider">Metode Keamanan</p>
-            <p className="text-sm font-semibold text-blue-700 flex items-center gap-1">
-              <Shield className="w-3.5 h-3.5 text-blue-600" />
-              Supabase Auth Session
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Change Password Card */}
-      <ChangePasswordCard />
+      {/* User Profile Card with Change Password Dialog Trigger */}
+      <UserProfileCard userEmail={userEmail} userRole={userRole} />
 
       {/* Registered Users Section (Read Only) */}
       <div className="bg-white rounded-2xl border border-border shadow-card overflow-hidden space-y-0">
@@ -118,7 +78,7 @@ export default async function ProfileUsersSettingsPage() {
               Daftar akun terdaftar yang dapat mengakses ERP Sultan Seafood.
             </p>
           </div>
-          
+
           <div className="flex items-center gap-1.5 text-xs text-amber-800 bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-200 shrink-0">
             <Info className="w-3.5 h-3.5 text-amber-600 shrink-0" />
             <span>Hanya <b>Owner</b> yang dapat menambahkan pengguna via Supabase Auth.</span>
