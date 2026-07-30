@@ -85,7 +85,7 @@ const navGrouped = [
 
 const bottomItems = [
   { label: "Profil Bisnis", href: "/settings/company", icon: Settings },
-  { label: "Pengguna", href: "/settings/users", icon: Settings },
+  { label: "Profil & Pengguna", href: "/settings/users", icon: Settings },
 ];
 
 function NavLink({
