@@ -139,8 +139,12 @@ export default async function CustomerInvoicePreviewPage({ params }: PageProps) 
                 <CreditCard className="w-4 h-4 text-blue-600" />
                 Informasi Pembayaran Transfer Bank
               </div>
-              <p className="text-sm font-semibold text-slate-900">Bank BCA: 1234567890</p>
-              <p className="text-xs text-muted-foreground">Atas Nama: <span className="font-semibold text-slate-800">Sultan Seafood</span></p>
+              <p className="text-sm font-semibold text-slate-900">
+                Bank BCA: <span className="font-mono text-blue-600">1234567890</span>
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Atas Nama: <span className="font-semibold text-slate-800">Sultan Seafood</span>
+              </p>
             </div>
             <div className="space-y-1 sm:text-right flex flex-col justify-center">
               <div className="inline-flex items-center gap-1 text-xs text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200 self-start sm:self-end">

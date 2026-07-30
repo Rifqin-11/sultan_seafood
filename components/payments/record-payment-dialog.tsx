@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CreditCard, Loader2 } from "lucide-react";
+import { CreditCard, Loader2, Upload, FileText, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -62,7 +62,8 @@ export function RecordPaymentDialog({
     new Date().toISOString().slice(0, 10)
   );
   const [method, setMethod] = useState<PaymentMethod>("TRANSFER");
-  const [referenceNumber, setReferenceNumber] = useState("");
+  const [proofUrl, setProofUrl] = useState<string | null>(null);
+  const [fileName, setFileName] = useState<string>("");
   const [notes, setNotes] = useState("");
 
   const activeInvoiceId = invoiceId || defaultInvoiceId || "";
@@ -70,9 +71,21 @@ export function RecordPaymentDialog({
 
   const resetForm = () => {
     setAmount("");
-    setReferenceNumber("");
+    setProofUrl(null);
+    setFileName("");
     setNotes("");
     setError("");
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setFileName(file.name);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setProofUrl(event.target?.result as string);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -93,7 +106,7 @@ export function RecordPaymentDialog({
       amount: parseFloat(amount),
       paymentDate,
       method,
-      referenceNumber: referenceNumber || undefined,
+      proofUrl: proofUrl || undefined,
       notes: notes || undefined,
     });
 
@@ -129,7 +142,7 @@ export function RecordPaymentDialog({
           <DialogHeader>
             <DialogTitle>Catat Pembayaran Pelanggan</DialogTitle>
             <DialogDescription>
-              Masukkan rincian pembayaran masuk dari restoran.
+              Masukkan rincian pembayaran masuk dan unggah bukti transfer.
             </DialogDescription>
           </DialogHeader>
 
@@ -200,45 +213,67 @@ export function RecordPaymentDialog({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-1">
-                  Metode Bayar
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">
+                Metode Bayar
+              </label>
+              <Select
+                value={method}
+                onValueChange={(v) => setMethod((v as PaymentMethod) || "TRANSFER")}
+              >
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue>
+                    {method === "TRANSFER"
+                      ? "Transfer Bank"
+                      : method === "CASH"
+                      ? "Tunai / Cash"
+                      : method === "CHECK"
+                      ? "Cek / Bilyet Giro"
+                      : "Lainnya"}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="TRANSFER">Transfer Bank</SelectItem>
+                  <SelectItem value="CASH">Tunai / Cash</SelectItem>
+                  <SelectItem value="CHECK">Cek / Bilyet Giro</SelectItem>
+                  <SelectItem value="OTHER">Lainnya</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">
+                Upload Bukti Pembayaran / Transfer
+              </label>
+              {proofUrl ? (
+                <div className="flex items-center justify-between p-2 bg-blue-50 border border-blue-200 rounded-lg text-xs">
+                  <div className="flex items-center gap-2 truncate">
+                    <FileText className="w-4 h-4 text-blue-600 shrink-0" />
+                    <span className="truncate font-medium text-blue-900">{fileName || "Bukti Transfer"}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setProofUrl(null);
+                      setFileName("");
+                    }}
+                    className="text-muted-foreground hover:text-red-500 p-1"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ) : (
+                <label className="flex items-center justify-center gap-2 px-3 py-2.5 border border-dashed border-border hover:border-blue-500 rounded-lg cursor-pointer text-xs text-muted-foreground hover:text-foreground transition-colors bg-muted/20">
+                  <Upload className="w-4 h-4 text-blue-600" />
+                  <span className="font-medium text-blue-700">Pilih File Bukti (Gambar / PDF)</span>
+                  <input
+                    type="file"
+                    accept="image/*,application/pdf"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
                 </label>
-                <Select
-                  value={method}
-                  onValueChange={(v) => setMethod((v as PaymentMethod) || "TRANSFER")}
-                >
-                  <SelectTrigger className="h-8 text-xs">
-                    <SelectValue>
-                      {method === "TRANSFER"
-                        ? "Transfer Bank"
-                        : method === "CASH"
-                        ? "Tunai / Cash"
-                        : method === "CHECK"
-                        ? "Cek / Bilyet Giro"
-                        : "Lainnya"}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="TRANSFER">Transfer Bank</SelectItem>
-                    <SelectItem value="CASH">Tunai / Cash</SelectItem>
-                    <SelectItem value="CHECK">Cek / Bilyet Giro</SelectItem>
-                    <SelectItem value="OTHER">Lainnya</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-1">
-                  No. Referensi / Bukti
-                </label>
-                <Input
-                  placeholder="TRX-98765432"
-                  value={referenceNumber}
-                  onChange={(e) => setReferenceNumber(e.target.value)}
-                  className="h-8 text-xs"
-                />
-              </div>
+              )}
             </div>
 
             <div>

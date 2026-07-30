@@ -261,7 +261,7 @@ export function InvoicePdfDocument({ invoice }: InvoicePdfDocumentProps) {
             <Text style={styles.metaLabel}>CATATAN & INSTRUKSI PEMBAYARAN:</Text>
             <Text style={{ fontSize: 9, color: "#444444" }}>{invoice.notes}</Text>
             <Text style={{ fontSize: 8, color: "#666666", marginTop: 4 }}>
-              Transfer ke: BCA 1234567890 a.n. Sultan Seafood
+              Transfer Pembayaran ke: Bank BCA No. Rek: 1234567890 (a.n. Sultan Seafood)
             </Text>
           </View>
         )}

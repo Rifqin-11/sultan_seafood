@@ -168,6 +168,7 @@ export interface Payment {
   amount: number;
   method: PaymentMethod;
   referenceNumber?: string;
+  proofUrl?: string;
   notes?: string;
   createdBy: string;
 }

@@ -3,6 +3,8 @@ import { PageHeader } from "@/components/app-shell/page-header";
 import { getExpensesAction } from "@/lib/actions/expenses";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { AddExpenseDialog } from "@/components/expenses/add-expense-dialog";
+import { MetricCard } from "@/components/dashboard/metric-card";
+import { DollarSign, Receipt, PieChart, TrendingUp } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -11,7 +13,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 
 export const metadata: Metadata = {
   title: "Pengeluaran Operasional",
@@ -20,6 +21,22 @@ export const metadata: Metadata = {
 export default async function ExpensesPage() {
   const expenses = await getExpensesAction();
   const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
+  const totalCount = expenses.length;
+  const avgExpense = totalCount > 0 ? Math.round(totalExpenses / totalCount) : 0;
+
+  // Calculate top category
+  const categoryMap: Record<string, number> = {};
+  expenses.forEach((e) => {
+    categoryMap[e.category] = (categoryMap[e.category] || 0) + e.amount;
+  });
+  let topCategory = "—";
+  let topCategoryAmount = 0;
+  Object.entries(categoryMap).forEach(([cat, amt]) => {
+    if (amt > topCategoryAmount) {
+      topCategoryAmount = amt;
+      topCategory = cat;
+    }
+  });
 
   return (
     <div className="space-y-6">
@@ -30,16 +47,40 @@ export default async function ExpensesPage() {
         <AddExpenseDialog />
       </PageHeader>
 
-      {/* Summary */}
-      <div className="bg-white rounded-2xl border border-border shadow-card p-5">
-        <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
-          Total Pengeluaran Bulan Ini
-        </p>
-        <p className="text-2xl font-bold">{formatCurrency(totalExpenses)}</p>
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <MetricCard
+          title="Total Pengeluaran"
+          value={totalExpenses}
+          isCurrency
+          icon={DollarSign}
+        />
+        <MetricCard
+          title="Jumlah Transaksi"
+          value={totalCount}
+          suffix="transaksi"
+          icon={Receipt}
+        />
+        <MetricCard
+          title="Kategori Terbesar"
+          value={topCategory}
+          suffix={topCategoryAmount > 0 ? `(${formatCurrency(topCategoryAmount)})` : ""}
+          icon={PieChart}
+        />
+        <MetricCard
+          title="Rata-rata Pengeluaran"
+          value={avgExpense}
+          isCurrency
+          icon={TrendingUp}
+        />
       </div>
 
       {/* Table */}
       <div className="bg-white rounded-2xl border border-border shadow-card overflow-hidden">
+        <div className="px-5 py-4 border-b border-border flex items-center justify-between">
+          <h3 className="text-sm font-semibold">Riwayat Pengeluaran Operasional</h3>
+          <AddExpenseDialog />
+        </div>
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
@@ -58,7 +99,9 @@ export default async function ExpensesPage() {
                     {formatDate(e.expenseDate)}
                   </TableCell>
                   <TableCell className="text-sm font-medium">
-                    {e.category}
+                    <span className="inline-block px-2.5 py-0.5 bg-amber-50 text-amber-800 text-xs font-medium rounded-full border border-amber-200">
+                      {e.category}
+                    </span>
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {e.description}
@@ -66,8 +109,8 @@ export default async function ExpensesPage() {
                   <TableCell className="text-sm text-muted-foreground">
                     {e.userName}
                   </TableCell>
-                  <TableCell className="text-right text-sm font-semibold tabular-nums">
-                    {formatCurrency(e.amount)}
+                  <TableCell className="text-right text-sm font-semibold tabular-nums text-red-600">
+                    -{formatCurrency(e.amount)}
                   </TableCell>
                 </TableRow>
               ))}

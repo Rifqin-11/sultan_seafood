@@ -10,6 +10,7 @@ export interface CreatePaymentPayload {
   paymentDate: string;
   method: PaymentMethod;
   referenceNumber?: string;
+  proofUrl?: string;
   notes?: string;
 }
 
@@ -18,6 +19,18 @@ export async function createPaymentAction(payload: CreatePaymentPayload) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
   if (!supabaseUrl || supabaseUrl.includes("placeholder")) {
+    const { mockPayments } = await import("@/lib/mock-data");
+    mockPayments.unshift({
+      id: `pay_${Date.now()}`,
+      invoiceId: payload.invoiceId,
+      amount: payload.amount,
+      paymentDate: payload.paymentDate,
+      method: payload.method,
+      referenceNumber: payload.referenceNumber,
+      proofUrl: payload.proofUrl,
+      notes: payload.notes,
+      createdBy: "Owner",
+    });
     revalidatePath("/payments");
     revalidatePath("/invoices");
     return { success: true, message: "Pembayaran berhasil dicatat (Demo Mode)." };
@@ -30,6 +43,7 @@ export async function createPaymentAction(payload: CreatePaymentPayload) {
       payment_date: payload.paymentDate,
       method: payload.method,
       reference_number: payload.referenceNumber || null,
+      proof_url: payload.proofUrl || null,
       notes: payload.notes || null,
     });
 
@@ -92,8 +106,9 @@ export async function getPaymentsAction() {
       paymentDate: p.payment_date,
       method: p.method,
       referenceNumber: p.reference_number,
+      proofUrl: p.proof_url || p.proofUrl,
       notes: p.notes,
-      recordedBy: p.recorded_by || "system",
+      createdBy: p.created_by || p.recorded_by || "system",
       createdAt: p.created_at,
     }));
   } catch {
