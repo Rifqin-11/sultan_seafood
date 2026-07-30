@@ -86,11 +86,21 @@ export async function updateProductAction(payload: UpdateProductPayload) {
     if (error) throw error;
 
     if (payload.activeCost && payload.activeCost > 0) {
-      await supabase.from("product_costs").insert({
-        product_id: payload.id,
-        unit_cost: payload.activeCost,
-        effective_at: new Date().toISOString(),
-      });
+      const { data: latestCost } = await supabase
+        .from("product_costs")
+        .select("unit_cost")
+        .eq("product_id", payload.id)
+        .order("effective_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (!latestCost || Number(latestCost.unit_cost) !== Number(payload.activeCost)) {
+        await supabase.from("product_costs").insert({
+          product_id: payload.id,
+          unit_cost: payload.activeCost,
+          effective_at: new Date().toISOString(),
+        });
+      }
     }
 
     revalidatePath("/products");

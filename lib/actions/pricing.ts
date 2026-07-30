@@ -143,3 +143,97 @@ export async function getCustomerPricesAction() {
     return [];
   }
 }
+
+export async function updatePurchasePriceAction(id: string, unitCost: number, notes?: string) {
+  const supabase = await createClient();
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+  if (!supabaseUrl || supabaseUrl.includes("placeholder")) {
+    revalidatePath("/pricing/purchase");
+    return { success: true, message: "Harga beli diperbarui (Demo)." };
+  }
+
+  try {
+    const { error } = await supabase
+      .from("product_costs")
+      .update({ unit_cost: unitCost, notes: notes || null })
+      .eq("id", id);
+
+    if (error) throw error;
+
+    revalidatePath("/pricing/purchase");
+    revalidatePath("/products");
+    return { success: true, message: "Harga beli berhasil diperbarui." };
+  } catch (err: unknown) {
+    const error = err as { message?: string };
+    return { error: error.message || "Gagal memperbarui harga beli." };
+  }
+}
+
+export async function deletePurchasePriceAction(id: string) {
+  const supabase = await createClient();
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+  if (!supabaseUrl || supabaseUrl.includes("placeholder")) {
+    revalidatePath("/pricing/purchase");
+    return { success: true, message: "Harga beli dihapus (Demo)." };
+  }
+
+  try {
+    const { error } = await supabase.from("product_costs").delete().eq("id", id);
+    if (error) throw error;
+
+    revalidatePath("/pricing/purchase");
+    revalidatePath("/products");
+    return { success: true, message: "Harga beli berhasil dihapus." };
+  } catch (err: unknown) {
+    const error = err as { message?: string };
+    return { error: error.message || "Gagal menghapus harga beli." };
+  }
+}
+
+export async function updateCustomerPriceAction(id: string, sellingPrice: number) {
+  const supabase = await createClient();
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+  if (!supabaseUrl || supabaseUrl.includes("placeholder")) {
+    revalidatePath("/pricing/selling");
+    return { success: true, message: "Harga khusus diperbarui (Demo)." };
+  }
+
+  try {
+    const { error } = await supabase
+      .from("customer_prices")
+      .update({ selling_price: sellingPrice })
+      .eq("id", id);
+
+    if (error) throw error;
+
+    revalidatePath("/pricing/selling");
+    return { success: true, message: "Harga khusus berhasil diperbarui." };
+  } catch (err: unknown) {
+    const error = err as { message?: string };
+    return { error: error.message || "Gagal memperbarui harga khusus." };
+  }
+}
+
+export async function deleteCustomerPriceAction(id: string) {
+  const supabase = await createClient();
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+  if (!supabaseUrl || supabaseUrl.includes("placeholder")) {
+    revalidatePath("/pricing/selling");
+    return { success: true, message: "Harga khusus dihapus (Demo)." };
+  }
+
+  try {
+    const { error } = await supabase.from("customer_prices").delete().eq("id", id);
+    if (error) throw error;
+
+    revalidatePath("/pricing/selling");
+    return { success: true, message: "Harga khusus berhasil dihapus." };
+  } catch (err: unknown) {
+    const error = err as { message?: string };
+    return { error: error.message || "Gagal menghapus harga khusus." };
+  }
+}
