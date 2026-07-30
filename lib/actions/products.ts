@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 
 export interface CreateProductPayload {
-  sku: string;
+  sku?: string;
   name: string;
   category: string;
   defaultUnit: string;
@@ -25,7 +25,7 @@ export async function createProductAction(payload: CreateProductPayload) {
     const { data: product, error } = await supabase
       .from("products")
       .insert({
-        sku: payload.sku,
+        sku: payload.sku || null,
         name: payload.name,
         category: payload.category,
         default_unit: payload.defaultUnit,

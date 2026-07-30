@@ -40,7 +40,7 @@ export function ProductTable({ initialProducts }: ProductTableProps) {
   const filtered = productsList.filter((p) => {
     const matchSearch =
       p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.sku.toLowerCase().includes(search.toLowerCase()) ||
+      p.id.toLowerCase().includes(search.toLowerCase()) ||
       p.category.toLowerCase().includes(search.toLowerCase());
     const matchStatus =
       statusFilter === "ALL" || p.status === statusFilter;
@@ -54,7 +54,7 @@ export function ProductTable({ initialProducts }: ProductTableProps) {
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
-            placeholder="Cari produk, SKU, kategori..."
+            placeholder="Cari produk, kategori..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9 h-9"
@@ -90,7 +90,7 @@ export function ProductTable({ initialProducts }: ProductTableProps) {
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/30 hover:bg-muted/30">
-                <TableHead className="text-xs font-semibold">SKU</TableHead>
+                <TableHead className="text-xs font-semibold">ID Produk</TableHead>
                 <TableHead className="text-xs font-semibold">Nama Produk</TableHead>
                 <TableHead className="text-xs font-semibold">Kategori</TableHead>
                 <TableHead className="text-xs font-semibold">Satuan</TableHead>
@@ -111,7 +111,7 @@ export function ProductTable({ initialProducts }: ProductTableProps) {
               {filtered.map((product) => (
                 <TableRow key={product.id} className="hover:bg-muted/20">
                   <TableCell className="font-mono text-xs text-muted-foreground">
-                    {product.sku}
+                    {product.id.includes("-") ? product.id.split("-")[0] : product.id.slice(0, 8)}
                   </TableCell>
                   <TableCell className="font-medium text-sm">
                     {product.name}

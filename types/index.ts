@@ -19,7 +19,7 @@ export type ProductStatus = "ACTIVE" | "INACTIVE";
 
 export interface Product {
   id: string;
-  sku: string;
+  sku?: string;
   name: string;
   category: string;
   defaultUnit: string;

@@ -110,7 +110,6 @@ export const mockSuppliers: Supplier[] = [
 export const mockProducts: Product[] = [
   {
     id: "prod_1",
-    sku: "SKU-001",
     name: "Ikan Kakap Merah",
     category: "Ikan",
     defaultUnit: "kg",
@@ -123,7 +122,6 @@ export const mockProducts: Product[] = [
   },
   {
     id: "prod_2",
-    sku: "SKU-002",
     name: "Udang Vannamei",
     category: "Udang",
     defaultUnit: "kg",
@@ -136,7 +134,6 @@ export const mockProducts: Product[] = [
   },
   {
     id: "prod_3",
-    sku: "SKU-003",
     name: "Cumi-cumi Segar",
     category: "Cumi",
     defaultUnit: "kg",
@@ -149,7 +146,6 @@ export const mockProducts: Product[] = [
   },
   {
     id: "prod_4",
-    sku: "SKU-004",
     name: "Kepiting Rajungan",
     category: "Kepiting",
     defaultUnit: "kg",
@@ -162,7 +158,6 @@ export const mockProducts: Product[] = [
   },
   {
     id: "prod_5",
-    sku: "SKU-005",
     name: "Ikan Kerapu",
     category: "Ikan",
     defaultUnit: "kg",
@@ -175,7 +170,6 @@ export const mockProducts: Product[] = [
   },
   {
     id: "prod_6",
-    sku: "SKU-006",
     name: "Lobster Air Laut",
     category: "Lobster",
     defaultUnit: "ekor",
@@ -188,7 +182,6 @@ export const mockProducts: Product[] = [
   },
   {
     id: "prod_7",
-    sku: "SKU-007",
     name: "Ikan Tongkol",
     category: "Ikan",
     defaultUnit: "kg",

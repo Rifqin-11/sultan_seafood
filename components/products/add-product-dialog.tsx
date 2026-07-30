@@ -20,7 +20,6 @@ export function AddProductDialog() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const [sku, setSku] = useState("");
   const [name, setName] = useState("");
   const [category, setCategory] = useState("Ikan");
   const [defaultUnit, setDefaultUnit] = useState("kg");
@@ -28,7 +27,6 @@ export function AddProductDialog() {
   const [activeCost, setActiveCost] = useState("");
 
   const resetForm = () => {
-    setSku("");
     setName("");
     setCategory("Ikan");
     setDefaultUnit("kg");
@@ -41,15 +39,14 @@ export function AddProductDialog() {
     e.preventDefault();
     setError("");
 
-    if (!sku || !name) {
-      setError("SKU dan Nama produk wajib diisi.");
+    if (!name) {
+      setError("Nama produk wajib diisi.");
       return;
     }
 
     setLoading(true);
 
     const res = await createProductAction({
-      sku,
       name,
       category,
       defaultUnit,
@@ -85,32 +82,6 @@ export function AddProductDialog() {
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-3.5 py-2">
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">
-                Kode SKU <span className="text-red-500">*</span>
-              </label>
-              <Input
-                placeholder="SF-UDG-01"
-                value={sku}
-                onChange={(e) => setSku(e.target.value)}
-                className="h-8 text-xs"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">
-                Kategori
-              </label>
-              <Input
-                placeholder="Ikan / Udang / Cumi"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="h-8 text-xs"
-              />
-            </div>
-          </div>
-
           <div>
             <label className="block text-xs font-medium text-muted-foreground mb-1">
               Nama Produk <span className="text-red-500">*</span>
@@ -121,6 +92,18 @@ export function AddProductDialog() {
               onChange={(e) => setName(e.target.value)}
               className="h-8 text-xs"
               required
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-muted-foreground mb-1">
+              Kategori
+            </label>
+            <Input
+              placeholder="Ikan / Udang / Cumi / Kepiting"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="h-8 text-xs"
             />
           </div>
 

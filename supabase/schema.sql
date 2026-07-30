@@ -76,7 +76,7 @@ CREATE TABLE IF NOT EXISTS public.suppliers (
 -- 5. PRODUCTS
 CREATE TABLE IF NOT EXISTS public.products (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  sku TEXT UNIQUE NOT NULL,
+  sku TEXT,
   name TEXT NOT NULL,
   category TEXT NOT NULL,
   default_unit TEXT NOT NULL DEFAULT 'kg',
