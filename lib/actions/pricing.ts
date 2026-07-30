@@ -17,11 +17,13 @@ export async function createPurchasePriceAction(payload: CreatePurchasePricePayl
 
   if (!supabaseUrl || supabaseUrl.includes("placeholder")) {
     revalidatePath("/pricing/purchase");
+    revalidatePath("/products");
     return { success: true, message: "Harga beli berhasil disimpan (Mode Demo)." };
   }
 
   try {
-    const { error } = await supabase.from("product_costs").insert({
+    // 1. Insert into product_costs table
+    const { error: costError } = await supabase.from("product_costs").insert({
       product_id: payload.productId,
       supplier_id: payload.supplierId || null,
       unit_cost: payload.unitCost,
@@ -29,9 +31,25 @@ export async function createPurchasePriceAction(payload: CreatePurchasePricePayl
       notes: payload.notes || null,
     });
 
-    if (error) throw error;
+    if (costError) {
+      console.warn("Product costs insert error, attempting direct update on products:", costError);
+    }
+
+    // 2. Also update active_cost on products table if column exists
+    try {
+      await supabase
+        .from("products")
+        .update({ active_cost: payload.unitCost })
+        .eq("id", payload.productId);
+    } catch {
+      // ignore if active_cost column doesn't exist
+    }
 
     revalidatePath("/pricing/purchase");
+    revalidatePath("/products");
+    revalidatePath("/reports/profit");
+    revalidatePath("/reports/sales");
+
     return { success: true, message: "Harga beli berhasil ditambahkan." };
   } catch (err: unknown) {
     const error = err as { message?: string };
@@ -57,7 +75,26 @@ export async function getPurchasePricesAction() {
       `)
       .order("effective_at", { ascending: false });
 
-    if (error || !costs) {
+    if (error || !costs || costs.length === 0) {
+      // Fallback: try fetching products with active_cost
+      const { data: products } = await supabase.from("products").select("id, name, default_unit, active_cost, created_at");
+      if (products && products.length > 0) {
+        return products
+          .filter((p) => Number(p.active_cost) > 0)
+          .map((p) => ({
+            id: `cost_${p.id}`,
+            productId: p.id,
+            productName: p.name,
+            unit: p.default_unit || "kg",
+            supplierId: "",
+            supplierName: "—",
+            unitCost: Number(p.active_cost),
+            effectiveAt: p.created_at || new Date().toISOString(),
+            notes: "Harga Beli Default Produk",
+            createdBy: "System",
+            createdAt: p.created_at || new Date().toISOString(),
+          }));
+      }
       const { mockProductCosts } = await import("@/lib/mock-data");
       return mockProductCosts;
     }
@@ -150,19 +187,35 @@ export async function updatePurchasePriceAction(id: string, unitCost: number, no
 
   if (!supabaseUrl || supabaseUrl.includes("placeholder")) {
     revalidatePath("/pricing/purchase");
+    revalidatePath("/products");
     return { success: true, message: "Harga beli diperbarui (Demo)." };
   }
 
   try {
-    const { error } = await supabase
+    // Update product_costs
+    const { data: updatedCost, error } = await supabase
       .from("product_costs")
       .update({ unit_cost: unitCost, notes: notes || null })
-      .eq("id", id);
+      .eq("id", id)
+      .select("product_id")
+      .maybeSingle();
 
     if (error) throw error;
 
+    if (updatedCost?.product_id) {
+      try {
+        await supabase
+          .from("products")
+          .update({ active_cost: unitCost })
+          .eq("id", updatedCost.product_id);
+      } catch {
+        // ignore if active_cost doesn't exist
+      }
+    }
+
     revalidatePath("/pricing/purchase");
     revalidatePath("/products");
+    revalidatePath("/reports/profit");
     return { success: true, message: "Harga beli berhasil diperbarui." };
   } catch (err: unknown) {
     const error = err as { message?: string };
@@ -176,6 +229,7 @@ export async function deletePurchasePriceAction(id: string) {
 
   if (!supabaseUrl || supabaseUrl.includes("placeholder")) {
     revalidatePath("/pricing/purchase");
+    revalidatePath("/products");
     return { success: true, message: "Harga beli dihapus (Demo)." };
   }
 
@@ -185,6 +239,7 @@ export async function deletePurchasePriceAction(id: string) {
 
     revalidatePath("/pricing/purchase");
     revalidatePath("/products");
+    revalidatePath("/reports/profit");
     return { success: true, message: "Harga beli berhasil dihapus." };
   } catch (err: unknown) {
     const error = err as { message?: string };

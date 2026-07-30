@@ -15,6 +15,8 @@ import {
 } from "@/components/ui/dialog";
 import { createPurchasePriceAction } from "@/lib/actions/pricing";
 import type { Product, Supplier } from "@/types";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 interface AddPurchasePriceDialogProps {
   products: Product[];
@@ -25,6 +27,7 @@ export function AddPurchasePriceDialog({
   products,
   suppliers,
 }: AddPurchasePriceDialogProps) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -64,9 +67,12 @@ export function AddPurchasePriceDialog({
 
     if (res.error) {
       setError(res.error);
+      toast.error(`Gagal: ${res.error}`);
     } else {
+      toast.success(res.message || "Harga beli berhasil disimpan");
       resetForm();
       setOpen(false);
+      router.refresh();
     }
   };
 
