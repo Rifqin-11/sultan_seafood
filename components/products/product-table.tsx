@@ -81,23 +81,23 @@ export function ProductTable({ initialProducts }: ProductTableProps) {
     <>
       <div className="bg-white rounded-2xl border border-border shadow-card overflow-hidden">
         {/* Toolbar */}
-        <div className="flex items-center gap-3 p-4 border-b border-border">
-          <div className="relative flex-1 max-w-sm">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-4 border-b border-border">
+          <div className="relative flex-1 max-w-full sm:max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               placeholder="Cari produk, kategori..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 h-9"
+              className="pl-9 h-9 w-full"
             />
           </div>
 
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
             {(["ALL", "ACTIVE", "INACTIVE"] as const).map((s) => (
               <button
                 key={s}
                 onClick={() => setStatusFilter(s)}
-                className={`px-3 py-1.5 text-xs rounded-lg font-medium transition-colors ${
+                className={`px-3 py-1.5 text-xs rounded-lg font-medium transition-colors shrink-0 ${
                   statusFilter === s
                     ? "bg-foreground text-background"
                     : "text-muted-foreground hover:bg-muted"

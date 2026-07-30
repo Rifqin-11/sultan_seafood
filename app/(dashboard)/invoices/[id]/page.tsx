@@ -34,27 +34,27 @@ export default async function InvoiceDetailPage(props: PageProps<"/invoices/[id]
   return (
     <div className="space-y-5 max-w-4xl">
       {/* Header */}
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div className="flex items-center gap-3">
           <Link
             href="/invoices"
-            className={buttonVariants({ variant: "ghost", size: "icon", className: "h-8 w-8" })}
+            className={buttonVariants({ variant: "ghost", size: "icon", className: "h-8 w-8 shrink-0" })}
           >
             <ArrowLeft className="w-4 h-4" />
           </Link>
           <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-xl font-semibold text-foreground">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2 className="text-xl font-bold text-foreground">
                 {invoice.invoiceNumber ?? "Draft"}
               </h2>
               <InvoiceStatusBadge status={invoice.status} />
             </div>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-xs sm:text-sm text-muted-foreground">
               {invoice.customerName} · {formatDate(invoice.issueDate)}
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="flex items-center gap-2 flex-wrap shrink-0">
           <WhatsAppButton invoice={invoice} customerPhone={invoice.customerPhone} />
           <InvoicePdfDownload invoice={invoice} />
           {(invoice.status === "ISSUED" ||

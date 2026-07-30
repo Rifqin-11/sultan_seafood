@@ -243,9 +243,9 @@ export function InvoiceForm({ customers, products }: InvoiceFormProps) {
   };
 
   return (
-    <div className="flex gap-6 items-start">
+    <div className="flex flex-col lg:flex-row gap-6 items-start">
       {/* Left Panel — Main Form */}
-      <div className="flex-1 min-w-0 space-y-5">
+      <div className="flex-1 min-w-0 w-full space-y-5">
         {formError && (
           <div className="flex items-center gap-2 p-3 text-xs text-red-600 bg-red-50 border border-red-200 rounded-xl">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
@@ -634,8 +634,8 @@ export function InvoiceForm({ customers, products }: InvoiceFormProps) {
         </div>
       </div>
 
-      {/* Right Panel — Internal Summary (sticky) */}
-      <div className="w-72 flex-shrink-0 sticky top-24 space-y-4">
+      {/* Right Panel — Internal Summary (sticky on lg) */}
+      <div className="w-full lg:w-72 shrink-0 lg:sticky lg:top-24 space-y-4">
         <div className="bg-white rounded-2xl border border-border shadow-card p-5">
           <div className="flex items-center gap-1.5 mb-4">
             <Lock className="w-3.5 h-3.5 text-amber-600" />

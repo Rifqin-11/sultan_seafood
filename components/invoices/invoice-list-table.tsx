@@ -116,13 +116,13 @@ export function InvoiceListTable({ initialInvoices }: InvoiceListTableProps) {
       {/* Toolbar */}
       <div className="p-4 border-b border-border space-y-3">
         <div className="flex items-center gap-3">
-          <div className="relative flex-1 max-w-sm">
+          <div className="relative flex-1 max-w-full sm:max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               placeholder="Cari nomor invoice atau restoran..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 h-9"
+              className="pl-9 h-9 w-full"
             />
           </div>
         </div>
