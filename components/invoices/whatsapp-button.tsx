@@ -1,11 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { MessageCircle, Loader2 } from "lucide-react";
+import { MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Invoice } from "@/types";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { handleDownloadInvoicePdf } from "./invoice-pdf-download";
 import { toast } from "sonner";
 
 interface WhatsAppButtonProps {
@@ -14,20 +12,8 @@ interface WhatsAppButtonProps {
 }
 
 export function WhatsAppButton({ invoice, customerPhone }: WhatsAppButtonProps) {
-  const [loading, setLoading] = useState(false);
-
-  const handleSendWhatsApp = async () => {
-    setLoading(true);
-
-    // 1. Download the Invoice PDF automatically
-    try {
-      toast.info("Mengunduh PDF Invoice & menyiapkan WhatsApp...", { duration: 3000 });
-      await handleDownloadInvoicePdf(invoice);
-    } catch (err) {
-      console.error("Gagal mendownload PDF untuk WhatsApp:", err);
-    }
-
-    // 2. Format phone number
+  const handleSendWhatsApp = () => {
+    // 1. Format phone number
     let rawPhone = customerPhone || "081234567890";
     let cleanPhone = rawPhone.replace(/\D/g, "");
     if (cleanPhone.startsWith("0")) {
@@ -36,7 +22,11 @@ export function WhatsAppButton({ invoice, customerPhone }: WhatsAppButtonProps) 
       cleanPhone = "62" + cleanPhone;
     }
 
-    // 3. Clean template string with reliable formatting (no broken Unicode characters)
+    // 2. Build public preview link
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const previewUrl = `${origin}/preview/invoices/${invoice.id}`;
+
+    // 3. Format message cleanly with online invoice link
     const customerName = invoice.customerName || "Pelanggan";
     const invoiceNum = invoice.invoiceNumber ?? "Draft";
     const dateStr = formatDate(invoice.issueDate);
@@ -46,12 +36,14 @@ export function WhatsAppButton({ invoice, customerPhone }: WhatsAppButtonProps) 
     const messageLines = [
       `Halo *${customerName}*,\n`,
       `Berikut rincian Invoice resmi dari *Sultan Seafood*:`,
-      `📋 *Nomor Invoice*: ${invoiceNum}`,
-      `🗓 *Tanggal*: ${dateStr}`,
-      `💰 *Total Tagihan*: ${totalStr}`,
-      `⌛ *Jatuh Tempo*: ${dueDateStr}\n`,
+      `-  *Nomor Invoice*: ${invoiceNum}`,
+      `-  *Tanggal*: ${dateStr}`,
+      `-  *Total Tagihan*: ${totalStr}`,
+      `-  *Jatuh Tempo*: ${dueDateStr}\n`,
+      `- *Lihat & Download PDF Invoice Online*:`,
+      `${previewUrl}\n`,
       `Mohon dapat melakukan pembayaran via Transfer Bank:`,
-      `💳 *BCA*: 1234567890 a.n. Sultan Seafood\n`,
+      `- *BCA*: 1234567890 a.n. Sultan Seafood\n`,
       `Terima kasih atas kerja samanya! 🙏`
     ];
 
@@ -61,10 +53,9 @@ export function WhatsAppButton({ invoice, customerPhone }: WhatsAppButtonProps) 
 
     // 4. Open WhatsApp in new tab
     window.open(whatsappUrl, "_blank");
-    setLoading(false);
 
-    toast.success("PDF Invoice terunduh! Lampirkan (📎) file di WhatsApp Web.", {
-      duration: 5000,
+    toast.success("Membuka WhatsApp dengan Link Invoice Online!", {
+      duration: 3000,
     });
   };
 
@@ -73,15 +64,10 @@ export function WhatsAppButton({ invoice, customerPhone }: WhatsAppButtonProps) 
       variant="outline"
       size="sm"
       onClick={handleSendWhatsApp}
-      disabled={loading}
       className="bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 hover:text-emerald-800 transition-colors cursor-pointer"
     >
-      {loading ? (
-        <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin text-emerald-600" />
-      ) : (
-        <MessageCircle className="w-3.5 h-3.5 mr-1.5 fill-emerald-600/20 text-emerald-600" />
-      )}
-      {loading ? "Menyiapkan WA..." : "Kirim ke WhatsApp"}
+      <MessageCircle className="w-3.5 h-3.5 mr-1.5 fill-emerald-600/20 text-emerald-600" />
+      Kirim ke WhatsApp
     </Button>
   );
 }
