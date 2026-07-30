@@ -24,6 +24,11 @@ export const metadata: Metadata = {
   description:
     "Sistem ERP internal untuk manajemen invoice, harga, dan keuangan bisnis pemasok seafood Sultan Seafood.",
   robots: { index: false, follow: false },
+  icons: {
+    icon: "/icon.svg",
+    shortcut: "/icon.svg",
+    apple: "/icon.svg",
+  },
 };
 
 export default function RootLayout({

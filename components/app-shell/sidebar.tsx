@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -26,6 +27,11 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  defaultCompanyProfile,
+  getCompanyProfile,
+  type CompanyProfile,
+} from "@/lib/company-store";
 
 const navItems = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -149,6 +155,19 @@ interface SidebarProps {
 
 export function Sidebar({ collapsed, onToggle, user }: SidebarProps) {
   const pathname = usePathname();
+  const [company, setCompany] = useState<CompanyProfile>(defaultCompanyProfile);
+
+  useEffect(() => {
+    setCompany(getCompanyProfile());
+    const handleUpdate = () => setCompany(getCompanyProfile());
+    window.addEventListener("company-profile-updated", handleUpdate);
+    window.addEventListener("storage", handleUpdate);
+    return () => {
+      window.removeEventListener("company-profile-updated", handleUpdate);
+      window.removeEventListener("storage", handleUpdate);
+    };
+  }, []);
+
   const isActive = (href: string) =>
     pathname === href || pathname.startsWith(href + "/");
 
@@ -170,13 +189,22 @@ export function Sidebar({ collapsed, onToggle, user }: SidebarProps) {
           collapsed ? "justify-center px-0" : "px-4 gap-3"
         )}
       >
-        <div className="flex items-center justify-center w-8 h-8 bg-white rounded-lg flex-shrink-0">
-          <Fish className="w-4 h-4 text-[#151515]" />
+        <div className="flex items-center justify-center w-8 h-8 bg-white rounded-lg flex-shrink-0 overflow-hidden p-0.5">
+          {company.logoUrl ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={company.logoUrl}
+              alt={company.name}
+              className="w-full h-full object-contain"
+            />
+          ) : (
+            <Fish className="w-4 h-4 text-[#151515]" />
+          )}
         </div>
         {!collapsed && (
           <div className="flex flex-col min-w-0">
             <span className="text-white text-sm font-semibold leading-tight truncate">
-              Sultan Seafood
+              {company.name || "Sultan Seafood"}
             </span>
             <span className="text-[#666666] text-xs leading-tight">ERP</span>
           </div>
@@ -297,6 +325,19 @@ interface MobileSidebarProps {
 
 export function MobileSidebar({ open, onClose, user }: MobileSidebarProps) {
   const pathname = usePathname();
+  const [company, setCompany] = useState<CompanyProfile>(defaultCompanyProfile);
+
+  useEffect(() => {
+    setCompany(getCompanyProfile());
+    const handleUpdate = () => setCompany(getCompanyProfile());
+    window.addEventListener("company-profile-updated", handleUpdate);
+    window.addEventListener("storage", handleUpdate);
+    return () => {
+      window.removeEventListener("company-profile-updated", handleUpdate);
+      window.removeEventListener("storage", handleUpdate);
+    };
+  }, []);
+
   const isActive = (href: string) =>
     pathname === href || pathname.startsWith(href + "/");
 
@@ -320,11 +361,20 @@ export function MobileSidebar({ open, onClose, user }: MobileSidebarProps) {
         )}
       >
         <div className="flex items-center h-16 px-4 gap-3 border-b border-[#262626] flex-shrink-0">
-          <div className="flex items-center justify-center w-8 h-8 bg-white rounded-lg">
-            <Fish className="w-4 h-4 text-[#151515]" />
+          <div className="flex items-center justify-center w-8 h-8 bg-white rounded-lg overflow-hidden p-0.5 shrink-0">
+            {company.logoUrl ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src={company.logoUrl}
+                alt={company.name}
+                className="w-full h-full object-contain"
+              />
+            ) : (
+              <Fish className="w-4 h-4 text-[#151515]" />
+            )}
           </div>
-          <div className="flex flex-col">
-            <span className="text-white text-sm font-semibold leading-tight">Sultan Seafood</span>
+          <div className="flex flex-col min-w-0">
+            <span className="text-white text-sm font-semibold leading-tight truncate">{company.name || "Sultan Seafood"}</span>
             <span className="text-[#666666] text-xs">ERP</span>
           </div>
         </div>

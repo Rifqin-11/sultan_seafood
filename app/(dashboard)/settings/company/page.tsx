@@ -44,7 +44,10 @@ export default function CompanySettingsPage() {
   };
 
   const handleRemoveLogo = () => {
-    setProfile((prev) => ({ ...prev, logoUrl: undefined }));
+    const updated = { ...profile, logoUrl: undefined };
+    setProfile(updated);
+    saveCompanyProfile(updated);
+    window.dispatchEvent(new Event("company-profile-updated"));
     toast.info("Logo dihapus. Menggunakan logo default.");
   };
 
@@ -52,6 +55,7 @@ export default function CompanySettingsPage() {
     e.preventDefault();
     setLoading(true);
     saveCompanyProfile(profile);
+    window.dispatchEvent(new Event("company-profile-updated"));
     setTimeout(() => {
       setLoading(false);
       toast.success("Profil Bisnis berhasil diperbarui!");
