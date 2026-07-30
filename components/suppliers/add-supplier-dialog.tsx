@@ -14,11 +14,14 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { createSupplierAction } from "@/lib/actions/suppliers";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export function AddSupplierDialog() {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const router = useRouter();
 
   const [name, setName] = useState("");
   const [contactName, setContactName] = useState("");
@@ -55,9 +58,12 @@ export function AddSupplierDialog() {
 
     if (res.error) {
       setError(res.error);
+      toast.error(res.error);
     } else {
+      toast.success(res.message || "Supplier berhasil ditambahkan");
       resetForm();
       setOpen(false);
+      router.refresh();
     }
   };
 

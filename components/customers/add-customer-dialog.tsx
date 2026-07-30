@@ -14,11 +14,14 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { createCustomerAction } from "@/lib/actions/customers";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export function AddCustomerDialog() {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const router = useRouter();
 
   const [name, setName] = useState("");
   const [contactName, setContactName] = useState("");
@@ -61,9 +64,12 @@ export function AddCustomerDialog() {
 
     if (res.error) {
       setError(res.error);
+      toast.error(res.error);
     } else {
+      toast.success(res.message || "Restoran berhasil ditambahkan");
       resetForm();
       setOpen(false);
+      router.refresh();
     }
   };
 

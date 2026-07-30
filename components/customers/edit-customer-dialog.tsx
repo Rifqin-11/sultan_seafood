@@ -15,6 +15,7 @@ import {
 import { updateCustomerAction } from "@/lib/actions/customers";
 import type { Customer } from "@/types";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 interface EditCustomerDialogProps {
   customer: Customer;
@@ -66,7 +67,9 @@ export function EditCustomerDialog({
 
     if (res.error) {
       setError(res.error);
+      toast.error(res.error);
     } else {
+      toast.success(res.message || "Restoran berhasil diperbarui");
       onOpenChange(false);
       router.refresh();
     }

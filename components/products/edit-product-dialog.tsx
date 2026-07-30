@@ -15,6 +15,7 @@ import {
 import { updateProductAction } from "@/lib/actions/products";
 import type { Product } from "@/types";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 interface EditProductDialogProps {
   product: Product;
@@ -70,7 +71,9 @@ export function EditProductDialog({
 
     if (res.error) {
       setError(res.error);
+      toast.error(res.error);
     } else {
+      toast.success(res.message || "Produk berhasil diperbarui");
       onOpenChange(false);
       router.refresh();
     }

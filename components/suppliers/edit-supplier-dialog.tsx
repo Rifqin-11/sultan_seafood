@@ -15,6 +15,7 @@ import {
 import { updateSupplierAction } from "@/lib/actions/suppliers";
 import type { Supplier } from "@/types";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 interface EditSupplierDialogProps {
   supplier: Supplier;
@@ -60,7 +61,9 @@ export function EditSupplierDialog({
 
     if (res.error) {
       setError(res.error);
+      toast.error(res.error);
     } else {
+      toast.success(res.message || "Supplier berhasil diperbarui");
       onOpenChange(false);
       router.refresh();
     }

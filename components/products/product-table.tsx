@@ -4,7 +4,7 @@ import { useState } from "react";
 import { mockProducts } from "@/lib/mock-data";
 import { formatCurrency, formatPercent } from "@/lib/utils";
 import type { Product } from "@/types";
-import { Search, MoreHorizontal, Edit, Power, Trash2, Loader2, Package, Plus } from "lucide-react";
+import { Search, MoreHorizontal, Edit, Power, Trash2, Loader2, Package } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -25,7 +25,9 @@ import {
 import { EmptyState } from "@/components/ui/empty-state";
 import { toggleProductStatusAction, deleteProductAction } from "@/lib/actions/products";
 import { EditProductDialog } from "./edit-product-dialog";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 interface ProductTableProps {
   initialProducts?: Product[];
@@ -37,34 +39,32 @@ export function ProductTable({ initialProducts }: ProductTableProps) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"ALL" | "ACTIVE" | "INACTIVE">("ALL");
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
-  const handleToggleStatus = (product: Product) => {
-    setTimeout(async () => {
-      setLoadingId(product.id);
-      const res = await toggleProductStatusAction(product.id, product.status);
-      setLoadingId(null);
-      if (res.error) {
-        alert(`Gagal: ${res.error}`);
-      }
+  const handleToggleStatus = async (product: Product) => {
+    setLoadingId(product.id);
+    const res = await toggleProductStatusAction(product.id, product.status);
+    setLoadingId(null);
+    if (res.error) {
+      toast.error(`Gagal: ${res.error}`);
+    } else {
+      toast.success(res.message || "Status produk berhasil diperbarui");
       router.refresh();
-    }, 50);
+    }
   };
 
-  const handleDelete = (product: Product) => {
-    setTimeout(async () => {
-      if (confirm(`Apakah Anda yakin ingin menghapus produk "${product.name}"?`)) {
-        setLoadingId(product.id);
-        const res = await deleteProductAction(product.id);
-        setLoadingId(null);
-        if (res.error) {
-          alert(`Gagal menghapus: ${res.error}`);
-        } else if (res.message) {
-          alert(res.message);
-        }
-        router.refresh();
-      }
-    }, 50);
+  const handleConfirmDelete = async () => {
+    if (!deletingProduct) return;
+    setLoadingId(deletingProduct.id);
+    const res = await deleteProductAction(deletingProduct.id);
+    setLoadingId(null);
+    if (res.error) {
+      toast.error(`Gagal menghapus: ${res.error}`);
+    } else {
+      toast.success(res.message || "Produk berhasil dihapus");
+      router.refresh();
+    }
   };
 
   const filtered = productsList.filter((p) => {
@@ -228,7 +228,7 @@ export function ProductTable({ initialProducts }: ProductTableProps) {
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             className="cursor-pointer text-red-600 focus:text-red-600"
-                            onClick={() => handleDelete(product)}
+                            onClick={() => setDeletingProduct(product)}
                           >
                             <Trash2 className="w-3.5 h-3.5 mr-2 text-red-600" />
                             Hapus Produk
@@ -258,6 +258,19 @@ export function ProductTable({ initialProducts }: ProductTableProps) {
           onOpenChange={(open) => {
             if (!open) setEditingProduct(null);
           }}
+        />
+      )}
+
+      {deletingProduct && (
+        <ConfirmDialog
+          open={!!deletingProduct}
+          onOpenChange={(open) => {
+            if (!open) setDeletingProduct(null);
+          }}
+          title="Hapus Produk?"
+          description={`Apakah Anda yakin ingin menghapus produk "${deletingProduct.name}"? Tindakan ini tidak dapat dibatalkan.`}
+          confirmLabel="Hapus Produk"
+          onConfirm={handleConfirmDelete}
         />
       )}
     </>

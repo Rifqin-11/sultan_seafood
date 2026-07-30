@@ -14,8 +14,11 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { createProductAction } from "@/lib/actions/products";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export function AddProductDialog() {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -61,9 +64,12 @@ export function AddProductDialog() {
 
     if (res.error) {
       setError(res.error);
+      toast.error(res.error);
     } else {
-      resetForm();
+      toast.success(res.message || "Produk berhasil ditambahkan");
       setOpen(false);
+      resetForm();
+      router.refresh();
     }
   };
 

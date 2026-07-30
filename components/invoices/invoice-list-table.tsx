@@ -44,6 +44,9 @@ import { deleteInvoiceAction, voidInvoiceAction } from "@/lib/actions/invoices";
 import { useRouter } from "next/navigation";
 import { Trash2, Ban } from "lucide-react";
 
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { toast } from "sonner";
+
 const STATUS_FILTERS: { label: string; value: InvoiceStatus | "ALL" }[] = [
   { label: "Semua", value: "ALL" },
   { label: "Draft", value: "DRAFT" },
@@ -65,33 +68,30 @@ export function InvoiceListTable({ initialInvoices }: InvoiceListTableProps) {
     "ALL"
   );
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
-  const [loadingActionId, setLoadingActionId] = useState<string | null>(null);
+  const [deletingInvoice, setDeletingInvoice] = useState<Invoice | null>(null);
+  const [voidingInvoice, setVoidingInvoice] = useState<Invoice | null>(null);
   const [selectedPaymentInvoiceId, setSelectedPaymentInvoiceId] = useState<string | null>(null);
 
-  const handleDeleteInvoice = (inv: Invoice) => {
-    setTimeout(async () => {
-      if (confirm(`Apakah Anda yakin ingin menghapus draft invoice "${inv.invoiceNumber || inv.id}"?`)) {
-        setLoadingActionId(inv.id);
-        const res = await deleteInvoiceAction(inv.id);
-        setLoadingActionId(null);
-        if (res.error) alert(`Gagal menghapus: ${res.error}`);
-        else if (res.message) alert(res.message);
-        router.refresh();
-      }
-    }, 50);
+  const handleConfirmDeleteInvoice = async () => {
+    if (!deletingInvoice) return;
+    const res = await deleteInvoiceAction(deletingInvoice.id);
+    if (res.error) {
+      toast.error(`Gagal menghapus: ${res.error}`);
+    } else {
+      toast.success(res.message || "Invoice berhasil dihapus");
+      router.refresh();
+    }
   };
 
-  const handleVoidInvoice = (inv: Invoice) => {
-    setTimeout(async () => {
-      if (confirm(`Apakah Anda yakin ingin membatalkan invoice "${inv.invoiceNumber || inv.id}"?`)) {
-        setLoadingActionId(inv.id);
-        const res = await voidInvoiceAction(inv.id);
-        setLoadingActionId(null);
-        if (res.error) alert(`Gagal membatalkan: ${res.error}`);
-        else if (res.message) alert(res.message);
-        router.refresh();
-      }
-    }, 50);
+  const handleConfirmVoidInvoice = async () => {
+    if (!voidingInvoice) return;
+    const res = await voidInvoiceAction(voidingInvoice.id);
+    if (res.error) {
+      toast.error(`Gagal membatalkan: ${res.error}`);
+    } else {
+      toast.success(res.message || "Invoice berhasil dibatalkan");
+      router.refresh();
+    }
   };
 
   const handleDownload = async (inv: Invoice) => {
@@ -276,7 +276,7 @@ export function InvoiceListTable({ initialInvoices }: InvoiceListTableProps) {
                         {inv.status === "DRAFT" && (
                           <DropdownMenuItem
                             className="cursor-pointer text-red-600 focus:text-red-600"
-                            onClick={() => handleDeleteInvoice(inv)}
+                            onClick={() => setDeletingInvoice(inv)}
                           >
                             <Trash2 className="w-3.5 h-3.5 mr-2 text-red-600" />
                             Hapus Draft
@@ -285,7 +285,7 @@ export function InvoiceListTable({ initialInvoices }: InvoiceListTableProps) {
                         {inv.status !== "VOID" && inv.status !== "DRAFT" && (
                           <DropdownMenuItem
                             className="cursor-pointer text-red-600 focus:text-red-600"
-                            onClick={() => handleVoidInvoice(inv)}
+                            onClick={() => setVoidingInvoice(inv)}
                           >
                             <Ban className="w-3.5 h-3.5 mr-2 text-red-600" />
                             Batalkan Invoice
@@ -324,6 +324,32 @@ export function InvoiceListTable({ initialInvoices }: InvoiceListTableProps) {
           onOpenChange={(open) => {
             if (!open) setSelectedPaymentInvoiceId(null);
           }}
+        />
+      )}
+
+      {deletingInvoice && (
+        <ConfirmDialog
+          open={!!deletingInvoice}
+          onOpenChange={(open) => {
+            if (!open) setDeletingInvoice(null);
+          }}
+          title="Hapus Draft Invoice?"
+          description={`Apakah Anda yakin ingin menghapus draft invoice "${deletingInvoice.invoiceNumber || deletingInvoice.id}"?`}
+          confirmLabel="Hapus Invoice"
+          onConfirm={handleConfirmDeleteInvoice}
+        />
+      )}
+
+      {voidingInvoice && (
+        <ConfirmDialog
+          open={!!voidingInvoice}
+          onOpenChange={(open) => {
+            if (!open) setVoidingInvoice(null);
+          }}
+          title="Batalkan Invoice?"
+          description={`Apakah Anda yakin ingin membatalkan invoice "${voidingInvoice.invoiceNumber || voidingInvoice.id}"? Status akan diubah menjadi VOID.`}
+          confirmLabel="Batalkan Invoice"
+          onConfirm={handleConfirmVoidInvoice}
         />
       )}
     </div>

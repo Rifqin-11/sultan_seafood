@@ -21,7 +21,9 @@ import {
 import { MoreHorizontal, Edit, Power, Trash2, Tag, Loader2 } from "lucide-react";
 import { toggleCustomerStatusAction, deleteCustomerAction } from "@/lib/actions/customers";
 import { EditCustomerDialog } from "./edit-customer-dialog";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import Link from "next/link";
 
 interface CustomerTableProps {
@@ -31,32 +33,32 @@ interface CustomerTableProps {
 export function CustomerTable({ customers }: CustomerTableProps) {
   const router = useRouter();
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+  const [deletingCustomer, setDeletingCustomer] = useState<Customer | null>(null);
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
-  const handleToggleStatus = (customer: Customer) => {
-    setTimeout(async () => {
-      setLoadingId(customer.id);
-      const res = await toggleCustomerStatusAction(customer.id, customer.status);
-      setLoadingId(null);
-      if (res.error) alert(`Gagal: ${res.error}`);
+  const handleToggleStatus = async (customer: Customer) => {
+    setLoadingId(customer.id);
+    const res = await toggleCustomerStatusAction(customer.id, customer.status);
+    setLoadingId(null);
+    if (res.error) {
+      toast.error(`Gagal: ${res.error}`);
+    } else {
+      toast.success(res.message || "Status restoran berhasil diperbarui");
       router.refresh();
-    }, 50);
+    }
   };
 
-  const handleDelete = (customer: Customer) => {
-    setTimeout(async () => {
-      if (confirm(`Apakah Anda yakin ingin menghapus restoran "${customer.name}"?`)) {
-        setLoadingId(customer.id);
-        const res = await deleteCustomerAction(customer.id);
-        setLoadingId(null);
-        if (res.error) {
-          alert(`Gagal menghapus: ${res.error}`);
-        } else if (res.message) {
-          alert(res.message);
-        }
-        router.refresh();
-      }
-    }, 50);
+  const handleConfirmDelete = async () => {
+    if (!deletingCustomer) return;
+    setLoadingId(deletingCustomer.id);
+    const res = await deleteCustomerAction(deletingCustomer.id);
+    setLoadingId(null);
+    if (res.error) {
+      toast.error(`Gagal menghapus: ${res.error}`);
+    } else {
+      toast.success(res.message || "Restoran berhasil dihapus");
+      router.refresh();
+    }
   };
 
   return (
@@ -136,7 +138,7 @@ export function CustomerTable({ customers }: CustomerTableProps) {
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           className="cursor-pointer text-red-600 focus:text-red-600"
-                          onClick={() => handleDelete(c)}
+                          onClick={() => setDeletingCustomer(c)}
                         >
                           <Trash2 className="w-3.5 h-3.5 mr-2 text-red-600" />
                           Hapus Restoran
@@ -163,6 +165,19 @@ export function CustomerTable({ customers }: CustomerTableProps) {
           onOpenChange={(open) => {
             if (!open) setEditingCustomer(null);
           }}
+        />
+      )}
+
+      {deletingCustomer && (
+        <ConfirmDialog
+          open={!!deletingCustomer}
+          onOpenChange={(open) => {
+            if (!open) setDeletingCustomer(null);
+          }}
+          title="Hapus Restoran?"
+          description={`Apakah Anda yakin ingin menghapus data restoran "${deletingCustomer.name}"?`}
+          confirmLabel="Hapus Restoran"
+          onConfirm={handleConfirmDelete}
         />
       )}
     </>

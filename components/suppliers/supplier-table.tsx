@@ -21,7 +21,9 @@ import {
 import { MoreHorizontal, Edit, Power, Trash2, Loader2, DollarSign } from "lucide-react";
 import { toggleSupplierStatusAction, deleteSupplierAction } from "@/lib/actions/suppliers";
 import { EditSupplierDialog } from "./edit-supplier-dialog";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import Link from "next/link";
 
 interface SupplierTableProps {
@@ -31,32 +33,32 @@ interface SupplierTableProps {
 export function SupplierTable({ suppliers }: SupplierTableProps) {
   const router = useRouter();
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
+  const [deletingSupplier, setDeletingSupplier] = useState<Supplier | null>(null);
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
-  const handleToggleStatus = (supplier: Supplier) => {
-    setTimeout(async () => {
-      setLoadingId(supplier.id);
-      const res = await toggleSupplierStatusAction(supplier.id, supplier.status);
-      setLoadingId(null);
-      if (res.error) alert(`Gagal: ${res.error}`);
+  const handleToggleStatus = async (supplier: Supplier) => {
+    setLoadingId(supplier.id);
+    const res = await toggleSupplierStatusAction(supplier.id, supplier.status);
+    setLoadingId(null);
+    if (res.error) {
+      toast.error(`Gagal: ${res.error}`);
+    } else {
+      toast.success(res.message || "Status supplier berhasil diperbarui");
       router.refresh();
-    }, 50);
+    }
   };
 
-  const handleDelete = (supplier: Supplier) => {
-    setTimeout(async () => {
-      if (confirm(`Apakah Anda yakin ingin menghapus supplier "${supplier.name}"?`)) {
-        setLoadingId(supplier.id);
-        const res = await deleteSupplierAction(supplier.id);
-        setLoadingId(null);
-        if (res.error) {
-          alert(`Gagal menghapus: ${res.error}`);
-        } else if (res.message) {
-          alert(res.message);
-        }
-        router.refresh();
-      }
-    }, 50);
+  const handleConfirmDelete = async () => {
+    if (!deletingSupplier) return;
+    setLoadingId(deletingSupplier.id);
+    const res = await deleteSupplierAction(deletingSupplier.id);
+    setLoadingId(null);
+    if (res.error) {
+      toast.error(`Gagal menghapus: ${res.error}`);
+    } else {
+      toast.success(res.message || "Supplier berhasil dihapus");
+      router.refresh();
+    }
   };
 
   return (
@@ -129,7 +131,7 @@ export function SupplierTable({ suppliers }: SupplierTableProps) {
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           className="cursor-pointer text-red-600 focus:text-red-600"
-                          onClick={() => handleDelete(s)}
+                          onClick={() => setDeletingSupplier(s)}
                         >
                           <Trash2 className="w-3.5 h-3.5 mr-2 text-red-600" />
                           Hapus Supplier
@@ -156,6 +158,19 @@ export function SupplierTable({ suppliers }: SupplierTableProps) {
           onOpenChange={(open) => {
             if (!open) setEditingSupplier(null);
           }}
+        />
+      )}
+
+      {deletingSupplier && (
+        <ConfirmDialog
+          open={!!deletingSupplier}
+          onOpenChange={(open) => {
+            if (!open) setDeletingSupplier(null);
+          }}
+          title="Hapus Supplier?"
+          description={`Apakah Anda yakin ingin menghapus data supplier "${deletingSupplier.name}"?`}
+          confirmLabel="Hapus Supplier"
+          onConfirm={handleConfirmDelete}
         />
       )}
     </>
