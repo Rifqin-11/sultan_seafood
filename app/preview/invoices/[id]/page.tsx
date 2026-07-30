@@ -4,6 +4,8 @@ import { getInvoiceByIdAction } from "@/lib/actions/invoices";
 import { formatCurrency, formatDate, parseProductDescription } from "@/lib/utils";
 import { InvoiceStatusBadge } from "@/components/invoices/invoice-status-badge";
 import { InvoicePdfDownload } from "@/components/invoices/invoice-pdf-download";
+import { CopyAccountButton } from "@/components/invoices/copy-account-button";
+import { CreditCard } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Invoice — Sultan Seafood",
@@ -139,15 +141,28 @@ export default async function CustomerInvoicePreviewPage({ params }: PageProps) 
             </div>
           </div>
 
-          {/* Payment Info */}
-          <div className="bg-slate-50 rounded-lg p-4 border border-slate-200/80 text-xs space-y-1">
-            <p className="font-semibold text-slate-900 mb-1">Informasi Pembayaran Transfer Bank:</p>
-            <p className="text-slate-700 font-medium">
-              Bank BCA: <span className="font-mono font-bold text-slate-900">1234567890</span>
-            </p>
-            <p className="text-slate-600">
-              Atas Nama: <span className="font-semibold text-slate-900">Sultan Seafood</span>
-            </p>
+          {/* Payment Info Box */}
+          <div className="bg-blue-50/60 rounded-xl p-5 border-2 border-blue-200/80 space-y-3">
+            <div className="flex items-center gap-2 text-slate-900">
+              <CreditCard className="w-4 h-4 text-blue-600 shrink-0" />
+              <p className="font-bold text-sm">Informasi Pembayaran Transfer Bank</p>
+            </div>
+            
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3.5 rounded-lg border border-blue-100 shadow-2xs">
+              <div className="space-y-0.5">
+                <p className="text-xs text-slate-500 font-medium">Bank BCA</p>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono font-extrabold text-base text-blue-900 tracking-wider">
+                    1234567890
+                  </span>
+                  <CopyAccountButton accountNumber="1234567890" />
+                </div>
+              </div>
+              <div className="sm:text-right border-t sm:border-t-0 border-slate-100 pt-2 sm:pt-0">
+                <p className="text-[11px] text-slate-400 font-medium uppercase tracking-wider">Atas Nama (A.N.)</p>
+                <p className="text-xs font-bold text-slate-900">Sultan Seafood</p>
+              </div>
+            </div>
           </div>
 
         </div>
