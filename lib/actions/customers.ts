@@ -13,6 +13,11 @@ export interface CreateCustomerPayload {
   paymentTermDays: number;
 }
 
+export interface UpdateCustomerPayload extends CreateCustomerPayload {
+  id: string;
+  status?: "ACTIVE" | "INACTIVE";
+}
+
 export async function createCustomerAction(payload: CreateCustomerPayload) {
   const supabase = await createClient();
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -41,6 +46,87 @@ export async function createCustomerAction(payload: CreateCustomerPayload) {
   } catch (err: unknown) {
     const error = err as { message?: string };
     return { error: error.message || "Gagal menambahkan restoran." };
+  }
+}
+
+export async function updateCustomerAction(payload: UpdateCustomerPayload) {
+  const supabase = await createClient();
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+  if (!supabaseUrl || supabaseUrl.includes("placeholder")) {
+    revalidatePath("/customers");
+    return { success: true, message: "Restoran berhasil diperbarui." };
+  }
+
+  try {
+    const { error } = await supabase
+      .from("customers")
+      .update({
+        name: payload.name,
+        contact_name: payload.contactName,
+        phone: payload.phone,
+        email: payload.email || null,
+        billing_address: payload.billingAddress,
+        shipping_address: payload.shippingAddress || payload.billingAddress,
+        payment_term_days: payload.paymentTermDays,
+        status: payload.status,
+      })
+      .eq("id", payload.id);
+
+    if (error) throw error;
+
+    revalidatePath("/customers");
+    return { success: true, message: "Restoran berhasil diperbarui." };
+  } catch (err: unknown) {
+    const error = err as { message?: string };
+    return { error: error.message || "Gagal memperbarui data restoran." };
+  }
+}
+
+export async function toggleCustomerStatusAction(id: string, currentStatus: "ACTIVE" | "INACTIVE") {
+  const supabase = await createClient();
+  const newStatus = currentStatus === "ACTIVE" ? "INACTIVE" : "ACTIVE";
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+  if (!supabaseUrl || supabaseUrl.includes("placeholder")) {
+    revalidatePath("/customers");
+    return { success: true, message: `Status restoran diubah ke ${newStatus}.` };
+  }
+
+  try {
+    const { error } = await supabase
+      .from("customers")
+      .update({ status: newStatus })
+      .eq("id", id);
+
+    if (error) throw error;
+
+    revalidatePath("/customers");
+    return { success: true, message: `Status restoran diubah ke ${newStatus}.` };
+  } catch (err: unknown) {
+    const error = err as { message?: string };
+    return { error: error.message || "Gagal mengubah status restoran." };
+  }
+}
+
+export async function deleteCustomerAction(id: string) {
+  const supabase = await createClient();
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+  if (!supabaseUrl || supabaseUrl.includes("placeholder")) {
+    revalidatePath("/customers");
+    return { success: true, message: "Restoran berhasil dihapus." };
+  }
+
+  try {
+    const { error } = await supabase.from("customers").delete().eq("id", id);
+    if (error) throw error;
+
+    revalidatePath("/customers");
+    return { success: true, message: "Restoran berhasil dihapus." };
+  } catch (err: unknown) {
+    const error = err as { message?: string };
+    return { error: error.message || "Gagal menghapus restoran." };
   }
 }
 

@@ -13,6 +13,11 @@ export interface CreateProductPayload {
   activeCost?: number;
 }
 
+export interface UpdateProductPayload extends CreateProductPayload {
+  id: string;
+  status?: "ACTIVE" | "INACTIVE";
+}
+
 export async function createProductAction(payload: CreateProductPayload) {
   const supabase = await createClient();
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -52,6 +57,94 @@ export async function createProductAction(payload: CreateProductPayload) {
   } catch (err: unknown) {
     const error = err as { message?: string };
     return { error: error.message || "Gagal menambahkan produk." };
+  }
+}
+
+export async function updateProductAction(payload: UpdateProductPayload) {
+  const supabase = await createClient();
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+  if (!supabaseUrl || supabaseUrl.includes("placeholder")) {
+    revalidatePath("/products");
+    return { success: true, message: "Produk berhasil diperbarui." };
+  }
+
+  try {
+    const { error } = await supabase
+      .from("products")
+      .update({
+        sku: payload.sku || null,
+        name: payload.name,
+        category: payload.category,
+        size: payload.size || null,
+        default_unit: payload.defaultUnit,
+        default_selling_price: payload.defaultSellingPrice || 0,
+        status: payload.status,
+      })
+      .eq("id", payload.id);
+
+    if (error) throw error;
+
+    if (payload.activeCost && payload.activeCost > 0) {
+      await supabase.from("product_costs").insert({
+        product_id: payload.id,
+        unit_cost: payload.activeCost,
+        effective_at: new Date().toISOString(),
+      });
+    }
+
+    revalidatePath("/products");
+    return { success: true, message: "Produk berhasil diperbarui." };
+  } catch (err: unknown) {
+    const error = err as { message?: string };
+    return { error: error.message || "Gagal memperbarui produk." };
+  }
+}
+
+export async function toggleProductStatusAction(id: string, currentStatus: "ACTIVE" | "INACTIVE") {
+  const supabase = await createClient();
+  const newStatus = currentStatus === "ACTIVE" ? "INACTIVE" : "ACTIVE";
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+  if (!supabaseUrl || supabaseUrl.includes("placeholder")) {
+    revalidatePath("/products");
+    return { success: true, message: `Status produk diubah ke ${newStatus}.` };
+  }
+
+  try {
+    const { error } = await supabase
+      .from("products")
+      .update({ status: newStatus })
+      .eq("id", id);
+
+    if (error) throw error;
+
+    revalidatePath("/products");
+    return { success: true, message: `Status produk diubah ke ${newStatus}.` };
+  } catch (err: unknown) {
+    const error = err as { message?: string };
+    return { error: error.message || "Gagal mengubah status produk." };
+  }
+}
+
+export async function deleteProductAction(id: string) {
+  const supabase = await createClient();
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+  if (!supabaseUrl || supabaseUrl.includes("placeholder")) {
+    revalidatePath("/products");
+    return { success: true, message: "Produk berhasil dihapus." };
+  }
+
+  try {
+    const { error } = await supabase.from("products").delete().eq("id", id);
+    if (error) throw error;
+
+    revalidatePath("/products");
+    return { success: true, message: "Produk berhasil dihapus." };
+  } catch (err: unknown) {
+    const error = err as { message?: string };
+    return { error: error.message || "Gagal menghapus produk." };
   }
 }
 

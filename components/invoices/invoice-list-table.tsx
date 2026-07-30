@@ -40,6 +40,9 @@ import Link from "next/link";
 import { handleDownloadInvoicePdf } from "./invoice-pdf-download";
 
 import { RecordPaymentDialog } from "@/components/payments/record-payment-dialog";
+import { deleteInvoiceAction, voidInvoiceAction } from "@/lib/actions/invoices";
+import { useRouter } from "next/navigation";
+import { Trash2, Ban } from "lucide-react";
 
 const STATUS_FILTERS: { label: string; value: InvoiceStatus | "ALL" }[] = [
   { label: "Semua", value: "ALL" },
@@ -55,13 +58,33 @@ interface InvoiceListTableProps {
 }
 
 export function InvoiceListTable({ initialInvoices }: InvoiceListTableProps) {
+  const router = useRouter();
   const invoicesList = initialInvoices && initialInvoices.length > 0 ? initialInvoices : mockInvoices;
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<InvoiceStatus | "ALL">(
     "ALL"
   );
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [loadingActionId, setLoadingActionId] = useState<string | null>(null);
   const [selectedPaymentInvoiceId, setSelectedPaymentInvoiceId] = useState<string | null>(null);
+
+  const handleDeleteInvoice = async (inv: Invoice) => {
+    if (confirm(`Apakah Anda yakin ingin menghapus draft invoice "${inv.invoiceNumber || inv.id}"?`)) {
+      setLoadingActionId(inv.id);
+      await deleteInvoiceAction(inv.id);
+      setLoadingActionId(null);
+      router.refresh();
+    }
+  };
+
+  const handleVoidInvoice = async (inv: Invoice) => {
+    if (confirm(`Apakah Anda yakin ingin membatalkan invoice "${inv.invoiceNumber || inv.id}"?`)) {
+      setLoadingActionId(inv.id);
+      await voidInvoiceAction(inv.id);
+      setLoadingActionId(null);
+      router.refresh();
+    }
+  };
 
   const handleDownload = async (inv: Invoice) => {
     setDownloadingId(inv.id);
@@ -243,12 +266,20 @@ export function InvoiceListTable({ initialInvoices }: InvoiceListTableProps) {
                         )}
                         <DropdownMenuSeparator />
                         {inv.status === "DRAFT" && (
-                          <DropdownMenuItem className="text-red-600">
+                          <DropdownMenuItem
+                            className="cursor-pointer text-red-600 focus:text-red-600"
+                            onClick={() => handleDeleteInvoice(inv)}
+                          >
+                            <Trash2 className="w-3.5 h-3.5 mr-2 text-red-600" />
                             Hapus Draft
                           </DropdownMenuItem>
                         )}
                         {inv.status !== "VOID" && inv.status !== "DRAFT" && (
-                          <DropdownMenuItem className="text-red-600">
+                          <DropdownMenuItem
+                            className="cursor-pointer text-red-600 focus:text-red-600"
+                            onClick={() => handleVoidInvoice(inv)}
+                          >
+                            <Ban className="w-3.5 h-3.5 mr-2 text-red-600" />
                             Batalkan Invoice
                           </DropdownMenuItem>
                         )}

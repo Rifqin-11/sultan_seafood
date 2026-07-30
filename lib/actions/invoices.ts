@@ -268,3 +268,49 @@ export async function getInvoiceByIdAction(id: string): Promise<(Invoice & { cus
   }
 }
 
+export async function deleteInvoiceAction(id: string) {
+  const supabase = await createClient();
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+  if (!supabaseUrl || supabaseUrl.includes("placeholder")) {
+    revalidatePath("/invoices");
+    return { success: true, message: "Invoice berhasil dihapus." };
+  }
+
+  try {
+    const { error } = await supabase.from("invoices").delete().eq("id", id);
+    if (error) throw error;
+
+    revalidatePath("/invoices");
+    return { success: true, message: "Invoice berhasil dihapus." };
+  } catch (err: unknown) {
+    const error = err as { message?: string };
+    return { error: error.message || "Gagal menghapus invoice." };
+  }
+}
+
+export async function voidInvoiceAction(id: string) {
+  const supabase = await createClient();
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+  if (!supabaseUrl || supabaseUrl.includes("placeholder")) {
+    revalidatePath("/invoices");
+    return { success: true, message: "Invoice berhasil dibatalkan." };
+  }
+
+  try {
+    const { error } = await supabase
+      .from("invoices")
+      .update({ status: "VOID" })
+      .eq("id", id);
+
+    if (error) throw error;
+
+    revalidatePath("/invoices");
+    return { success: true, message: "Invoice berhasil dibatalkan." };
+  } catch (err: unknown) {
+    const error = err as { message?: string };
+    return { error: error.message || "Gagal membatalkan invoice." };
+  }
+}
+
