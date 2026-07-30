@@ -103,7 +103,12 @@ export function CustomerTable({ customers }: CustomerTableProps) {
     if (res.error) {
       toast.error(`Gagal menghapus: ${res.error}`);
     } else {
-      toast.success(res.message || "Restoran berhasil dihapus");
+      if (res.isWarning) {
+        toast.warning(res.message);
+      } else {
+        toast.success(res.message || "Restoran berhasil dihapus");
+      }
+      setDeletingCustomer(null);
       router.refresh();
     }
   };

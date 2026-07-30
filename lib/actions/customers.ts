@@ -119,19 +119,32 @@ export async function deleteCustomerAction(id: string) {
   }
 
   try {
+    // 1. Delete price lists for this customer
     await supabase.from("customer_prices").delete().eq("customer_id", id);
-    const { error } = await supabase.from("customers").delete().eq("id", id);
-    if (error) {
-      if (error.code === "23503") {
-        await supabase.from("customers").update({ status: "INACTIVE" }).eq("id", id);
-        revalidatePath("/customers");
-        return { success: true, message: "Restoran memiliki invoice. Status diubah ke Nonaktif." };
-      }
-      throw error;
+
+    // 2. Check if customer has existing invoices
+    const { count } = await supabase
+      .from("invoices")
+      .select("id", { count: "exact", head: true })
+      .eq("customer_id", id);
+
+    if (count && count > 0) {
+      // Has invoice history -> mark INACTIVE to protect financial reporting integrity
+      await supabase.from("customers").update({ status: "INACTIVE" }).eq("id", id);
+      revalidatePath("/customers");
+      return {
+        success: true,
+        isWarning: true,
+        message: "Restoran ini memiliki riwayat Invoice transaksi. Demi keamanan data keuangan, status restoran diubah menjadi Nonaktif.",
+      };
     }
 
+    // 3. No invoices -> Delete permanently from Supabase
+    const { error } = await supabase.from("customers").delete().eq("id", id);
+    if (error) throw error;
+
     revalidatePath("/customers");
-    return { success: true, message: "Restoran berhasil dihapus." };
+    return { success: true, message: "Restoran berhasil dihapus secara permanen." };
   } catch (err: unknown) {
     const error = err as { message?: string };
     return { error: error.message || "Gagal menghapus restoran." };
