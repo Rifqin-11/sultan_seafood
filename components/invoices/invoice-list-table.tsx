@@ -39,6 +39,8 @@ import { EmptyState } from "@/components/ui/empty-state";
 import Link from "next/link";
 import { handleDownloadInvoicePdf } from "./invoice-pdf-download";
 
+import { RecordPaymentDialog } from "@/components/payments/record-payment-dialog";
+
 const STATUS_FILTERS: { label: string; value: InvoiceStatus | "ALL" }[] = [
   { label: "Semua", value: "ALL" },
   { label: "Draft", value: "DRAFT" },
@@ -59,6 +61,7 @@ export function InvoiceListTable({ initialInvoices }: InvoiceListTableProps) {
     "ALL"
   );
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [selectedPaymentInvoiceId, setSelectedPaymentInvoiceId] = useState<string | null>(null);
 
   const handleDownload = async (inv: Invoice) => {
     setDownloadingId(inv.id);
@@ -230,7 +233,10 @@ export function InvoiceListTable({ initialInvoices }: InvoiceListTableProps) {
                         {(inv.status === "ISSUED" ||
                           inv.status === "PARTIALLY_PAID" ||
                           inv.status === "OVERDUE") && (
-                          <DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="cursor-pointer"
+                            onClick={() => setSelectedPaymentInvoiceId(inv.id)}
+                          >
                             <CreditCard className="w-3.5 h-3.5 mr-2" />
                             Catat Pembayaran
                           </DropdownMenuItem>
@@ -270,6 +276,17 @@ export function InvoiceListTable({ initialInvoices }: InvoiceListTableProps) {
           </Button>
         </div>
       </div>
+
+      {selectedPaymentInvoiceId && (
+        <RecordPaymentDialog
+          defaultInvoiceId={selectedPaymentInvoiceId}
+          invoices={invoicesList}
+          open={!!selectedPaymentInvoiceId}
+          onOpenChange={(open) => {
+            if (!open) setSelectedPaymentInvoiceId(null);
+          }}
+        />
+      )}
     </div>
   );
 }

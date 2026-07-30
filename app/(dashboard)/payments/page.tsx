@@ -39,7 +39,7 @@ export default async function PaymentsPage() {
   return (
     <div className="space-y-6">
       <PageHeader title="Pembayaran" description="Riwayat pembayaran invoice">
-        <RecordPaymentDialog />
+        <RecordPaymentDialog invoices={invoices} />
       </PageHeader>
 
       {/* Metrics */}
@@ -69,7 +69,7 @@ export default async function PaymentsPage() {
       <div className="bg-white rounded-2xl border border-border shadow-card overflow-hidden">
         <div className="px-5 py-4 border-b border-border flex items-center justify-between">
           <h3 className="text-sm font-semibold">Riwayat Pembayaran</h3>
-          <RecordPaymentDialog />
+          <RecordPaymentDialog invoices={invoices} />
         </div>
         <div className="overflow-x-auto">
           <Table>

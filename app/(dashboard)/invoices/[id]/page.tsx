@@ -60,7 +60,7 @@ export default async function InvoiceDetailPage(props: PageProps<"/invoices/[id]
           {(invoice.status === "ISSUED" ||
             invoice.status === "PARTIALLY_PAID" ||
             invoice.status === "OVERDUE") && (
-            <RecordPaymentDialog defaultInvoiceId={invoice.id} />
+            <RecordPaymentDialog defaultInvoiceId={invoice.id} invoices={[invoice]} />
           )}
         </div>
       </div>
