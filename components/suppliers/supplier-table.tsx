@@ -33,20 +33,30 @@ export function SupplierTable({ suppliers }: SupplierTableProps) {
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
-  const handleToggleStatus = async (supplier: Supplier) => {
-    setLoadingId(supplier.id);
-    await toggleSupplierStatusAction(supplier.id, supplier.status);
-    setLoadingId(null);
-    router.refresh();
+  const handleToggleStatus = (supplier: Supplier) => {
+    setTimeout(async () => {
+      setLoadingId(supplier.id);
+      const res = await toggleSupplierStatusAction(supplier.id, supplier.status);
+      setLoadingId(null);
+      if (res.error) alert(`Gagal: ${res.error}`);
+      router.refresh();
+    }, 50);
   };
 
-  const handleDelete = async (supplier: Supplier) => {
-    if (confirm(`Apakah Anda yakin ingin menghapus supplier "${supplier.name}"?`)) {
-      setLoadingId(supplier.id);
-      await deleteSupplierAction(supplier.id);
-      setLoadingId(null);
-      router.refresh();
-    }
+  const handleDelete = (supplier: Supplier) => {
+    setTimeout(async () => {
+      if (confirm(`Apakah Anda yakin ingin menghapus supplier "${supplier.name}"?`)) {
+        setLoadingId(supplier.id);
+        const res = await deleteSupplierAction(supplier.id);
+        setLoadingId(null);
+        if (res.error) {
+          alert(`Gagal menghapus: ${res.error}`);
+        } else if (res.message) {
+          alert(res.message);
+        }
+        router.refresh();
+      }
+    }, 50);
   };
 
   return (

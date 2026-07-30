@@ -39,20 +39,32 @@ export function ProductTable({ initialProducts }: ProductTableProps) {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
-  const handleToggleStatus = async (product: Product) => {
-    setLoadingId(product.id);
-    await toggleProductStatusAction(product.id, product.status);
-    setLoadingId(null);
-    router.refresh();
+  const handleToggleStatus = (product: Product) => {
+    setTimeout(async () => {
+      setLoadingId(product.id);
+      const res = await toggleProductStatusAction(product.id, product.status);
+      setLoadingId(null);
+      if (res.error) {
+        alert(`Gagal: ${res.error}`);
+      }
+      router.refresh();
+    }, 50);
   };
 
-  const handleDelete = async (product: Product) => {
-    if (confirm(`Apakah Anda yakin ingin menghapus produk "${product.name}"?`)) {
-      setLoadingId(product.id);
-      await deleteProductAction(product.id);
-      setLoadingId(null);
-      router.refresh();
-    }
+  const handleDelete = (product: Product) => {
+    setTimeout(async () => {
+      if (confirm(`Apakah Anda yakin ingin menghapus produk "${product.name}"?`)) {
+        setLoadingId(product.id);
+        const res = await deleteProductAction(product.id);
+        setLoadingId(null);
+        if (res.error) {
+          alert(`Gagal menghapus: ${res.error}`);
+        } else if (res.message) {
+          alert(res.message);
+        }
+        router.refresh();
+      }
+    }, 50);
   };
 
   const filtered = productsList.filter((p) => {

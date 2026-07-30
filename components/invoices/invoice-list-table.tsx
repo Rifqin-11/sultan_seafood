@@ -68,22 +68,30 @@ export function InvoiceListTable({ initialInvoices }: InvoiceListTableProps) {
   const [loadingActionId, setLoadingActionId] = useState<string | null>(null);
   const [selectedPaymentInvoiceId, setSelectedPaymentInvoiceId] = useState<string | null>(null);
 
-  const handleDeleteInvoice = async (inv: Invoice) => {
-    if (confirm(`Apakah Anda yakin ingin menghapus draft invoice "${inv.invoiceNumber || inv.id}"?`)) {
-      setLoadingActionId(inv.id);
-      await deleteInvoiceAction(inv.id);
-      setLoadingActionId(null);
-      router.refresh();
-    }
+  const handleDeleteInvoice = (inv: Invoice) => {
+    setTimeout(async () => {
+      if (confirm(`Apakah Anda yakin ingin menghapus draft invoice "${inv.invoiceNumber || inv.id}"?`)) {
+        setLoadingActionId(inv.id);
+        const res = await deleteInvoiceAction(inv.id);
+        setLoadingActionId(null);
+        if (res.error) alert(`Gagal menghapus: ${res.error}`);
+        else if (res.message) alert(res.message);
+        router.refresh();
+      }
+    }, 50);
   };
 
-  const handleVoidInvoice = async (inv: Invoice) => {
-    if (confirm(`Apakah Anda yakin ingin membatalkan invoice "${inv.invoiceNumber || inv.id}"?`)) {
-      setLoadingActionId(inv.id);
-      await voidInvoiceAction(inv.id);
-      setLoadingActionId(null);
-      router.refresh();
-    }
+  const handleVoidInvoice = (inv: Invoice) => {
+    setTimeout(async () => {
+      if (confirm(`Apakah Anda yakin ingin membatalkan invoice "${inv.invoiceNumber || inv.id}"?`)) {
+        setLoadingActionId(inv.id);
+        const res = await voidInvoiceAction(inv.id);
+        setLoadingActionId(null);
+        if (res.error) alert(`Gagal membatalkan: ${res.error}`);
+        else if (res.message) alert(res.message);
+        router.refresh();
+      }
+    }, 50);
   };
 
   const handleDownload = async (inv: Invoice) => {

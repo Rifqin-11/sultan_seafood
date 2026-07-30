@@ -33,20 +33,30 @@ export function CustomerTable({ customers }: CustomerTableProps) {
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
-  const handleToggleStatus = async (customer: Customer) => {
-    setLoadingId(customer.id);
-    await toggleCustomerStatusAction(customer.id, customer.status);
-    setLoadingId(null);
-    router.refresh();
+  const handleToggleStatus = (customer: Customer) => {
+    setTimeout(async () => {
+      setLoadingId(customer.id);
+      const res = await toggleCustomerStatusAction(customer.id, customer.status);
+      setLoadingId(null);
+      if (res.error) alert(`Gagal: ${res.error}`);
+      router.refresh();
+    }, 50);
   };
 
-  const handleDelete = async (customer: Customer) => {
-    if (confirm(`Apakah Anda yakin ingin menghapus restoran "${customer.name}"?`)) {
-      setLoadingId(customer.id);
-      await deleteCustomerAction(customer.id);
-      setLoadingId(null);
-      router.refresh();
-    }
+  const handleDelete = (customer: Customer) => {
+    setTimeout(async () => {
+      if (confirm(`Apakah Anda yakin ingin menghapus restoran "${customer.name}"?`)) {
+        setLoadingId(customer.id);
+        const res = await deleteCustomerAction(customer.id);
+        setLoadingId(null);
+        if (res.error) {
+          alert(`Gagal menghapus: ${res.error}`);
+        } else if (res.message) {
+          alert(res.message);
+        }
+        router.refresh();
+      }
+    }, 50);
   };
 
   return (

@@ -111,7 +111,14 @@ export async function deleteSupplierAction(id: string) {
 
   try {
     const { error } = await supabase.from("suppliers").delete().eq("id", id);
-    if (error) throw error;
+    if (error) {
+      if (error.code === "23503") {
+        await supabase.from("suppliers").update({ status: "INACTIVE" }).eq("id", id);
+        revalidatePath("/suppliers");
+        return { success: true, message: "Supplier memiliki riwayat data. Status diubah ke Nonaktif." };
+      }
+      throw error;
+    }
 
     revalidatePath("/suppliers");
     return { success: true, message: "Supplier berhasil dihapus." };

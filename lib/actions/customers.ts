@@ -119,8 +119,16 @@ export async function deleteCustomerAction(id: string) {
   }
 
   try {
+    await supabase.from("customer_prices").delete().eq("customer_id", id);
     const { error } = await supabase.from("customers").delete().eq("id", id);
-    if (error) throw error;
+    if (error) {
+      if (error.code === "23503") {
+        await supabase.from("customers").update({ status: "INACTIVE" }).eq("id", id);
+        revalidatePath("/customers");
+        return { success: true, message: "Restoran memiliki invoice. Status diubah ke Nonaktif." };
+      }
+      throw error;
+    }
 
     revalidatePath("/customers");
     return { success: true, message: "Restoran berhasil dihapus." };

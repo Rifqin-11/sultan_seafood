@@ -137,8 +137,19 @@ export async function deleteProductAction(id: string) {
   }
 
   try {
+    // Delete related child records first to avoid foreign key constraints
+    await supabase.from("customer_prices").delete().eq("product_id", id);
+    await supabase.from("product_costs").delete().eq("product_id", id);
+
     const { error } = await supabase.from("products").delete().eq("id", id);
-    if (error) throw error;
+    if (error) {
+      if (error.code === "23503") {
+        await supabase.from("products").update({ status: "INACTIVE" }).eq("id", id);
+        revalidatePath("/products");
+        return { success: true, message: "Produk sudah digunakan di Invoice. Status diubah ke Nonaktif." };
+      }
+      throw error;
+    }
 
     revalidatePath("/products");
     return { success: true, message: "Produk berhasil dihapus." };
