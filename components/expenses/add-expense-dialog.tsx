@@ -94,7 +94,7 @@ export function AddExpenseDialog() {
               </label>
               <Select value={category} onValueChange={(v) => setCategory(v || "Operasional")}>
                 <SelectTrigger className="h-8 text-xs">
-                  <SelectValue />
+                  <SelectValue>{category}</SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Operasional">Operasional Gudang</SelectItem>

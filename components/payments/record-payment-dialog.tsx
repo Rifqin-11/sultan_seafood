@@ -105,7 +105,9 @@ export function RecordPaymentDialog({ defaultInvoiceId }: RecordPaymentDialogPro
             </label>
             <Select value={invoiceId} onValueChange={(v) => setInvoiceId(v || "")}>
               <SelectTrigger className="h-8 text-xs">
-                <SelectValue placeholder="Pilih Invoice..." />
+                <SelectValue placeholder="Pilih Invoice...">
+                  {selectedInvoice ? `${selectedInvoice.invoiceNumber ?? "DRAFT"} — ${selectedInvoice.customerName}` : undefined}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {mockInvoices
@@ -173,7 +175,15 @@ export function RecordPaymentDialog({ defaultInvoiceId }: RecordPaymentDialogPro
                 onValueChange={(v) => setMethod((v as PaymentMethod) || "TRANSFER")}
               >
                 <SelectTrigger className="h-8 text-xs">
-                  <SelectValue />
+                  <SelectValue>
+                    {method === "TRANSFER"
+                      ? "Transfer Bank"
+                      : method === "CASH"
+                      ? "Tunai / Cash"
+                      : method === "CHECK"
+                      ? "Cek / Bilyet Giro"
+                      : "Lainnya"}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="TRANSFER">Transfer Bank</SelectItem>

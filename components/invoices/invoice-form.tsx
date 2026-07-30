@@ -235,7 +235,9 @@ export function InvoiceForm() {
               </label>
               <Select value={customerId} onValueChange={(v) => setCustomerId(v || "")}>
                 <SelectTrigger className="h-9">
-                  <SelectValue placeholder="Pilih restoran..." />
+                  <SelectValue placeholder="Pilih restoran...">
+                    {selectedCustomer ? selectedCustomer.name : undefined}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {mockCustomers
@@ -340,7 +342,12 @@ export function InvoiceForm() {
                           }
                         >
                           <SelectTrigger className="h-8 text-xs">
-                            <SelectValue placeholder="Pilih produk..." />
+                            <SelectValue placeholder="Pilih produk...">
+                              {(() => {
+                                const p = mockProducts.find((prod) => prod.id === item.productId);
+                                return p ? `${p.name} ${p.size ? `[${p.size}]` : ""}` : undefined;
+                              })()}
+                            </SelectValue>
                           </SelectTrigger>
                           <SelectContent>
                             {mockProducts
@@ -479,7 +486,9 @@ export function InvoiceForm() {
                     }
                   >
                     <SelectTrigger className="h-8 text-xs w-36 flex-shrink-0">
-                      <SelectValue />
+                      <SelectValue>
+                        {getDirectCostLabel(cost.category)}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       {DIRECT_COST_CATEGORIES.map((cat) => (
