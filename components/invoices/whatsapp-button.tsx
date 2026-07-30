@@ -23,7 +23,14 @@ export function WhatsAppButton({ invoice, customerPhone }: WhatsAppButtonProps) 
     }
 
     // 2. Build public preview link
-    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    let origin = typeof window !== "undefined" ? window.location.origin : "";
+    if (process.env.NEXT_PUBLIC_APP_URL) {
+      origin = process.env.NEXT_PUBLIC_APP_URL;
+    }
+    // Force HTTP for localhost/127.0.0.1 in local development to avoid Safari HTTPS upgrade error
+    if (origin.includes("localhost") || origin.includes("127.0.0.1")) {
+      origin = origin.replace(/^https:\/\//, "http://");
+    }
     const previewUrl = `${origin}/preview/invoices/${invoice.id}`;
 
     // 3. Format message cleanly with online invoice link
