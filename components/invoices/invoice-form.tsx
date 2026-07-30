@@ -351,6 +351,11 @@ export function InvoiceForm({ customers, products }: InvoiceFormProps) {
                     <th className="text-left text-xs font-semibold text-muted-foreground px-3 py-2.5 w-20">
                       Satuan
                     </th>
+                    <th className="text-right text-xs font-semibold text-amber-700 px-3 py-2.5 w-32 bg-amber-50/50">
+                      <span className="inline-flex items-center justify-end gap-1">
+                        <Lock className="w-3 h-3 text-amber-600" /> Harga Beli
+                      </span>
+                    </th>
                     <th className="text-right text-xs font-semibold text-muted-foreground px-3 py-2.5 w-32">
                       Harga Jual
                     </th>
@@ -414,6 +419,22 @@ export function InvoiceForm({ customers, products }: InvoiceFormProps) {
                           className="h-8 text-xs w-full"
                         />
                       </td>
+                      <td className="px-3 py-2 bg-amber-50/30">
+                        <Input
+                          type="number"
+                          min={0}
+                          value={item.purchasePrice}
+                          onChange={(e) =>
+                            updateItem(
+                              item.id,
+                              "purchasePrice",
+                              parseFloat(e.target.value) || 0
+                            )
+                          }
+                          className="h-8 text-xs text-right w-full bg-amber-50/50 border-amber-200 focus:border-amber-400 font-medium text-amber-900"
+                          placeholder="0"
+                        />
+                      </td>
                       <td className="px-3 py-2">
                         <Input
                           type="number"
@@ -426,7 +447,7 @@ export function InvoiceForm({ customers, products }: InvoiceFormProps) {
                               parseFloat(e.target.value) || 0
                             )
                           }
-                          className="h-8 text-xs text-right w-full"
+                          className="h-8 text-xs text-right w-full font-medium"
                         />
                       </td>
                       <td className="px-3 py-2 text-right text-xs font-semibold tabular-nums">
