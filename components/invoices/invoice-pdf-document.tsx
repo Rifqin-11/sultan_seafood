@@ -1,0 +1,272 @@
+import React from "react";
+import {
+  Document,
+  Page,
+  Text,
+  View,
+  StyleSheet,
+} from "@react-pdf/renderer";
+import type { Invoice } from "@/types";
+import { formatCurrency, formatDate } from "@/lib/utils";
+
+// Create styles for clean monochrome invoice PDF
+const styles = StyleSheet.create({
+  page: {
+    padding: 36,
+    fontSize: 10,
+    fontFamily: "Helvetica",
+    color: "#151515",
+    backgroundColor: "#FFFFFF",
+  },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 24,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E5E5",
+    paddingBottom: 16,
+  },
+  companyTitle: {
+    fontSize: 18,
+    fontFamily: "Helvetica-Bold",
+    letterSpacing: -0.5,
+    marginBottom: 4,
+  },
+  companySubtitle: {
+    fontSize: 9,
+    color: "#666666",
+  },
+  invoiceTitle: {
+    fontSize: 20,
+    fontFamily: "Helvetica-Bold",
+    textAlign: "right",
+    color: "#151515",
+  },
+  invoiceNumber: {
+    fontSize: 11,
+    fontFamily: "Helvetica-Bold",
+    textAlign: "right",
+    marginTop: 4,
+    color: "#333333",
+  },
+  metaGrid: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 24,
+  },
+  metaBox: {
+    width: "48%",
+  },
+  metaLabel: {
+    fontSize: 8,
+    color: "#666666",
+    textTransform: "uppercase",
+    marginBottom: 4,
+    fontFamily: "Helvetica-Bold",
+  },
+  metaValue: {
+    fontSize: 10,
+    fontFamily: "Helvetica",
+    marginBottom: 2,
+  },
+  table: {
+    width: "100%",
+    marginBottom: 24,
+  },
+  tableHeader: {
+    flexDirection: "row",
+    backgroundColor: "#F5F5F5",
+    borderBottomWidth: 1,
+    borderBottomColor: "#D4D4D4",
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+  },
+  tableRow: {
+    flexDirection: "row",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E5E5",
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+  },
+  colDesc: { width: "45%" },
+  colQty: { width: "15%", textAlign: "right" },
+  colUnit: { width: "10%", textAlign: "center" },
+  colPrice: { width: "15%", textAlign: "right" },
+  colSubtotal: { width: "15%", textAlign: "right" },
+  th: {
+    fontSize: 8,
+    fontFamily: "Helvetica-Bold",
+    color: "#404040",
+  },
+  td: {
+    fontSize: 9,
+  },
+  summaryContainer: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    marginBottom: 24,
+  },
+  summaryBox: {
+    width: "45%",
+  },
+  summaryRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingVertical: 4,
+  },
+  summaryTotalRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingVertical: 6,
+    borderTopWidth: 1.5,
+    borderTopColor: "#151515",
+    marginTop: 4,
+  },
+  summaryTotalLabel: {
+    fontSize: 11,
+    fontFamily: "Helvetica-Bold",
+  },
+  summaryTotalValue: {
+    fontSize: 13,
+    fontFamily: "Helvetica-Bold",
+  },
+  notesBox: {
+    borderTopWidth: 1,
+    borderTopColor: "#E5E5E5",
+    paddingTop: 12,
+  },
+  footer: {
+    position: "absolute",
+    bottom: 24,
+    left: 36,
+    right: 36,
+    textAlign: "center",
+    fontSize: 8,
+    color: "#888888",
+    borderTopWidth: 1,
+    borderTopColor: "#E5E5E5",
+    paddingTop: 8,
+  },
+});
+
+interface InvoicePdfDocumentProps {
+  invoice: Invoice;
+}
+
+export function InvoicePdfDocument({ invoice }: InvoicePdfDocumentProps) {
+  return (
+    <Document title={`Invoice_${invoice.invoiceNumber ?? "Draft"}`}>
+      <Page size="A4" style={styles.page}>
+        {/* Header */}
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.companyTitle}>SULTAN SEAFOOD</Text>
+            <Text style={styles.companySubtitle}>
+              Pemasok Seafood Berkualitas untuk Restoran
+            </Text>
+            <Text style={styles.companySubtitle}>
+              Jl. Pemasok Seafood No. 1, Jakarta Utara · Telp: 021-XXXXXXXX
+            </Text>
+          </View>
+          <View>
+            <Text style={styles.invoiceTitle}>INVOICE</Text>
+            <Text style={styles.invoiceNumber}>
+              {invoice.invoiceNumber ?? "DRAFT"}
+            </Text>
+          </View>
+        </View>
+
+        {/* Customer & Dates Meta */}
+        <View style={styles.metaGrid}>
+          <View style={styles.metaBox}>
+            <Text style={styles.metaLabel}>TAGIHAN KEPADA:</Text>
+            <Text style={[styles.metaValue, { fontFamily: "Helvetica-Bold" }]}>
+              {invoice.customerName}
+            </Text>
+          </View>
+          <View style={styles.metaBox}>
+            <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+              <Text style={styles.metaLabel}>TANGGAL INVOICE:</Text>
+              <Text style={styles.metaValue}>{formatDate(invoice.issueDate)}</Text>
+            </View>
+            {invoice.dueDate && (
+              <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                <Text style={styles.metaLabel}>JATUH TEMPO:</Text>
+                <Text style={styles.metaValue}>{formatDate(invoice.dueDate)}</Text>
+              </View>
+            )}
+          </View>
+        </View>
+
+        {/* Table Header */}
+        <View style={styles.table}>
+          <View style={styles.tableHeader}>
+            <Text style={[styles.colDesc, styles.th]}>DESKRIPSI PRODUK</Text>
+            <Text style={[styles.colQty, styles.th]}>QTY</Text>
+            <Text style={[styles.colUnit, styles.th]}>SATUAN</Text>
+            <Text style={[styles.colPrice, styles.th]}>HARGA</Text>
+            <Text style={[styles.colSubtotal, styles.th]}>SUBTOTAL</Text>
+          </View>
+
+          {/* Table Items */}
+          {invoice.items.map((item) => (
+            <View key={item.id} style={styles.tableRow}>
+              <Text style={[styles.colDesc, styles.td]}>
+                {item.descriptionSnapshot}
+              </Text>
+              <Text style={[styles.colQty, styles.td]}>{item.quantity}</Text>
+              <Text style={[styles.colUnit, styles.td]}>{item.unit}</Text>
+              <Text style={[styles.colPrice, styles.td]}>
+                {formatCurrency(item.sellingPriceSnapshot)}
+              </Text>
+              <Text style={[styles.colSubtotal, styles.td, { fontFamily: "Helvetica-Bold" }]}>
+                {formatCurrency(item.subtotal)}
+              </Text>
+            </View>
+          ))}
+        </View>
+
+        {/* Summary (Public Only) */}
+        <View style={styles.summaryContainer}>
+          <View style={styles.summaryBox}>
+            <View style={styles.summaryRow}>
+              <Text style={{ color: "#666666" }}>Subtotal:</Text>
+              <Text>{formatCurrency(invoice.subtotal)}</Text>
+            </View>
+            {invoice.discount > 0 && (
+              <View style={styles.summaryRow}>
+                <Text style={{ color: "#666666" }}>Diskon:</Text>
+                <Text style={{ color: "#DC2626" }}>
+                  -{formatCurrency(invoice.discount)}
+                </Text>
+              </View>
+            )}
+            <View style={styles.summaryTotalRow}>
+              <Text style={styles.summaryTotalLabel}>Total Tagihan:</Text>
+              <Text style={styles.summaryTotalValue}>
+                {formatCurrency(invoice.total)}
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Notes */}
+        {invoice.notes && (
+          <View style={styles.notesBox}>
+            <Text style={styles.metaLabel}>CATATAN & INSTRUKSI PEMBAYARAN:</Text>
+            <Text style={{ fontSize: 9, color: "#444444" }}>{invoice.notes}</Text>
+            <Text style={{ fontSize: 8, color: "#666666", marginTop: 4 }}>
+              Transfer ke: BCA 1234567890 a.n. Sultan Seafood
+            </Text>
+          </View>
+        )}
+
+        {/* Footer */}
+        <Text style={styles.footer}>
+          Terima kasih atas kerja sama Anda · Sultan Seafood ERP Document
+        </Text>
+      </Page>
+    </Document>
+  );
+}

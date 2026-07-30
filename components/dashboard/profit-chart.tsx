@@ -1,0 +1,101 @@
+"use client";
+
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+} from "recharts";
+import { formatCurrencyCompact, formatPercent } from "@/lib/utils";
+import type { ProfitDataPoint } from "@/types";
+
+interface ProfitChartProps {
+  data: ProfitDataPoint[];
+}
+
+function CustomTooltip({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean;
+  payload?: { value: number; name: string }[];
+  label?: string;
+}) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="bg-white border border-border rounded-xl shadow-dropdown px-4 py-3 text-sm">
+      <p className="text-muted-foreground text-xs mb-2">{label}</p>
+      <div className="space-y-1">
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full bg-foreground" />
+          <span className="text-xs text-muted-foreground">Laba</span>
+          <span className="text-xs font-semibold ml-auto">
+            {formatCurrencyCompact(payload[0]?.value ?? 0)}
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full bg-muted-foreground" />
+          <span className="text-xs text-muted-foreground">Margin</span>
+          <span className="text-xs font-semibold ml-auto">
+            {formatPercent(payload[1]?.value ?? 0)}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function ProfitChart({ data }: ProfitChartProps) {
+  return (
+    <div className="bg-white rounded-2xl border border-border p-5 shadow-card">
+      <div className="mb-4">
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-0.5">
+          Laba & Margin
+        </p>
+        <p className="text-lg font-bold text-foreground">Juli 2026</p>
+      </div>
+      <div className="h-48">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={data} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+            <XAxis
+              dataKey="date"
+              tick={{ fontSize: 11, fill: "#999" }}
+              axisLine={false}
+              tickLine={false}
+              interval={1}
+            />
+            <YAxis
+              tickFormatter={(v) => formatCurrencyCompact(v)}
+              tick={{ fontSize: 11, fill: "#999" }}
+              axisLine={false}
+              tickLine={false}
+            />
+            <Tooltip content={<CustomTooltip />} />
+            <Line
+              type="monotone"
+              dataKey="profit"
+              stroke="#171717"
+              strokeWidth={2}
+              dot={false}
+              activeDot={{ r: 4, fill: "#171717" }}
+            />
+            <Line
+              type="monotone"
+              dataKey="margin"
+              stroke="#a3a3a3"
+              strokeWidth={1.5}
+              strokeDasharray="4 4"
+              dot={false}
+              activeDot={{ r: 3, fill: "#a3a3a3" }}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+}

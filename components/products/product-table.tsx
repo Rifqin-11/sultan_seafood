@@ -1,0 +1,196 @@
+"use client";
+
+import { useState } from "react";
+import { mockProducts } from "@/lib/mock-data";
+import { formatCurrency, formatPercent } from "@/lib/utils";
+import type { Product } from "@/types";
+import { Search, MoreHorizontal, Plus, Filter } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Package } from "lucide-react";
+
+interface ProductTableProps {
+  initialProducts?: Product[];
+}
+
+export function ProductTable({ initialProducts }: ProductTableProps) {
+  const productsList = initialProducts && initialProducts.length > 0 ? initialProducts : mockProducts;
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<
+    "ALL" | "ACTIVE" | "INACTIVE"
+  >("ALL");
+
+  const filtered = productsList.filter((p) => {
+    const matchSearch =
+      p.name.toLowerCase().includes(search.toLowerCase()) ||
+      p.sku.toLowerCase().includes(search.toLowerCase()) ||
+      p.category.toLowerCase().includes(search.toLowerCase());
+    const matchStatus =
+      statusFilter === "ALL" || p.status === statusFilter;
+    return matchSearch && matchStatus;
+  });
+
+  return (
+    <div className="bg-white rounded-2xl border border-border shadow-card overflow-hidden">
+      {/* Toolbar */}
+      <div className="flex items-center gap-3 p-4 border-b border-border">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Cari produk, SKU, kategori..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9 h-9"
+          />
+        </div>
+
+        <div className="flex items-center gap-1.5">
+          {(["ALL", "ACTIVE", "INACTIVE"] as const).map((s) => (
+            <button
+              key={s}
+              onClick={() => setStatusFilter(s)}
+              className={`px-3 py-1.5 text-xs rounded-lg font-medium transition-colors ${
+                statusFilter === s
+                  ? "bg-foreground text-background"
+                  : "text-muted-foreground hover:bg-muted"
+              }`}
+            >
+              {s === "ALL" ? "Semua" : s === "ACTIVE" ? "Aktif" : "Nonaktif"}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Table */}
+      {filtered.length === 0 ? (
+        <EmptyState
+          icon={Package}
+          title="Tidak ada produk"
+          description="Coba ubah kata kunci pencarian atau filter."
+        />
+      ) : (
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/30 hover:bg-muted/30">
+                <TableHead className="text-xs font-semibold">SKU</TableHead>
+                <TableHead className="text-xs font-semibold">Nama Produk</TableHead>
+                <TableHead className="text-xs font-semibold">Kategori</TableHead>
+                <TableHead className="text-xs font-semibold">Satuan</TableHead>
+                <TableHead className="text-xs font-semibold text-right">
+                  Harga Beli
+                </TableHead>
+                <TableHead className="text-xs font-semibold text-right">
+                  Harga Jual
+                </TableHead>
+                <TableHead className="text-xs font-semibold text-right">
+                  Margin
+                </TableHead>
+                <TableHead className="text-xs font-semibold">Status</TableHead>
+                <TableHead className="w-10" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filtered.map((product) => (
+                <TableRow key={product.id} className="hover:bg-muted/20">
+                  <TableCell className="font-mono text-xs text-muted-foreground">
+                    {product.sku}
+                  </TableCell>
+                  <TableCell className="font-medium text-sm">
+                    {product.name}
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {product.category}
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {product.defaultUnit}
+                  </TableCell>
+                  <TableCell className="text-right text-sm font-medium tabular-nums">
+                    {product.activeCost
+                      ? formatCurrency(product.activeCost)
+                      : "—"}
+                  </TableCell>
+                  <TableCell className="text-right text-sm font-medium tabular-nums">
+                    {product.defaultSellingPrice
+                      ? formatCurrency(product.defaultSellingPrice)
+                      : "—"}
+                  </TableCell>
+                  <TableCell className="text-right text-sm tabular-nums">
+                    {product.estimatedMargin != null ? (
+                      <span
+                        className={
+                          product.estimatedMargin >= 20
+                            ? "text-emerald-600 font-medium"
+                            : "text-muted-foreground"
+                        }
+                      >
+                        {formatPercent(product.estimatedMargin)}
+                      </span>
+                    ) : (
+                      "—"
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <Badge
+                      variant={
+                        product.status === "ACTIVE" ? "default" : "secondary"
+                      }
+                      className="text-[11px]"
+                    >
+                      {product.status === "ACTIVE" ? "Aktif" : "Nonaktif"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger
+                        className="inline-flex items-center justify-center h-7 w-7 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                        aria-label="Aksi produk"
+                      >
+                        <MoreHorizontal className="w-4 h-4" />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-40">
+                        <DropdownMenuItem>Lihat detail</DropdownMenuItem>
+                        <DropdownMenuItem>Edit produk</DropdownMenuItem>
+                        <DropdownMenuItem>Tambah harga beli</DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem className="text-red-600">
+                          {product.status === "ACTIVE"
+                            ? "Nonaktifkan"
+                            : "Aktifkan"}
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+
+      {/* Footer */}
+      <div className="flex items-center justify-between px-4 py-3 border-t border-border">
+        <p className="text-xs text-muted-foreground">
+          {filtered.length} dari {productsList.length} produk
+        </p>
+      </div>
+    </div>
+  );
+}

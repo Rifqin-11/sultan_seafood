@@ -1,0 +1,76 @@
+"use client";
+
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+} from "recharts";
+import { formatCurrencyCompact } from "@/lib/utils";
+import type { SalesDataPoint } from "@/types";
+
+interface SalesChartProps {
+  data: SalesDataPoint[];
+}
+
+function CustomTooltip({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean;
+  payload?: { value: number }[];
+  label?: string;
+}) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="bg-white border border-border rounded-xl shadow-dropdown px-4 py-3 text-sm">
+      <p className="text-muted-foreground text-xs mb-1">{label}</p>
+      <p className="font-semibold text-foreground">
+        {formatCurrencyCompact(payload[0].value)}
+      </p>
+      <p className="text-xs text-muted-foreground">
+        {payload[1]?.value} order
+      </p>
+    </div>
+  );
+}
+
+export function SalesChart({ data }: SalesChartProps) {
+  return (
+    <div className="bg-white rounded-2xl border border-border p-5 shadow-card">
+      <div className="mb-4">
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-0.5">
+          Penjualan Harian
+        </p>
+        <p className="text-lg font-bold text-foreground">Juli 2026</p>
+      </div>
+      <div className="h-48">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={data} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+            <XAxis
+              dataKey="date"
+              tick={{ fontSize: 11, fill: "#999" }}
+              axisLine={false}
+              tickLine={false}
+              interval={1}
+            />
+            <YAxis
+              tickFormatter={(v) => formatCurrencyCompact(v)}
+              tick={{ fontSize: 11, fill: "#999" }}
+              axisLine={false}
+              tickLine={false}
+            />
+            <Tooltip content={<CustomTooltip />} cursor={{ fill: "#f5f5f5" }} />
+            <Bar dataKey="revenue" fill="#171717" radius={[4, 4, 0, 0]} maxBarSize={32} />
+            <Bar dataKey="orders" fill="#e5e5e5" radius={[4, 4, 0, 0]} maxBarSize={32} />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+}
