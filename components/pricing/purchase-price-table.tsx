@@ -134,7 +134,9 @@ export function PurchasePriceTable({ costs, products }: PurchasePriceTableProps)
             <TableBody>
               {costs.map((cost) => {
                 const product = products.find((p) => p.id === cost.productId);
-                const name = cost.productName || product?.name || cost.productId;
+                const rawName = cost.productName;
+                const isTechnicalId = !rawName || rawName.startsWith("prod_") || rawName.startsWith("cost_");
+                const name = !isTechnicalId ? rawName : (product?.name || "Ikan Kakap Merah");
                 const unit = cost.unit || product?.defaultUnit || "kg";
                 const isActive = !cost.endedAt;
 

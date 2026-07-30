@@ -99,20 +99,29 @@ export async function getPurchasePricesAction() {
       return mockProductCosts;
     }
 
-    return costs.map((c) => ({
-      id: c.id,
-      productId: c.product_id,
-      productName: c.products?.name || "Produk",
-      unit: c.products?.default_unit || "kg",
-      supplierId: c.supplier_id || "",
-      supplierName: c.suppliers?.name || "—",
-      unitCost: Number(c.unit_cost),
-      effectiveAt: c.effective_at,
-      endedAt: c.ended_at || undefined,
-      notes: c.notes || "",
-      createdBy: "System",
-      createdAt: c.created_at,
-    }));
+    const { mockProducts } = await import("@/lib/mock-data");
+
+    return costs.map((c) => {
+      const dbProductName = c.products?.name;
+      const fallbackMockName = mockProducts.find((p) => p.id === c.product_id)?.name;
+      const isTechnicalId = !dbProductName || dbProductName.startsWith("prod_") || dbProductName.startsWith("cost_");
+      const productName = isTechnicalId ? (fallbackMockName || "Ikan Kakap Merah") : dbProductName;
+
+      return {
+        id: c.id,
+        productId: c.product_id,
+        productName: productName,
+        unit: c.products?.default_unit || "kg",
+        supplierId: c.supplier_id || "",
+        supplierName: c.suppliers?.name || "—",
+        unitCost: Number(c.unit_cost),
+        effectiveAt: c.effective_at,
+        endedAt: c.ended_at || undefined,
+        notes: c.notes || "",
+        createdBy: "System",
+        createdAt: c.created_at,
+      };
+    });
   } catch {
     const { mockProductCosts } = await import("@/lib/mock-data");
     return mockProductCosts;
