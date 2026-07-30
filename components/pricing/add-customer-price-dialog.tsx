@@ -69,10 +69,14 @@ export function AddCustomerPriceDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger className="inline-flex items-center justify-center rounded-lg bg-foreground text-background font-medium h-8 px-3 text-xs hover:bg-foreground/90 transition-colors cursor-pointer">
+      <Button
+        size="sm"
+        onClick={() => setOpen(true)}
+        className="h-8 px-3 text-xs cursor-pointer"
+      >
         <Plus className="w-3.5 h-3.5 mr-1" />
         Tambah Harga Khusus
-      </DialogTrigger>
+      </Button>
 
       <DialogContent className="sm:max-w-md">
         <DialogHeader>

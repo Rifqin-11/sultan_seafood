@@ -599,9 +599,14 @@ export function InvoiceForm({ customers, products }: InvoiceFormProps) {
             Preview
           </Button>
           <Button
-            onClick={() => setPublishDialogOpen(true)}
+            onClick={() => {
+              if (!customerId || items.length === 0) {
+                submitInvoice("ISSUED");
+              } else {
+                setPublishDialogOpen(true);
+              }
+            }}
             size="sm"
-            disabled={!customerId || items.length === 0}
           >
             Terbitkan Invoice
           </Button>
