@@ -11,6 +11,10 @@ export async function middleware(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
+  if (request.nextUrl.pathname === "/") {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
+  }
+
   // If Supabase env vars are configured, check session
   if (supabaseUrl && supabaseAnonKey && !supabaseUrl.includes("placeholder")) {
     const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
@@ -19,7 +23,7 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
+          cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           );
           response = NextResponse.next({
@@ -38,7 +42,6 @@ export async function middleware(request: NextRequest) {
 
     // Protected dashboard routes
     const isDashboardRoute =
-      request.nextUrl.pathname === "/" ||
       request.nextUrl.pathname.startsWith("/dashboard") ||
       request.nextUrl.pathname.startsWith("/invoices") ||
       request.nextUrl.pathname.startsWith("/products") ||
@@ -50,8 +53,8 @@ export async function middleware(request: NextRequest) {
       request.nextUrl.pathname.startsWith("/settings");
 
     if (isDashboardRoute && !user) {
-      // Allow demo viewing if not configured, or redirect to login
-      // return NextResponse.redirect(new URL("/login", request.url));
+      // Redirect to login if user is not authenticated
+      return NextResponse.redirect(new URL("/login", request.url));
     }
 
     if (request.nextUrl.pathname === "/login" && user) {

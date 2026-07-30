@@ -19,6 +19,7 @@ import {
   ChevronLeft,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { signOutAction } from "@/lib/actions/auth";
 import {
   Tooltip,
   TooltipContent,
@@ -236,7 +237,10 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
         {collapsed ? (
           <Tooltip>
             <TooltipTrigger render={
-              <button className="flex items-center justify-center w-full h-9 rounded-lg text-[#a3a3a3] hover:bg-[#242424] hover:text-white transition-colors" />
+              <button
+                onClick={async () => { await signOutAction(); }}
+                className="flex items-center justify-center w-full h-9 rounded-lg text-[#a3a3a3] hover:bg-[#242424] hover:text-white transition-colors"
+              />
             }>
               <div className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center text-xs font-medium text-white">
                 O
@@ -255,7 +259,11 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
               <p className="text-white text-xs font-medium truncate">Owner</p>
               <p className="text-[#666666] text-xs truncate">owner@sultansf.id</p>
             </div>
-            <button className="text-[#666666] hover:text-white transition-colors">
+            <button
+              onClick={async () => { await signOutAction(); }}
+              title="Keluar"
+              className="text-[#666666] hover:text-white transition-colors cursor-pointer"
+            >
               <LogOut className="w-4 h-4" />
             </button>
           </div>

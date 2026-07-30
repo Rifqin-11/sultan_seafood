@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { usePathname } from "next/navigation";
+import { signOutAction } from "@/lib/actions/auth";
 
 const pathLabels: Record<string, string> = {
   "/dashboard": "Dashboard",
@@ -117,7 +118,14 @@ export function Topbar({ onMobileMenuToggle }: TopbarProps) {
             <DropdownMenuItem>Profil</DropdownMenuItem>
             <DropdownMenuItem>Pengaturan</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-red-600">Keluar</DropdownMenuItem>
+            <DropdownMenuItem
+              className="text-red-600 cursor-pointer"
+              onClick={async () => {
+                await signOutAction();
+              }}
+            >
+              Keluar
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
