@@ -15,6 +15,7 @@ import {
   Download,
   Eye,
   CreditCard,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,6 +37,7 @@ import {
 import { InvoiceStatusBadge } from "./invoice-status-badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import Link from "next/link";
+import { handleDownloadInvoicePdf } from "./invoice-pdf-download";
 
 const STATUS_FILTERS: { label: string; value: InvoiceStatus | "ALL" }[] = [
   { label: "Semua", value: "ALL" },
@@ -56,6 +58,13 @@ export function InvoiceListTable({ initialInvoices }: InvoiceListTableProps) {
   const [statusFilter, setStatusFilter] = useState<InvoiceStatus | "ALL">(
     "ALL"
   );
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+
+  const handleDownload = async (inv: Invoice) => {
+    setDownloadingId(inv.id);
+    await handleDownloadInvoicePdf(inv);
+    setDownloadingId(null);
+  };
 
   const filtered = invoicesList.filter((inv) => {
     const matchSearch =
@@ -206,9 +215,17 @@ export function InvoiceListTable({ initialInvoices }: InvoiceListTableProps) {
                             Lihat Detail
                           </Link>
                         </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <Download className="w-3.5 h-3.5 mr-2" />
-                          Download PDF
+                        <DropdownMenuItem
+                          onClick={() => handleDownload(inv)}
+                          disabled={downloadingId === inv.id}
+                          className="cursor-pointer"
+                        >
+                          {downloadingId === inv.id ? (
+                            <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />
+                          ) : (
+                            <Download className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
+                          )}
+                          {downloadingId === inv.id ? "Menyiapkan PDF..." : "Download PDF"}
                         </DropdownMenuItem>
                         {(inv.status === "ISSUED" ||
                           inv.status === "PARTIALLY_PAID" ||
