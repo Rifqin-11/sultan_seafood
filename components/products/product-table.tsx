@@ -93,6 +93,7 @@ export function ProductTable({ initialProducts }: ProductTableProps) {
                 <TableHead className="text-xs font-semibold">ID Produk</TableHead>
                 <TableHead className="text-xs font-semibold">Nama Produk</TableHead>
                 <TableHead className="text-xs font-semibold">Kategori</TableHead>
+                <TableHead className="text-xs font-semibold">Ukuran / Size</TableHead>
                 <TableHead className="text-xs font-semibold">Satuan</TableHead>
                 <TableHead className="text-xs font-semibold text-right">
                   Harga Beli
@@ -118,6 +119,15 @@ export function ProductTable({ initialProducts }: ProductTableProps) {
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {product.category}
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {product.size ? (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                        {product.size}
+                      </span>
+                    ) : (
+                      "—"
+                    )}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {product.defaultUnit}

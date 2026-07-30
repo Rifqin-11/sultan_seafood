@@ -79,6 +79,7 @@ CREATE TABLE IF NOT EXISTS public.products (
   sku TEXT,
   name TEXT NOT NULL,
   category TEXT NOT NULL,
+  size TEXT,
   default_unit TEXT NOT NULL DEFAULT 'kg',
   default_selling_price NUMERIC(12, 2),
   status product_status NOT NULL DEFAULT 'ACTIVE',

@@ -7,6 +7,7 @@ export interface CreateProductPayload {
   sku?: string;
   name: string;
   category: string;
+  size?: string;
   defaultUnit: string;
   defaultSellingPrice?: number;
   activeCost?: number;
@@ -28,6 +29,7 @@ export async function createProductAction(payload: CreateProductPayload) {
         sku: payload.sku || null,
         name: payload.name,
         category: payload.category,
+        size: payload.size || null,
         default_unit: payload.defaultUnit,
         default_selling_price: payload.defaultSellingPrice || 0,
         status: "ACTIVE",
@@ -93,6 +95,7 @@ export async function getProductsAction() {
         sku: p.sku,
         name: p.name,
         category: p.category,
+        size: p.size || undefined,
         defaultUnit: p.default_unit,
         defaultSellingPrice: sellingPrice,
         activeCost: latestCost,

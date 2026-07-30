@@ -121,7 +121,7 @@ export function InvoiceForm() {
             return {
               ...item,
               productId: value as string,
-              description: product.name,
+              description: product.size ? `${product.name} (${product.size})` : product.name,
               unit: product.defaultUnit,
               sellingPrice: product.defaultSellingPrice ?? 0,
               purchasePrice: product.activeCost ?? 0,
@@ -347,7 +347,7 @@ export function InvoiceForm() {
                               .filter((p) => p.status === "ACTIVE")
                               .map((p) => (
                                 <SelectItem key={p.id} value={p.id}>
-                                  {p.name}
+                                  {p.name} {p.size ? `[${p.size}]` : ""}
                                 </SelectItem>
                               ))}
                           </SelectContent>

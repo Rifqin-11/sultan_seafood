@@ -99,7 +99,7 @@ export function AddPurchasePriceDialog({
               <option value="" disabled>Pilih Produk</option>
               {products.map((p) => (
                 <option key={p.id} value={p.id}>
-                  {p.name} ({p.defaultUnit})
+                  {p.name} {p.size ? `[${p.size}]` : ""} ({p.defaultUnit})
                 </option>
               ))}
             </select>

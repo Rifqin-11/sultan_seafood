@@ -22,6 +22,7 @@ export interface Product {
   sku?: string;
   name: string;
   category: string;
+  size?: string;
   defaultUnit: string;
   defaultSellingPrice?: number;
   status: ProductStatus;

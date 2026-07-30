@@ -72,7 +72,9 @@ export default async function SellingPricingPage() {
                 <TableRow key={p.id} className="hover:bg-muted/20">
                   <TableCell className="text-sm font-medium sticky left-0 bg-white">
                     <div>
-                      <p>{p.name}</p>
+                      <p>
+                        {p.name} {p.size ? <span className="text-xs font-normal text-blue-600">[{p.size}]</span> : null}
+                      </p>
                       <p className="text-xs text-muted-foreground">
                         per {p.defaultUnit}
                       </p>

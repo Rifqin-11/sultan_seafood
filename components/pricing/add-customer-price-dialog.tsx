@@ -115,7 +115,7 @@ export function AddCustomerPriceDialog({
               <option value="" disabled>Pilih Produk</option>
               {products.map((p) => (
                 <option key={p.id} value={p.id}>
-                  {p.name} ({p.defaultUnit}) - Default: Rp {p.defaultSellingPrice?.toLocaleString("id-ID") ?? "0"}
+                  {p.name} {p.size ? `[${p.size}]` : ""} ({p.defaultUnit}) - Default: Rp {p.defaultSellingPrice?.toLocaleString("id-ID") ?? "0"}
                 </option>
               ))}
             </select>

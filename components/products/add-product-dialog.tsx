@@ -22,6 +22,7 @@ export function AddProductDialog() {
 
   const [name, setName] = useState("");
   const [category, setCategory] = useState("Ikan");
+  const [size, setSize] = useState("");
   const [defaultUnit, setDefaultUnit] = useState("kg");
   const [defaultSellingPrice, setDefaultSellingPrice] = useState("");
   const [activeCost, setActiveCost] = useState("");
@@ -29,6 +30,7 @@ export function AddProductDialog() {
   const resetForm = () => {
     setName("");
     setCategory("Ikan");
+    setSize("");
     setDefaultUnit("kg");
     setDefaultSellingPrice("");
     setActiveCost("");
@@ -49,6 +51,7 @@ export function AddProductDialog() {
     const res = await createProductAction({
       name,
       category,
+      size: size || undefined,
       defaultUnit,
       defaultSellingPrice: defaultSellingPrice ? parseFloat(defaultSellingPrice) : undefined,
       activeCost: activeCost ? parseFloat(activeCost) : undefined,
@@ -95,16 +98,29 @@ export function AddProductDialog() {
             />
           </div>
 
-          <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1">
-              Kategori
-            </label>
-            <Input
-              placeholder="Ikan / Udang / Cumi / Kepiting"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="h-8 text-xs"
-            />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">
+                Kategori
+              </label>
+              <Input
+                placeholder="Ikan / Udang / Cumi"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="h-8 text-xs"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">
+                Size / Ukuran
+              </label>
+              <Input
+                placeholder="Size 30 / 500g-700g / Jumbo"
+                value={size}
+                onChange={(e) => setSize(e.target.value)}
+                className="h-8 text-xs"
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-3 gap-3">
