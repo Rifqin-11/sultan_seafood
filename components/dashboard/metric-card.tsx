@@ -38,35 +38,35 @@ export function MetricCard({
   const content = (
     <div
       className={cn(
-        "bg-white rounded-2xl border border-border p-5 shadow-card transition-all",
+        "bg-white rounded-2xl border border-border p-4 sm:p-5 shadow-card transition-all overflow-hidden",
         href && "hover:shadow-md cursor-pointer",
         className
       )}
     >
-      <div className="flex items-start justify-between gap-3 mb-3">
-        <div className="flex items-center gap-1.5 min-w-0">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide truncate">
+      <div className="flex items-start justify-between gap-2 mb-2 sm:mb-3">
+        <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
+          <p className="text-[11px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wider truncate">
             {title}
           </p>
           {internal && (
-            <span className="text-[10px] font-medium px-1.5 py-0.5 bg-amber-50 text-amber-700 rounded border border-amber-200 flex-shrink-0">
+            <span className="text-[9px] font-medium px-1.5 py-0.5 bg-amber-50 text-amber-700 rounded border border-amber-200 shrink-0">
               Internal
             </span>
           )}
         </div>
         {Icon && (
-          <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
-            <Icon className="w-4 h-4 text-muted-foreground" />
+          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
+            <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground" />
           </div>
         )}
       </div>
 
-      <div className="mb-2">
-        <span className="text-2xl font-bold text-foreground tracking-tight">
+      <div className="mb-1 sm:mb-2 min-w-0">
+        <span className="text-lg sm:text-2xl font-bold text-foreground tracking-tight truncate block">
           {displayValue}
         </span>
         {suffix && (
-          <span className="text-sm font-medium text-muted-foreground ml-1">
+          <span className="text-xs sm:text-sm font-medium text-muted-foreground ml-1">
             {suffix}
           </span>
         )}
