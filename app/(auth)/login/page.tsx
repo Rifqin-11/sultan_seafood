@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Fish, Eye, EyeOff, Loader2 } from "lucide-react";
+import { Fish, Eye, EyeOff, Loader2, Sparkles, UserCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
@@ -9,24 +9,19 @@ import { signInAction } from "@/lib/actions/auth";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("owner@sultansf.id");
+  const [password, setPassword] = useState("123456");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleLoginWithCredentials = async (targetEmail: string, targetPass: string) => {
     setError("");
-    if (!email || !password) {
-      setError("Email dan password wajib diisi.");
-      return;
-    }
     setLoading(true);
 
     const formData = new FormData();
-    formData.append("email", email);
-    formData.append("password", password);
+    formData.append("email", targetEmail);
+    formData.append("password", targetPass);
 
     const res = await signInAction(formData);
     if (res?.error) {
@@ -38,23 +33,79 @@ export default function LoginPage() {
     }
   };
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password) {
+      setError("Email dan password wajib diisi.");
+      return;
+    }
+    await handleLoginWithCredentials(email, password);
+  };
+
+  const handleQuickDemoLogin = async (demoEmail: string, demoRole: string) => {
+    setEmail(demoEmail);
+    setPassword("123456");
+    await handleLoginWithCredentials(demoEmail, "123456");
+  };
+
   return (
     <div className="min-h-screen bg-[#151515] flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
         {/* Logo */}
-        <div className="flex flex-col items-center mb-8">
-          <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center mb-4">
+        <div className="flex flex-col items-center mb-6">
+          <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center mb-3 shadow-lg">
             <Fish className="w-6 h-6 text-[#151515]" />
           </div>
-          <h1 className="text-xl font-bold text-white">Sultan Seafood</h1>
-          <p className="text-sm text-neutral-400 mt-0.5">ERP Internal</p>
+          <h1 className="text-xl font-bold text-white tracking-tight">Sultan Seafood</h1>
+          <p className="text-xs text-neutral-400 mt-0.5">ERP Internal Restoran</p>
         </div>
 
-        {/* Form */}
-        <div className="bg-[#1c1c1c] border border-[#2a2a2a] rounded-2xl p-6 shadow-2xl">
-          <h2 className="text-base font-semibold text-white mb-5">
-            Masuk ke akun Anda
-          </h2>
+        {/* Form Card */}
+        <div className="bg-[#1c1c1c] border border-[#2a2a2a] rounded-2xl p-6 shadow-2xl space-y-5">
+          <div>
+            <h2 className="text-base font-semibold text-white">
+              Masuk ke Akun ERP
+            </h2>
+            <p className="text-xs text-neutral-400 mt-0.5">
+              Gunakan kredensial terdaftar atau akses demo cepat.
+            </p>
+          </div>
+
+          {/* Quick Demo Access Box */}
+          <div className="bg-[#242424] border border-[#333] rounded-xl p-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-semibold text-neutral-300 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                Akun Demo Pengujian:
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => handleQuickDemoLogin("owner@sultansf.id", "Owner")}
+                className="flex items-center justify-center gap-1.5 py-2 px-2.5 bg-[#2d2d2d] hover:bg-[#383838] border border-[#404040] text-xs font-medium text-white rounded-lg transition-all text-center"
+              >
+                <UserCheck className="w-3.5 h-3.5 text-blue-400" />
+                Demo Owner
+              </button>
+              <button
+                type="button"
+                onClick={() => handleQuickDemoLogin("admin@sultansf.id", "Staff Admin")}
+                className="flex items-center justify-center gap-1.5 py-2 px-2.5 bg-[#2d2d2d] hover:bg-[#383838] border border-[#404040] text-xs font-medium text-white rounded-lg transition-all text-center"
+              >
+                <UserCheck className="w-3.5 h-3.5 text-emerald-400" />
+                Demo Admin
+              </button>
+            </div>
+          </div>
+
+          <div className="relative flex items-center justify-center">
+            <div className="border-t border-[#2a2a2a] w-full" />
+            <span className="bg-[#1c1c1c] px-2 text-[10px] text-neutral-500 uppercase tracking-widest absolute">
+              atau masuk manual
+            </span>
+          </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
@@ -67,10 +118,10 @@ export default function LoginPage() {
               <Input
                 id="email"
                 type="email"
-                placeholder="email@sultansf.id"
+                placeholder="owner@sultansf.id"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="h-10 bg-[#252525] border-[#333] text-white placeholder:text-neutral-600 focus-visible:ring-white/20"
+                className="h-10 bg-[#252525] border-[#333] text-white placeholder:text-neutral-600 focus-visible:ring-white/20 text-xs"
                 autoComplete="email"
               />
             </div>
@@ -89,7 +140,7 @@ export default function LoginPage() {
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="h-10 bg-[#252525] border-[#333] text-white placeholder:text-neutral-600 focus-visible:ring-white/20 pr-10"
+                  className="h-10 bg-[#252525] border-[#333] text-white placeholder:text-neutral-600 focus-visible:ring-white/20 pr-10 text-xs"
                   autoComplete="current-password"
                 />
                 <button
@@ -115,7 +166,7 @@ export default function LoginPage() {
 
             <Button
               type="submit"
-              className="w-full h-10 bg-white text-[#151515] hover:bg-neutral-100 font-semibold mt-1"
+              className="w-full h-10 bg-white text-[#151515] hover:bg-neutral-100 font-semibold text-xs mt-1"
               disabled={loading}
             >
               {loading ? (
@@ -125,8 +176,8 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          <p className="text-xs text-neutral-500 text-center mt-4">
-            Sistem ERP internal. Akses hanya untuk pengguna terdaftar.
+          <p className="text-[11px] text-neutral-500 text-center">
+            Sistem ERP Internal Sultan Seafood.
           </p>
         </div>
 
