@@ -35,6 +35,8 @@ export interface Product {
 export interface ProductCost {
   id: string;
   productId: string;
+  productName?: string;
+  unit?: string;
   supplierId: string;
   supplierName: string;
   unitCost: number;

@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/app-shell/page-header";
-import { mockProducts, mockCustomers } from "@/lib/mock-data";
 import { formatCurrency } from "@/lib/utils";
 import {
   Table,
@@ -10,16 +9,30 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { getProductsAction } from "@/lib/actions/products";
+import { getCustomersAction } from "@/lib/actions/customers";
+import { getCustomerPricesAction } from "@/lib/actions/pricing";
+import { AddCustomerPriceDialog } from "@/components/pricing/add-customer-price-dialog";
 
 export const metadata: Metadata = {
   title: "Harga Jual Restoran",
 };
 
-export default function SellingPricingPage() {
-  const activeProducts = mockProducts.filter((p) => p.status === "ACTIVE");
-  const activeCustomers = mockCustomers.filter((c) => c.status === "ACTIVE");
+export default async function SellingPricingPage() {
+  const [products, customers, customPrices] = await Promise.all([
+    getProductsAction(),
+    getCustomersAction(),
+    getCustomerPricesAction(),
+  ]);
+
+  const activeProducts = products.filter((p) => p.status === "ACTIVE");
+  const activeCustomers = customers.filter((c) => c.status === "ACTIVE");
+
+  // Map custom prices for quick lookup (key: customerId_productId)
+  const priceMap = new Map<string, number>();
+  customPrices.forEach((cp) => {
+    priceMap.set(`${cp.customerId}_${cp.productId}`, cp.sellingPrice);
+  });
 
   return (
     <div className="space-y-6">
@@ -27,10 +40,10 @@ export default function SellingPricingPage() {
         title="Harga Jual Restoran"
         description="Harga khusus per produk untuk setiap restoran"
       >
-        <Button size="sm">
-          <Plus className="w-4 h-4 mr-1" />
-          Tambah Harga Khusus
-        </Button>
+        <AddCustomerPriceDialog
+          customers={activeCustomers}
+          products={activeProducts}
+        />
       </PageHeader>
 
       <div className="bg-white rounded-2xl border border-border shadow-card overflow-hidden">
@@ -65,19 +78,28 @@ export default function SellingPricingPage() {
                       </p>
                     </div>
                   </TableCell>
-                  <TableCell className="text-right text-sm tabular-nums">
+                  <TableCell className="text-right text-sm tabular-nums font-medium">
                     {p.defaultSellingPrice
                       ? formatCurrency(p.defaultSellingPrice)
                       : "—"}
                   </TableCell>
-                  {activeCustomers.map((c) => (
-                    <TableCell
-                      key={c.id}
-                      className="text-right text-sm text-muted-foreground tabular-nums"
-                    >
-                      {/* In real app: look up customer-specific price */}—
-                    </TableCell>
-                  ))}
+                  {activeCustomers.map((c) => {
+                    const customPrice = priceMap.get(`${c.id}_${p.id}`);
+                    return (
+                      <TableCell
+                        key={c.id}
+                        className="text-right text-sm tabular-nums"
+                      >
+                        {customPrice ? (
+                          <span className="font-semibold text-emerald-600">
+                            {formatCurrency(customPrice)}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
+                    );
+                  })}
                 </TableRow>
               ))}
             </TableBody>

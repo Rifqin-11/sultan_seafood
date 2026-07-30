@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/app-shell/page-header";
-import { mockProducts, mockProductCosts } from "@/lib/mock-data";
 import { formatCurrency, formatDateShort } from "@/lib/utils";
 import {
   Table,
@@ -11,24 +10,29 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { getPurchasePricesAction } from "@/lib/actions/pricing";
+import { getProductsAction } from "@/lib/actions/products";
+import { getSuppliersAction } from "@/lib/actions/suppliers";
+import { AddPurchasePriceDialog } from "@/components/pricing/add-purchase-price-dialog";
 
 export const metadata: Metadata = {
   title: "Harga Beli",
 };
 
-export default function PurchasePricingPage() {
+export default async function PurchasePricingPage() {
+  const [costs, products, suppliers] = await Promise.all([
+    getPurchasePricesAction(),
+    getProductsAction(),
+    getSuppliersAction(),
+  ]);
+
   return (
     <div className="space-y-6">
       <PageHeader
         title="Harga Beli"
         description="Riwayat harga beli produk dari supplier"
       >
-        <Button size="sm">
-          <Plus className="w-4 h-4 mr-1" />
-          Tambah Harga Beli
-        </Button>
+        <AddPurchasePriceDialog products={products} suppliers={suppliers} />
       </PageHeader>
 
       <div className="bg-white rounded-2xl border border-amber-200 shadow-card overflow-hidden">
@@ -55,21 +59,21 @@ export default function PurchasePricingPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mockProductCosts.map((cost) => {
-                const product = mockProducts.find(
-                  (p) => p.id === cost.productId
-                );
+              {costs.map((cost) => {
+                const product = products.find((p) => p.id === cost.productId);
+                const name = cost.productName || product?.name || cost.productId;
+                const unit = cost.unit || product?.defaultUnit || "kg";
                 const isActive = !cost.endedAt;
                 return (
                   <TableRow key={cost.id} className="hover:bg-muted/20">
                     <TableCell className="text-sm font-medium">
-                      {product?.name ?? cost.productId}
+                      {name}
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {cost.supplierName}
                     </TableCell>
                     <TableCell className="text-right text-sm font-semibold tabular-nums">
-                      {formatCurrency(cost.unitCost)} / {product?.defaultUnit}
+                      {formatCurrency(cost.unitCost)} / {unit}
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {formatDateShort(cost.effectiveAt)}
