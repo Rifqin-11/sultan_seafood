@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/app-shell/page-header";
-import { mockInvoices, mockMetrics } from "@/lib/mock-data";
+import { getInvoicesAction } from "@/lib/actions/invoices";
+import { mockInvoices, mockSalesData } from "@/lib/mock-data";
 import { formatCurrency, formatDateShort, formatPercent } from "@/lib/utils";
 import { MetricCard } from "@/components/dashboard/metric-card";
 import { SalesChart } from "@/components/dashboard/sales-chart";
-import { mockSalesData } from "@/lib/mock-data";
 import {
   Table,
   TableBody,
@@ -20,11 +20,15 @@ export const metadata: Metadata = {
   title: "Laporan Penjualan",
 };
 
-export default function SalesReportPage() {
-  const issuedInvoices = mockInvoices.filter(
+export default async function SalesReportPage() {
+  const realInvoices = await getInvoicesAction();
+  const invoices = realInvoices && realInvoices.length > 0 ? realInvoices : mockInvoices;
+
+  const issuedInvoices = invoices.filter(
     (inv) => inv.status !== "DRAFT" && inv.status !== "VOID"
   );
   const totalRevenue = issuedInvoices.reduce((s, i) => s + i.total, 0);
+  const totalProfit = issuedInvoices.reduce((s, i) => s + i.transactionProfit, 0);
 
   return (
     <div className="space-y-6">
@@ -45,7 +49,7 @@ export default function SalesReportPage() {
         />
         <MetricCard
           title="Laba Transaksi"
-          value={mockMetrics.transactionProfitThisMonth}
+          value={totalProfit}
           isCurrency
           internal
         />
@@ -55,7 +59,7 @@ export default function SalesReportPage() {
 
       <div className="bg-white rounded-2xl border border-border shadow-card overflow-hidden">
         <div className="px-5 py-4 border-b border-border">
-          <h3 className="text-sm font-semibold">Daftar Invoice</h3>
+          <h3 className="text-sm font-semibold">Daftar Invoice Penjualan</h3>
         </div>
         <div className="overflow-x-auto">
           <Table>
@@ -74,8 +78,8 @@ export default function SalesReportPage() {
             <TableBody>
               {issuedInvoices.map((inv) => (
                 <TableRow key={inv.id} className="hover:bg-muted/20">
-                  <TableCell className="text-xs font-mono">
-                    {inv.invoiceNumber}
+                  <TableCell className="text-xs font-mono font-medium">
+                    {inv.invoiceNumber ?? "DRAFT"}
                   </TableCell>
                   <TableCell className="text-sm font-medium">
                     {inv.customerName}

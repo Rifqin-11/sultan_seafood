@@ -1,26 +1,44 @@
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/app-shell/page-header";
-import { mockInvoices, mockMetrics } from "@/lib/mock-data";
-import { formatCurrency, formatPercent } from "@/lib/utils";
+import { getInvoicesAction } from "@/lib/actions/invoices";
+import { mockInvoices, mockProfitData } from "@/lib/mock-data";
+import { formatCurrency, formatPercent, getDirectCostLabel } from "@/lib/utils";
 import { MetricCard } from "@/components/dashboard/metric-card";
 import { ProfitChart } from "@/components/dashboard/profit-chart";
-import { mockProfitData } from "@/lib/mock-data";
 import { InternalCostCard } from "@/components/dashboard/internal-cost-card";
-import { mockInternalCosts } from "@/lib/mock-data";
+import type { DirectCostCategory, InternalCostBreakdown } from "@/types";
 
 export const metadata: Metadata = {
   title: "Laporan Laba",
 };
 
-export default function ProfitReportPage() {
-  const issuedInvoices = mockInvoices.filter(
+export default async function ProfitReportPage() {
+  const realInvoices = await getInvoicesAction();
+  const invoices = realInvoices && realInvoices.length > 0 ? realInvoices : mockInvoices;
+
+  const issuedInvoices = invoices.filter(
     (inv) => inv.status !== "DRAFT" && inv.status !== "VOID"
   );
+
   const totalRevenue = issuedInvoices.reduce((s, i) => s + i.total, 0);
   const totalHPP = issuedInvoices.reduce((s, i) => s + i.totalProductCost, 0);
   const totalDirectCost = issuedInvoices.reduce((s, i) => s + i.totalDirectCost, 0);
   const totalProfit = issuedInvoices.reduce((s, i) => s + i.transactionProfit, 0);
   const avgMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0;
+
+  // Build internal costs breakdown from real invoices
+  const costCategoryMap: Record<string, number> = {};
+  issuedInvoices.forEach((inv) => {
+    (inv.directCosts || []).forEach((dc) => {
+      costCategoryMap[dc.category] = (costCategoryMap[dc.category] || 0) + dc.amount;
+    });
+  });
+
+  const internalCosts: InternalCostBreakdown[] = Object.entries(costCategoryMap).map(([cat, amt]) => ({
+    category: cat as DirectCostCategory,
+    label: getDirectCostLabel(cat as DirectCostCategory),
+    amount: amt,
+  }));
 
   return (
     <div className="space-y-6">
@@ -46,8 +64,8 @@ export default function ProfitReportPage() {
           <ProfitChart data={mockProfitData} />
         </div>
         <InternalCostCard
-          costs={mockInternalCosts}
-          total={mockMetrics.totalDirectCostsThisMonth}
+          costs={internalCosts.length > 0 ? internalCosts : []}
+          total={totalDirectCost}
         />
       </div>
 

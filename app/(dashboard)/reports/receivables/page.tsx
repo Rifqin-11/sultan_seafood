@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/app-shell/page-header";
+import { getInvoicesAction } from "@/lib/actions/invoices";
 import { mockInvoices } from "@/lib/mock-data";
 import { formatCurrency, formatDateShort } from "@/lib/utils";
 import { MetricCard } from "@/components/dashboard/metric-card";
@@ -18,8 +19,11 @@ export const metadata: Metadata = {
   title: "Piutang",
 };
 
-export default function ReceivablesPage() {
-  const unpaid = mockInvoices.filter(
+export default async function ReceivablesPage() {
+  const realInvoices = await getInvoicesAction();
+  const invoices = realInvoices && realInvoices.length > 0 ? realInvoices : mockInvoices;
+
+  const unpaid = invoices.filter(
     (inv) =>
       inv.status === "ISSUED" ||
       inv.status === "PARTIALLY_PAID" ||
@@ -71,46 +75,54 @@ export default function ReceivablesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {unpaid.map((inv) => (
-                <TableRow key={inv.id} className="hover:bg-muted/20">
-                  <TableCell className="text-sm font-mono font-medium">
-                    {inv.invoiceNumber}
-                  </TableCell>
-                  <TableCell className="text-sm font-medium">
-                    {inv.customerName}
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {formatDateShort(inv.issueDate)}
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    <span
-                      className={
-                        inv.status === "OVERDUE"
-                          ? "text-red-600 font-medium"
-                          : "text-muted-foreground"
-                      }
-                    >
-                      {inv.dueDate ? formatDateShort(inv.dueDate) : "—"}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-right text-sm tabular-nums">
-                    {formatCurrency(inv.total)}
-                  </TableCell>
-                  <TableCell className="text-right text-sm text-emerald-600 tabular-nums">
-                    {inv.totalPaid > 0 ? formatCurrency(inv.totalPaid) : "—"}
-                  </TableCell>
-                  <TableCell className="text-right text-sm font-bold tabular-nums">
-                    <span
-                      className={inv.status === "OVERDUE" ? "text-red-600" : ""}
-                    >
-                      {formatCurrency(inv.remainingBalance)}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <InvoiceStatusBadge status={inv.status} />
+              {unpaid.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground text-xs">
+                    Tidak ada piutang outstanding. Semua invoice telah lunas!
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                unpaid.map((inv) => (
+                  <TableRow key={inv.id} className="hover:bg-muted/20">
+                    <TableCell className="text-sm font-mono font-medium">
+                      {inv.invoiceNumber ?? "DRAFT"}
+                    </TableCell>
+                    <TableCell className="text-sm font-medium">
+                      {inv.customerName}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {formatDateShort(inv.issueDate)}
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      <span
+                        className={
+                          inv.status === "OVERDUE"
+                            ? "text-red-600 font-medium"
+                            : "text-muted-foreground"
+                        }
+                      >
+                        {inv.dueDate ? formatDateShort(inv.dueDate) : "—"}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-right text-sm tabular-nums">
+                      {formatCurrency(inv.total)}
+                    </TableCell>
+                    <TableCell className="text-right text-sm text-emerald-600 tabular-nums">
+                      {inv.totalPaid > 0 ? formatCurrency(inv.totalPaid) : "—"}
+                    </TableCell>
+                    <TableCell className="text-right text-sm font-bold tabular-nums">
+                      <span
+                        className={inv.status === "OVERDUE" ? "text-red-600" : ""}
+                      >
+                        {formatCurrency(inv.remainingBalance)}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <InvoiceStatusBadge status={inv.status} />
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </div>

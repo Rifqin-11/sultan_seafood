@@ -1,16 +1,41 @@
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/app-shell/page-header";
-import { mockInternalCosts, mockMetrics } from "@/lib/mock-data";
-import { formatCurrency, formatPercent } from "@/lib/utils";
+import { getInvoicesAction } from "@/lib/actions/invoices";
+import { mockInvoices, mockInternalCosts } from "@/lib/mock-data";
+import { formatCurrency, formatPercent, getDirectCostLabel } from "@/lib/utils";
 import { InternalCostCard } from "@/components/dashboard/internal-cost-card";
 import { MetricCard } from "@/components/dashboard/metric-card";
+import type { DirectCostCategory, InternalCostBreakdown } from "@/types";
 
 export const metadata: Metadata = {
   title: "Biaya Internal",
 };
 
-export default function InternalCostsReportPage() {
-  const total = mockMetrics.totalDirectCostsThisMonth;
+export default async function InternalCostsReportPage() {
+  const realInvoices = await getInvoicesAction();
+  const invoices = realInvoices && realInvoices.length > 0 ? realInvoices : mockInvoices;
+
+  const issuedInvoices = invoices.filter(
+    (inv) => inv.status !== "DRAFT" && inv.status !== "VOID"
+  );
+
+  const totalDirectCost = issuedInvoices.reduce((s, i) => s + i.totalDirectCost, 0);
+
+  // Aggregate costs by category
+  const categoryMap: Record<string, number> = {};
+  issuedInvoices.forEach((inv) => {
+    (inv.directCosts || []).forEach((dc) => {
+      categoryMap[dc.category] = (categoryMap[dc.category] || 0) + dc.amount;
+    });
+  });
+
+  const internalCostsList: InternalCostBreakdown[] = Object.keys(categoryMap).length > 0
+    ? Object.entries(categoryMap).map(([cat, amt]) => ({
+        category: cat as DirectCostCategory,
+        label: getDirectCostLabel(cat as DirectCostCategory),
+        amount: amt,
+      }))
+    : mockInternalCosts;
 
   return (
     <div className="space-y-6">
@@ -21,21 +46,22 @@ export default function InternalCostsReportPage() {
 
       <MetricCard
         title="Total Biaya Internal"
-        value={total}
+        value={totalDirectCost > 0 ? totalDirectCost : mockInternalCosts.reduce((s, c) => s + c.amount, 0)}
         isCurrency
         internal
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <InternalCostCard costs={mockInternalCosts} total={total} />
+        <InternalCostCard costs={internalCostsList} total={totalDirectCost > 0 ? totalDirectCost : 4120000} />
 
         <div className="bg-white rounded-2xl border border-amber-200 shadow-card p-5">
           <h3 className="text-sm font-semibold mb-4 text-amber-800">
             Breakdown Kategori
           </h3>
           <div className="space-y-3">
-            {mockInternalCosts.map((c) => {
-              const pct = total > 0 ? (c.amount / total) * 100 : 0;
+            {internalCostsList.map((c) => {
+              const currentTotal = totalDirectCost > 0 ? totalDirectCost : 4120000;
+              const pct = currentTotal > 0 ? (c.amount / currentTotal) * 100 : 0;
               return (
                 <div key={c.category} className="flex items-center gap-4">
                   <div className="w-24 flex-shrink-0">
