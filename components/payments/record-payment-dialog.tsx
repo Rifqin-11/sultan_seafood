@@ -243,7 +243,7 @@ export function RecordPaymentDialog({
 
             <div>
               <label className="block text-xs font-medium text-muted-foreground mb-1">
-                Upload Bukti Pembayaran / Transfer
+                Upload Bukti Pembayaran / Transfer <span className="text-[10px] text-muted-foreground font-normal">(Opsional)</span>
               </label>
               {proofUrl ? (
                 <div className="flex items-center justify-between p-2 bg-blue-50 border border-blue-200 rounded-lg text-xs">

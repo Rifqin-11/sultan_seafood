@@ -37,15 +37,33 @@ export async function createPaymentAction(payload: CreatePaymentPayload) {
   }
 
   try {
-    const { error: payError } = await supabase.from("payments").insert({
+    const insertPayload: Record<string, any> = {
       invoice_id: payload.invoiceId,
       amount: payload.amount,
       payment_date: payload.paymentDate,
       method: payload.method,
       reference_number: payload.referenceNumber || null,
-      proof_url: payload.proofUrl || null,
       notes: payload.notes || null,
-    });
+    };
+
+    if (payload.proofUrl) {
+      insertPayload.proof_url = payload.proofUrl;
+    }
+
+    let { error: payError } = await supabase.from("payments").insert(insertPayload);
+
+    // Fallback if proof_url column does not exist in user's Supabase schema
+    if (
+      payError &&
+      (payError.message.includes("proof_url") ||
+        payError.message.includes("schema cache") ||
+        payError.code === "PGRST204" ||
+        payError.code === "42703")
+    ) {
+      delete insertPayload.proof_url;
+      const res = await supabase.from("payments").insert(insertPayload);
+      payError = res.error;
+    }
 
     if (payError) throw payError;
 
