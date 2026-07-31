@@ -34,7 +34,7 @@ interface ProductTableProps {
 }
 
 export function ProductTable({ initialProducts }: ProductTableProps) {
-  const productsList = initialProducts && initialProducts.length > 0 ? initialProducts : mockProducts;
+  const productsList = initialProducts ?? mockProducts;
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"ALL" | "ACTIVE" | "INACTIVE">("ALL");
@@ -59,8 +59,12 @@ export function ProductTable({ initialProducts }: ProductTableProps) {
     setLoadingId(deletingProduct.id);
     const res = await deleteProductAction(deletingProduct.id);
     setLoadingId(null);
+    setDeletingProduct(null);
     if (res.error) {
       toast.error(`Gagal menghapus: ${res.error}`);
+    } else if (res.isWarning) {
+      toast.warning(res.message);
+      router.refresh();
     } else {
       toast.success(res.message || "Produk berhasil dihapus");
       router.refresh();

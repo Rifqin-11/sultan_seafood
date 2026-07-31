@@ -23,6 +23,25 @@ export async function createProductAction(payload: CreateProductPayload) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
   if (!supabaseUrl || supabaseUrl.includes("placeholder")) {
+    const { mockProducts } = await import("@/lib/mock-data");
+    const newProduct: any = {
+      id: `prod_${Date.now()}`,
+      sku: payload.sku || undefined,
+      name: payload.name,
+      category: payload.category,
+      size: payload.size || undefined,
+      defaultUnit: payload.defaultUnit,
+      defaultSellingPrice: payload.defaultSellingPrice || 0,
+      activeCost: payload.activeCost || 0,
+      estimatedMargin:
+        payload.defaultSellingPrice && payload.activeCost
+          ? Number((((payload.defaultSellingPrice - payload.activeCost) / payload.defaultSellingPrice) * 100).toFixed(1))
+          : undefined,
+      status: "ACTIVE",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    mockProducts.unshift(newProduct);
     revalidatePath("/products");
     return { success: true, message: "Produk berhasil ditambahkan (Demo Mode)." };
   }
@@ -92,6 +111,22 @@ export async function updateProductAction(payload: UpdateProductPayload) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
   if (!supabaseUrl || supabaseUrl.includes("placeholder")) {
+    const { mockProducts } = await import("@/lib/mock-data");
+    const p = mockProducts.find((item) => item.id === payload.id);
+    if (p) {
+      p.sku = payload.sku || undefined;
+      p.name = payload.name;
+      p.category = payload.category;
+      p.size = payload.size || undefined;
+      p.defaultUnit = payload.defaultUnit;
+      p.defaultSellingPrice = payload.defaultSellingPrice || 0;
+      if (payload.activeCost !== undefined) p.activeCost = payload.activeCost;
+      if (payload.status) p.status = payload.status;
+      if (p.defaultSellingPrice && p.activeCost) {
+        p.estimatedMargin = Number((((p.defaultSellingPrice - p.activeCost) / p.defaultSellingPrice) * 100).toFixed(1));
+      }
+      p.updatedAt = new Date().toISOString();
+    }
     revalidatePath("/products");
     return { success: true, message: "Produk berhasil diperbarui." };
   }
@@ -154,6 +189,11 @@ export async function toggleProductStatusAction(id: string, currentStatus: "ACTI
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
   if (!supabaseUrl || supabaseUrl.includes("placeholder")) {
+    const { mockProducts } = await import("@/lib/mock-data");
+    const p = mockProducts.find((item) => item.id === id);
+    if (p) {
+      p.status = newStatus;
+    }
     revalidatePath("/products");
     return { success: true, message: `Status produk diubah ke ${newStatus}.` };
   }
@@ -179,18 +219,68 @@ export async function deleteProductAction(id: string) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
   if (!supabaseUrl || supabaseUrl.includes("placeholder")) {
-    revalidatePath("/products");
-    return { success: true, message: "Produk berhasil dihapus." };
+    const { mockProducts, mockInvoices } = await import("@/lib/mock-data");
+
+    // Check if product is referenced in mockInvoices items
+    const hasInvoiceHistory = mockInvoices.some((inv) =>
+      inv.items?.some((item) => item.productId === id)
+    );
+
+    const idx = mockProducts.findIndex((p) => p.id === id);
+    if (idx !== -1) {
+      if (hasInvoiceHistory) {
+        mockProducts[idx].status = "INACTIVE";
+        revalidatePath("/products");
+        return {
+          success: true,
+          isWarning: true,
+          message: "Produk ini memiliki riwayat transaksi invoice. Demi menjaga keutuhan data keuangan, status produk diubah menjadi Nonaktif.",
+        };
+      } else {
+        mockProducts.splice(idx, 1);
+        revalidatePath("/products");
+        return { success: true, message: "Produk berhasil dihapus secara permanen." };
+      }
+    }
+    return { error: "Produk tidak ditemukan." };
   }
 
   try {
-    // Clean up all foreign key dependencies first so product can be deleted
+    // 1. Check if product has invoice history
+    const { count, error: countErr } = await supabase
+      .from("invoice_items")
+      .select("id", { count: "exact", head: true })
+      .eq("product_id", id);
+
+    if (!countErr && count && count > 0) {
+      // Has invoice history -> mark INACTIVE to protect financial reporting integrity
+      await supabase.from("products").update({ status: "INACTIVE" }).eq("id", id);
+      revalidatePath("/products");
+      return {
+        success: true,
+        isWarning: true,
+        message: "Produk ini memiliki riwayat transaksi invoice. Demi menjaga keutuhan data keuangan, status produk diubah menjadi Nonaktif.",
+      };
+    }
+
+    // 2. Clean up foreign key dependencies (customer_prices, product_costs)
     await supabase.from("customer_prices").delete().eq("product_id", id);
     await supabase.from("product_costs").delete().eq("product_id", id);
-    await supabase.from("invoice_items").delete().eq("product_id", id);
 
+    // 3. Delete product permanently
     const { error } = await supabase.from("products").delete().eq("id", id);
-    if (error) throw error;
+    if (error) {
+      if (error.code === "23503") {
+        await supabase.from("products").update({ status: "INACTIVE" }).eq("id", id);
+        revalidatePath("/products");
+        return {
+          success: true,
+          isWarning: true,
+          message: "Produk memiliki riwayat data transaksi. Status diubah menjadi Nonaktif.",
+        };
+      }
+      throw error;
+    }
 
     revalidatePath("/products");
     return { success: true, message: "Produk berhasil dihapus secara permanen." };

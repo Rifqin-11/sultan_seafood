@@ -257,6 +257,14 @@ DROP POLICY IF EXISTS "Restricted read product costs" ON public.product_costs;
 DROP POLICY IF EXISTS "Restricted read invoice direct costs" ON public.invoice_direct_costs;
 DROP POLICY IF EXISTS "Allow authenticated insert customers" ON public.customers;
 DROP POLICY IF EXISTS "Allow authenticated update customers" ON public.customers;
+DROP POLICY IF EXISTS "Allow authenticated delete customers" ON public.customers;
+DROP POLICY IF EXISTS "Allow authenticated insert products" ON public.products;
+DROP POLICY IF EXISTS "Allow authenticated update products" ON public.products;
+DROP POLICY IF EXISTS "Allow authenticated delete products" ON public.products;
+DROP POLICY IF EXISTS "Allow authenticated insert product_costs" ON public.product_costs;
+DROP POLICY IF EXISTS "Allow authenticated update product_costs" ON public.product_costs;
+DROP POLICY IF EXISTS "Allow authenticated delete product_costs" ON public.product_costs;
+DROP POLICY IF EXISTS "Allow authenticated delete customer_prices" ON public.customer_prices;
 DROP POLICY IF EXISTS "Allow authenticated insert invoices" ON public.invoices;
 DROP POLICY IF EXISTS "Allow authenticated update invoices" ON public.invoices;
 DROP POLICY IF EXISTS "Allow authenticated insert invoice items" ON public.invoice_items;
@@ -279,6 +287,18 @@ USING (get_user_role(auth.uid()) IN ('OWNER', 'FINANCE'));
 
 CREATE POLICY "Allow authenticated insert customers" ON public.customers FOR INSERT TO authenticated WITH CHECK (true);
 CREATE POLICY "Allow authenticated update customers" ON public.customers FOR UPDATE TO authenticated USING (true);
+CREATE POLICY "Allow authenticated delete customers" ON public.customers FOR DELETE TO authenticated USING (true);
+
+CREATE POLICY "Allow authenticated insert products" ON public.products FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY "Allow authenticated update products" ON public.products FOR UPDATE TO authenticated USING (true);
+CREATE POLICY "Allow authenticated delete products" ON public.products FOR DELETE TO authenticated USING (true);
+
+CREATE POLICY "Allow authenticated insert product_costs" ON public.product_costs FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY "Allow authenticated update product_costs" ON public.product_costs FOR UPDATE TO authenticated USING (true);
+CREATE POLICY "Allow authenticated delete product_costs" ON public.product_costs FOR DELETE TO authenticated USING (true);
+
+CREATE POLICY "Allow authenticated delete customer_prices" ON public.customer_prices FOR DELETE TO authenticated USING (true);
+
 CREATE POLICY "Allow authenticated insert invoices" ON public.invoices FOR INSERT TO authenticated WITH CHECK (true);
 CREATE POLICY "Allow authenticated update invoices" ON public.invoices FOR UPDATE TO authenticated USING (true);
 CREATE POLICY "Allow authenticated insert invoice items" ON public.invoice_items FOR INSERT TO authenticated WITH CHECK (true);
