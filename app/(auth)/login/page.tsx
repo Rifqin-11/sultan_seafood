@@ -143,6 +143,13 @@ export default function LoginPage() {
           <p className="text-[11px] text-neutral-500 text-center leading-relaxed">
             Keamanan terenkripsi via Supabase Auth Session Cookie HTTP-Only.
           </p>
+
+          <div className="pt-2 border-t border-[#262626] text-center text-xs text-neutral-400">
+            Belum memiliki akun?{" "}
+            <a href="/register" className="text-white font-medium hover:underline">
+              Daftar Akun Baru
+            </a>
+          </div>
         </div>
 
         <p className="text-xs text-neutral-600 text-center mt-6">

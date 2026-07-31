@@ -11,7 +11,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { createPurchasePriceAction } from "@/lib/actions/pricing";
 import type { Product, Supplier } from "@/types";

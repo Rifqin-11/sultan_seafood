@@ -14,6 +14,7 @@ import type { SalesDataPoint } from "@/types";
 
 interface SalesChartProps {
   data: SalesDataPoint[];
+  periodLabel?: string;
 }
 
 function CustomTooltip({
@@ -39,14 +40,14 @@ function CustomTooltip({
   );
 }
 
-export function SalesChart({ data }: SalesChartProps) {
+export function SalesChart({ data, periodLabel }: SalesChartProps) {
   return (
     <div className="bg-white rounded-2xl border border-border p-5 shadow-card">
       <div className="mb-4">
         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-0.5">
           Penjualan Harian
         </p>
-        <p className="text-lg font-bold text-foreground">Juli 2026</p>
+        <p className="text-lg font-bold text-foreground">{periodLabel ?? "Periode berjalan"}</p>
       </div>
       <div className="h-48">
         <ResponsiveContainer width="100%" height="100%">

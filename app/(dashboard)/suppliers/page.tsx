@@ -3,13 +3,15 @@ import { PageHeader } from "@/components/app-shell/page-header";
 import { getSuppliersAction } from "@/lib/actions/suppliers";
 import { AddSupplierDialog } from "@/components/suppliers/add-supplier-dialog";
 import { SupplierTable } from "@/components/suppliers/supplier-table";
+import { requireApprovedUser } from "@/lib/security/auth";
 
 export const metadata: Metadata = {
   title: "Supplier",
 };
 
 export default async function SuppliersPage() {
-  const suppliers = await getSuppliersAction();
+  const [suppliers, user] = await Promise.all([getSuppliersAction(), requireApprovedUser()]);
+  const canManage = user.role !== "STAFF";
 
   return (
     <div className="space-y-6">
@@ -17,10 +19,10 @@ export default async function SuppliersPage() {
         title="Supplier"
         description="Kelola daftar supplier seafood dan Nelayan"
       >
-        <AddSupplierDialog />
+        {canManage && <AddSupplierDialog />}
       </PageHeader>
 
-      <SupplierTable suppliers={suppliers} />
+      <SupplierTable suppliers={suppliers} canManage={canManage} />
     </div>
   );
 }

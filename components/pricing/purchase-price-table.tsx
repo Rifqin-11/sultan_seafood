@@ -20,7 +20,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { MoreHorizontal, Edit, Trash2, Loader2 } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
+import { MoreHorizontal, Edit, Trash2, Loader2, DollarSign } from "lucide-react";
 import { deletePurchasePriceAction, updatePurchasePriceAction } from "@/lib/actions/pricing";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
@@ -54,6 +55,8 @@ interface PurchasePriceTableProps {
 
 export function PurchasePriceTable({ costs, products }: PurchasePriceTableProps) {
   const router = useRouter();
+  const [costsList, setCostsList] = useState<PurchaseCostItem[]>(costs);
+
   const [editingCost, setEditingCost] = useState<PurchaseCostItem | null>(null);
   const [deletingCost, setDeletingCost] = useState<PurchaseCostItem | null>(null);
   const [loadingId, setLoadingId] = useState<string | null>(null);
@@ -91,15 +94,19 @@ export function PurchasePriceTable({ costs, products }: PurchasePriceTableProps)
 
   const handleConfirmDelete = async () => {
     if (!deletingCost) return;
-    setLoadingId(deletingCost.id);
-    const res = await deletePurchasePriceAction(deletingCost.id);
+    const targetId = deletingCost.id;
+    setDeletingCost(null);
+    setCostsList((prev) => prev.filter((c) => c.id !== targetId));
+
+    setLoadingId(targetId);
+    const res = await deletePurchasePriceAction(targetId);
     setLoadingId(null);
 
     if (res.error) {
       toast.error(`Gagal menghapus: ${res.error}`);
+      router.refresh();
     } else {
       toast.success(res.message || "Harga beli berhasil dihapus");
-      setDeletingCost(null);
       router.refresh();
     }
   };
@@ -132,8 +139,19 @@ export function PurchasePriceTable({ costs, products }: PurchasePriceTableProps)
               </TableRow>
             </TableHeader>
             <TableBody>
-              {costs.map((cost) => {
-                const product = products.find((p) => p.id === cost.productId);
+              {costsList.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="h-48">
+                    <EmptyState
+                      icon={DollarSign}
+                      title="Belum ada harga beli"
+                      description="Tambahkan harga beli khusus untuk mencatat harga dari supplier."
+                    />
+                  </TableCell>
+                </TableRow>
+              ) : (
+                costsList.map((cost) => {
+                  const product = products.find((p) => p.id === cost.productId);
                 const rawName = cost.productName;
                 const isTechnicalId = !rawName || rawName.startsWith("prod_") || rawName.startsWith("cost_");
                 const name = !isTechnicalId ? rawName : (product?.name || "Ikan Kakap Merah");
@@ -198,7 +216,7 @@ export function PurchasePriceTable({ costs, products }: PurchasePriceTableProps)
                     </TableCell>
                   </TableRow>
                 );
-              })}
+              }))}
             </TableBody>
           </Table>
         </div>

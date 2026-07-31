@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/app-shell/page-header";
 import { getInvoicesAction } from "@/lib/actions/invoices";
-import { mockInvoices } from "@/lib/mock-data";
 import { formatCurrency, formatDateShort } from "@/lib/utils";
 import { MetricCard } from "@/components/dashboard/metric-card";
 import { InvoiceStatusBadge } from "@/components/invoices/invoice-status-badge";
@@ -14,14 +13,15 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { AlertCircle } from "lucide-react";
+import { requireRole } from "@/lib/security/auth";
 
 export const metadata: Metadata = {
   title: "Piutang",
 };
 
 export default async function ReceivablesPage() {
-  const realInvoices = await getInvoicesAction();
-  const invoices = realInvoices && realInvoices.length > 0 ? realInvoices : mockInvoices;
+  await requireRole(["OWNER", "FINANCE"]);
+  const invoices = await getInvoicesAction();
 
   const unpaid = invoices.filter(
     (inv) =>

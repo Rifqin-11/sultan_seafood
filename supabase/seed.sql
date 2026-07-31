@@ -4,25 +4,25 @@
 
 -- 1. Insert Suppliers
 INSERT INTO public.suppliers (id, name, contact_name, phone, address, status) VALUES
-('sup_10000000-0000-0000-0000-000000000001', 'UD Nelayan Maju', 'Pak Slamet', '081234567890', 'Pelabuhan Muara Baru, Jakarta Utara', 'ACTIVE'),
-('sup_20000000-0000-0000-0000-000000000002', 'CV Bahari Lestari', 'Bu Wati', '082345678901', 'Jl. Ikan Mujair No. 12, Muara Angke', 'ACTIVE')
+('a1000000-0000-0000-0000-000000000001', 'UD Nelayan Maju', 'Pak Slamet', '081234567890', 'Pelabuhan Muara Baru, Jakarta Utara', 'ACTIVE'),
+('a2000000-0000-0000-0000-000000000002', 'CV Bahari Lestari', 'Bu Wati', '082345678901', 'Jl. Ikan Mujair No. 12, Muara Angke', 'ACTIVE')
 ON CONFLICT (id) DO NOTHING;
 
 -- 2. Insert Products
 INSERT INTO public.products (id, sku, name, category, default_unit, default_selling_price, status) VALUES
-('p0000000-0000-0000-0000-000000000001', 'SKU-001', 'Ikan Kakap Merah', 'Ikan', 'kg', 95000.00, 'ACTIVE'),
-('p0000000-0000-0000-0000-000000000002', 'SKU-002', 'Udang Vannamei', 'Udang', 'kg', 120000.00, 'ACTIVE'),
-('p0000000-0000-0000-0000-000000000003', 'SKU-003', 'Cumi-cumi Segar', 'Cumi', 'kg', 75000.00, 'ACTIVE'),
-('p0000000-0000-0000-0000-000000000004', 'SKU-004', 'Kepiting Rajungan', 'Kepiting', 'kg', 180000.00, 'ACTIVE'),
-('p0000000-0000-0000-0000-000000000005', 'SKU-005', 'Ikan Kerapu', 'Ikan', 'kg', 145000.00, 'ACTIVE'),
-('p0000000-0000-0000-0000-000000000006', 'SKU-006', 'Lobster Air Laut', 'Lobster', 'ekor', 350000.00, 'ACTIVE')
+('b0000000-0000-0000-0000-000000000001', 'SKU-001', 'Ikan Kakap Merah', 'Ikan', 'kg', 95000.00, 'ACTIVE'),
+('b0000000-0000-0000-0000-000000000002', 'SKU-002', 'Udang Vannamei', 'Udang', 'kg', 120000.00, 'ACTIVE'),
+('b0000000-0000-0000-0000-000000000003', 'SKU-003', 'Cumi-cumi Segar', 'Cumi', 'kg', 75000.00, 'ACTIVE'),
+('b0000000-0000-0000-0000-000000000004', 'SKU-004', 'Kepiting Rajungan', 'Kepiting', 'kg', 180000.00, 'ACTIVE'),
+('b0000000-0000-0000-0000-000000000005', 'SKU-005', 'Ikan Kerapu', 'Ikan', 'kg', 145000.00, 'ACTIVE'),
+('b0000000-0000-0000-0000-000000000006', 'SKU-006', 'Lobster Air Laut', 'Lobster', 'ekor', 350000.00, 'ACTIVE')
 ON CONFLICT (sku) DO NOTHING;
 
 -- 3. Insert Product Costs (HPP)
 INSERT INTO public.product_costs (product_id, supplier_id, unit_cost, notes) VALUES
-('p0000000-0000-0000-0000-000000000001', 'sup_10000000-0000-0000-0000-000000000001', 68000.00, 'Harga beli dari Pak Slamet'),
-('p0000000-0000-0000-0000-000000000002', 'sup_10000000-0000-0000-0000-000000000001', 88000.00, 'Udang kualitas grade A'),
-('p0000000-0000-0000-0000-000000000003', 'sup_20000000-0000-0000-0000-000000000002', 52000.00, 'Cumi muara angke');
+('b0000000-0000-0000-0000-000000000001', 'a1000000-0000-0000-0000-000000000001', 68000.00, 'Harga beli dari Pak Slamet'),
+('b0000000-0000-0000-0000-000000000002', 'a1000000-0000-0000-0000-000000000001', 88000.00, 'Udang kualitas grade A'),
+('b0000000-0000-0000-0000-000000000003', 'a2000000-0000-0000-0000-000000000002', 52000.00, 'Cumi muara angke');
 
 -- 4. Insert Customers
 INSERT INTO public.customers (id, name, contact_name, phone, email, billing_address, payment_term_days, status) VALUES

@@ -20,9 +20,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { createPaymentAction } from "@/lib/actions/payments";
-import { mockInvoices } from "@/lib/mock-data";
 import type { Invoice, PaymentMethod } from "@/types";
 import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 
 interface RecordPaymentDialogProps {
   defaultInvoiceId?: string;
@@ -55,14 +55,14 @@ export function RecordPaymentDialog({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const invoicesList = invoices && invoices.length > 0 ? invoices : mockInvoices;
+  const invoicesList = invoices ?? [];
   const [invoiceId, setInvoiceId] = useState(defaultInvoiceId || "");
   const [amount, setAmount] = useState("");
   const [paymentDate, setPaymentDate] = useState(
     new Date().toISOString().slice(0, 10)
   );
   const [method, setMethod] = useState<PaymentMethod>("TRANSFER");
-  const [proofUrl, setProofUrl] = useState<string | null>(null);
+  const [proofFile, setProofFile] = useState<File | null>(null);
   const [fileName, setFileName] = useState<string>("");
   const [notes, setNotes] = useState("");
 
@@ -71,7 +71,7 @@ export function RecordPaymentDialog({
 
   const resetForm = () => {
     setAmount("");
-    setProofUrl(null);
+    setProofFile(null);
     setFileName("");
     setNotes("");
     setError("");
@@ -80,12 +80,18 @@ export function RecordPaymentDialog({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
+    if (!allowedTypes.includes(file.type)) {
+      setError("Bukti pembayaran harus berupa JPG, PNG, WebP, atau PDF.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setError("Ukuran bukti pembayaran maksimal 5 MB.");
+      return;
+    }
+    setError("");
     setFileName(file.name);
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      setProofUrl(event.target?.result as string);
-    };
-    reader.readAsDataURL(file);
+    setProofFile(file);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -101,18 +107,38 @@ export function RecordPaymentDialog({
 
     setLoading(true);
 
+    let proofPath: string | undefined;
+    if (proofFile) {
+      const supabase = createClient();
+      const { data: authData, error: authError } = await supabase.auth.getUser();
+      if (authError || !authData.user) {
+        setLoading(false);
+        setError("Sesi login tidak valid.");
+        return;
+      }
+      const safeName = proofFile.name.replace(/[^a-zA-Z0-9._-]/g, "-");
+      proofPath = `${authData.user.id}/${crypto.randomUUID()}-${safeName}`;
+      const { error: uploadError } = await supabase.storage.from("payment-proofs").upload(proofPath, proofFile, { upsert: false });
+      if (uploadError) {
+        setLoading(false);
+        setError(uploadError.message);
+        return;
+      }
+    }
+
     const res = await createPaymentAction({
       invoiceId: targetId,
       amount: parseFloat(amount),
       paymentDate,
       method,
-      proofUrl: proofUrl || undefined,
+      proofPath,
       notes: notes || undefined,
     });
 
     setLoading(false);
 
     if (res.error) {
+      if (proofPath) await createClient().storage.from("payment-proofs").remove([proofPath]);
       setError(res.error);
     } else {
       resetForm();
@@ -245,7 +271,7 @@ export function RecordPaymentDialog({
               <label className="block text-xs font-medium text-muted-foreground mb-1">
                 Upload Bukti Pembayaran / Transfer <span className="text-[10px] text-muted-foreground font-normal">(Opsional)</span>
               </label>
-              {proofUrl ? (
+              {proofFile ? (
                 <div className="flex items-center justify-between p-2 bg-blue-50 border border-blue-200 rounded-lg text-xs">
                   <div className="flex items-center gap-2 truncate">
                     <FileText className="w-4 h-4 text-blue-600 shrink-0" />
@@ -254,7 +280,7 @@ export function RecordPaymentDialog({
                   <button
                     type="button"
                     onClick={() => {
-                      setProofUrl(null);
+                      setProofFile(null);
                       setFileName("");
                     }}
                     className="text-muted-foreground hover:text-red-500 p-1"

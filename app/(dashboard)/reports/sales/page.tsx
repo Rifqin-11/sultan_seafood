@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/app-shell/page-header";
-import { getInvoicesAction } from "@/lib/actions/invoices";
-import { mockInvoices, mockSalesData } from "@/lib/mock-data";
+import { getDashboardDataAction } from "@/lib/actions/dashboard";
 import { formatCurrency, formatDateShort, formatPercent } from "@/lib/utils";
 import { MetricCard } from "@/components/dashboard/metric-card";
 import { SalesChart } from "@/components/dashboard/sales-chart";
@@ -13,16 +12,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Download } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { CsvExportButton } from "@/components/ui/csv-export-button";
+import { requireRole } from "@/lib/security/auth";
 
 export const metadata: Metadata = {
   title: "Laporan Penjualan",
 };
 
 export default async function SalesReportPage() {
-  const realInvoices = await getInvoicesAction();
-  const invoices = realInvoices && realInvoices.length > 0 ? realInvoices : mockInvoices;
+  await requireRole(["OWNER", "FINANCE"]);
+  const { invoices, salesData, periodLabel } = await getDashboardDataAction();
 
   const issuedInvoices = invoices.filter(
     (inv) => inv.status !== "DRAFT" && inv.status !== "VOID"
@@ -33,10 +32,7 @@ export default async function SalesReportPage() {
   return (
     <div className="space-y-6">
       <PageHeader title="Laporan Penjualan" description="Analisis penjualan per periode">
-        <Button variant="outline" size="sm">
-          <Download className="w-4 h-4 mr-1" />
-          Ekspor CSV
-        </Button>
+        <CsvExportButton filename="laporan-penjualan.csv" headers={["Nomor", "Restoran", "Tanggal", "Pendapatan", "HPP", "Biaya", "Laba", "Margin"]} rows={issuedInvoices.map((invoice) => [invoice.invoiceNumber, invoice.customerName, invoice.issueDate, invoice.total, invoice.totalProductCost, invoice.totalDirectCost, invoice.transactionProfit, invoice.transactionMargin])} />
       </PageHeader>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -55,7 +51,7 @@ export default async function SalesReportPage() {
         />
       </div>
 
-      <SalesChart data={mockSalesData} />
+      <SalesChart data={salesData} periodLabel={periodLabel} />
 
       <div className="bg-white rounded-2xl border border-border shadow-card overflow-hidden">
         <div className="px-5 py-4 border-b border-border">

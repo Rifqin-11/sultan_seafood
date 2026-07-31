@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -27,11 +26,8 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import {
-  defaultCompanyProfile,
-  getCompanyProfile,
-  type CompanyProfile,
-} from "@/lib/company-store";
+import type { CompanyProfile } from "@/lib/company-store";
+import type { Role } from "@/types";
 
 const navItems = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -93,6 +89,7 @@ const navGrouped = [
 const bottomItems = [
   { label: "Profil Bisnis", href: "/settings/company", icon: Settings },
   { label: "Profil & Pengguna", href: "/settings/users", icon: Settings },
+  { label: "Audit Log", href: "/settings/audit-logs", icon: Settings },
 ];
 
 function NavLink({
@@ -151,22 +148,18 @@ interface SidebarProps {
   collapsed: boolean;
   onToggle: () => void;
   user?: UserProfileInfo;
+  role: Role;
+  company: CompanyProfile;
 }
 
-export function Sidebar({ collapsed, onToggle, user }: SidebarProps) {
-  const pathname = usePathname();
-  const [company, setCompany] = useState<CompanyProfile>(defaultCompanyProfile);
+function canAccess(href: string, role: Role) {
+  if (role === "OWNER") return true;
+  if (role === "FINANCE") return !href.startsWith("/settings/");
+  return ["/dashboard", "/products", "/invoices", "/customers", "/suppliers"].includes(href);
+}
 
-  useEffect(() => {
-    setCompany(getCompanyProfile());
-    const handleUpdate = () => setCompany(getCompanyProfile());
-    window.addEventListener("company-profile-updated", handleUpdate);
-    window.addEventListener("storage", handleUpdate);
-    return () => {
-      window.removeEventListener("company-profile-updated", handleUpdate);
-      window.removeEventListener("storage", handleUpdate);
-    };
-  }, []);
+export function Sidebar({ collapsed, onToggle, user, role, company }: SidebarProps) {
+  const pathname = usePathname();
 
   const isActive = (href: string) =>
     pathname === href || pathname.startsWith(href + "/");
@@ -215,7 +208,7 @@ export function Sidebar({ collapsed, onToggle, user }: SidebarProps) {
       <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
         {collapsed ? (
           // Collapsed: flat list
-          navItems.map((item) => (
+          navItems.filter((item) => canAccess(item.href, role)).map((item) => (
             <NavLink
               key={item.href}
               href={item.href}
@@ -234,7 +227,7 @@ export function Sidebar({ collapsed, onToggle, user }: SidebarProps) {
                   {group.label}
                 </p>
               )}
-              {group.items.map((item) => (
+              {group.items.filter((item) => canAccess(item.href, role)).map((item) => (
                 <NavLink
                   key={item.href}
                   href={item.href}
@@ -250,7 +243,7 @@ export function Sidebar({ collapsed, onToggle, user }: SidebarProps) {
         
         {/* Bottom items */}
         <div className="pt-3 border-t border-[#262626] mt-3">
-          {bottomItems.map((item) => (
+          {bottomItems.filter((item) => canAccess(item.href, role)).map((item) => (
             <NavLink
               key={item.href}
               href={item.href}
@@ -321,22 +314,12 @@ interface MobileSidebarProps {
   open: boolean;
   onClose: () => void;
   user?: UserProfileInfo;
+  role: Role;
+  company: CompanyProfile;
 }
 
-export function MobileSidebar({ open, onClose, user }: MobileSidebarProps) {
+export function MobileSidebar({ open, onClose, user, role, company }: MobileSidebarProps) {
   const pathname = usePathname();
-  const [company, setCompany] = useState<CompanyProfile>(defaultCompanyProfile);
-
-  useEffect(() => {
-    setCompany(getCompanyProfile());
-    const handleUpdate = () => setCompany(getCompanyProfile());
-    window.addEventListener("company-profile-updated", handleUpdate);
-    window.addEventListener("storage", handleUpdate);
-    return () => {
-      window.removeEventListener("company-profile-updated", handleUpdate);
-      window.removeEventListener("storage", handleUpdate);
-    };
-  }, []);
 
   const isActive = (href: string) =>
     pathname === href || pathname.startsWith(href + "/");
@@ -387,7 +370,7 @@ export function MobileSidebar({ open, onClose, user }: MobileSidebarProps) {
                   {group.label}
                 </p>
               )}
-              {group.items.map((item) => {
+              {group.items.filter((item) => canAccess(item.href, role)).map((item) => {
                 const Icon = item.icon;
                 const active = isActive(item.href);
                 return (

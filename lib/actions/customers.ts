@@ -1,190 +1,62 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { createClient } from "@/lib/supabase/server";
+import { normalizeActionError, requireApprovedUser, requireRole } from "@/lib/security/auth";
+import type { CustomerStatus } from "@/types";
 
-export interface CreateCustomerPayload {
-  name: string;
-  contactName: string;
-  phone: string;
-  email?: string;
-  billingAddress: string;
-  shippingAddress?: string;
-  paymentTermDays: number;
-}
+export interface CreateCustomerPayload { name: string; contactName: string; phone: string; email?: string; billingAddress: string; shippingAddress?: string; paymentTermDays: number }
+export interface UpdateCustomerPayload extends CreateCustomerPayload { id: string; status?: CustomerStatus }
 
-export interface UpdateCustomerPayload extends CreateCustomerPayload {
-  id: string;
-  status?: "ACTIVE" | "INACTIVE";
+function validate(payload: CreateCustomerPayload) {
+  if (!payload.name.trim() || !payload.contactName.trim() || !payload.phone.trim() || !payload.billingAddress.trim()) return "Data wajib restoran belum lengkap.";
+  if (!Number.isInteger(payload.paymentTermDays) || payload.paymentTermDays < 0) return "Termin pembayaran tidak valid.";
+  return null;
 }
 
 export async function createCustomerAction(payload: CreateCustomerPayload) {
-  const supabase = await createClient();
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-
-  if (!supabaseUrl || supabaseUrl.includes("placeholder")) {
-    revalidatePath("/customers");
-    return { success: true, message: "Restoran berhasil ditambahkan (Demo Mode)." };
-  }
-
+  const invalid = validate(payload); if (invalid) return { error: invalid };
   try {
-    const { error } = await supabase.from("customers").insert({
-      name: payload.name,
-      contact_name: payload.contactName,
-      phone: payload.phone,
-      email: payload.email || null,
-      billing_address: payload.billingAddress,
-      shipping_address: payload.shippingAddress || payload.billingAddress,
-      payment_term_days: payload.paymentTermDays,
-      status: "ACTIVE",
-    });
-
-    if (error) throw error;
-
-    revalidatePath("/customers");
-    return { success: true, message: "Restoran berhasil ditambahkan." };
-  } catch (err: unknown) {
-    const error = err as { message?: string };
-    return { error: error.message || "Gagal menambahkan restoran." };
-  }
+    await requireRole(["OWNER", "FINANCE"]); const supabase = await createClient();
+    const { error } = await supabase.from("customers").insert({ name: payload.name.trim(), contact_name: payload.contactName.trim(), phone: payload.phone.trim(), email: payload.email?.trim() || null, billing_address: payload.billingAddress.trim(), shipping_address: payload.shippingAddress?.trim() || payload.billingAddress.trim(), payment_term_days: payload.paymentTermDays, status: "ACTIVE" });
+    if (error) throw error; revalidatePath("/customers"); return { success: true, message: "Restoran berhasil ditambahkan." };
+  } catch (error) { return { error: normalizeActionError(error, "Gagal menambahkan restoran.") }; }
 }
 
 export async function updateCustomerAction(payload: UpdateCustomerPayload) {
-  const supabase = await createClient();
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-
-  if (!supabaseUrl || supabaseUrl.includes("placeholder")) {
-    revalidatePath("/customers");
-    return { success: true, message: "Restoran berhasil diperbarui." };
-  }
-
+  const invalid = validate(payload); if (invalid) return { error: invalid };
   try {
-    const { error } = await supabase
-      .from("customers")
-      .update({
-        name: payload.name,
-        contact_name: payload.contactName,
-        phone: payload.phone,
-        email: payload.email || null,
-        billing_address: payload.billingAddress,
-        shipping_address: payload.shippingAddress || payload.billingAddress,
-        payment_term_days: payload.paymentTermDays,
-        status: payload.status,
-      })
-      .eq("id", payload.id);
-
-    if (error) throw error;
-
-    revalidatePath("/customers");
-    return { success: true, message: "Restoran berhasil diperbarui." };
-  } catch (err: unknown) {
-    const error = err as { message?: string };
-    return { error: error.message || "Gagal memperbarui data restoran." };
-  }
+    await requireRole(["OWNER", "FINANCE"]); const supabase = await createClient();
+    const { error } = await supabase.from("customers").update({ name: payload.name.trim(), contact_name: payload.contactName.trim(), phone: payload.phone.trim(), email: payload.email?.trim() || null, billing_address: payload.billingAddress.trim(), shipping_address: payload.shippingAddress?.trim() || payload.billingAddress.trim(), payment_term_days: payload.paymentTermDays, status: payload.status }).eq("id", payload.id);
+    if (error) throw error; revalidatePath("/customers"); return { success: true, message: "Restoran berhasil diperbarui." };
+  } catch (error) { return { error: normalizeActionError(error, "Gagal memperbarui restoran.") }; }
 }
 
-export async function toggleCustomerStatusAction(id: string, currentStatus: "ACTIVE" | "INACTIVE") {
-  const supabase = await createClient();
-  const newStatus = currentStatus === "ACTIVE" ? "INACTIVE" : "ACTIVE";
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-
-  if (!supabaseUrl || supabaseUrl.includes("placeholder")) {
-    revalidatePath("/customers");
-    return { success: true, message: `Status restoran diubah ke ${newStatus}.` };
-  }
-
+export async function toggleCustomerStatusAction(id: string, currentStatus: CustomerStatus) {
   try {
-    const { error } = await supabase
-      .from("customers")
-      .update({ status: newStatus })
-      .eq("id", id);
-
-    if (error) throw error;
-
-    revalidatePath("/customers");
-    return { success: true, message: `Status restoran diubah ke ${newStatus}.` };
-  } catch (err: unknown) {
-    const error = err as { message?: string };
-    return { error: error.message || "Gagal mengubah status restoran." };
-  }
+    await requireRole(["OWNER", "FINANCE"]); const next = currentStatus === "ACTIVE" ? "INACTIVE" : "ACTIVE"; const supabase = await createClient();
+    const { error } = await supabase.from("customers").update({ status: next }).eq("id", id); if (error) throw error;
+    revalidatePath("/customers"); return { success: true, message: `Status restoran diubah ke ${next}.` };
+  } catch (error) { return { error: normalizeActionError(error, "Gagal mengubah status restoran.") }; }
 }
 
 export async function deleteCustomerAction(id: string) {
-  const supabase = await createClient();
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-
-  if (!supabaseUrl || supabaseUrl.includes("placeholder")) {
-    revalidatePath("/customers");
-    return { success: true, message: "Restoran berhasil dihapus." };
-  }
-
   try {
-    // 1. Delete price lists for this customer
-    await supabase.from("customer_prices").delete().eq("customer_id", id);
-
-    // 2. Check if customer has existing invoices
-    const { count } = await supabase
-      .from("invoices")
-      .select("id", { count: "exact", head: true })
-      .eq("customer_id", id);
-
-    if (count && count > 0) {
-      // Has invoice history -> mark INACTIVE to protect financial reporting integrity
-      await supabase.from("customers").update({ status: "INACTIVE" }).eq("id", id);
-      revalidatePath("/customers");
-      return {
-        success: true,
-        isWarning: true,
-        message: "Restoran ini memiliki riwayat Invoice transaksi. Demi keamanan data keuangan, status restoran diubah menjadi Nonaktif.",
-      };
+    await requireRole(["OWNER", "FINANCE"]); const supabase = await createClient();
+    const { count, error: countError } = await supabase.from("invoices").select("id", { count: "exact", head: true }).eq("customer_id", id); if (countError) throw countError;
+    if ((count ?? 0) > 0) {
+      const { error } = await supabase.from("customers").update({ status: "INACTIVE" }).eq("id", id); if (error) throw error;
+      revalidatePath("/customers"); return { success: true, isWarning: true, message: "Restoran memiliki riwayat invoice dan dinonaktifkan tanpa menghapus histori." };
     }
-
-    // 3. No invoices -> Delete permanently from Supabase
-    const { error } = await supabase.from("customers").delete().eq("id", id);
-    if (error) throw error;
-
-    revalidatePath("/customers");
-    return { success: true, message: "Restoran berhasil dihapus secara permanen." };
-  } catch (err: unknown) {
-    const error = err as { message?: string };
-    return { error: error.message || "Gagal menghapus restoran." };
-  }
+    const { error: priceError } = await supabase.from("customer_prices").delete().eq("customer_id", id); if (priceError) throw priceError;
+    const { error } = await supabase.from("customers").delete().eq("id", id); if (error) throw error;
+    revalidatePath("/customers"); return { success: true, message: "Restoran berhasil dihapus." };
+  } catch (error) { return { error: normalizeActionError(error, "Gagal menghapus restoran.") }; }
 }
 
 export async function getCustomersAction() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  if (!supabaseUrl || supabaseUrl.includes("placeholder")) {
-    const { mockCustomers } = await import("@/lib/mock-data");
-    return mockCustomers;
-  }
-
-  try {
-    const supabase = await createClient();
-    const { data: customers, error } = await supabase
-      .from("customers")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    if (error || !customers) {
-      const { mockCustomers } = await import("@/lib/mock-data");
-      return mockCustomers;
-    }
-
-    return customers.map((c) => ({
-      id: c.id,
-      name: c.name,
-      contactName: c.contact_name,
-      phone: c.phone,
-      email: c.email,
-      billingAddress: c.billing_address,
-      shippingAddress: c.shipping_address,
-      paymentTermDays: c.payment_term_days,
-      status: c.status,
-      createdAt: c.created_at,
-      updatedAt: c.updated_at,
-    }));
-  } catch {
-    const { mockCustomers } = await import("@/lib/mock-data");
-    return mockCustomers;
-  }
+  await requireApprovedUser(); const supabase = await createClient();
+  const { data, error } = await supabase.from("customers").select("id,name,contact_name,phone,email,billing_address,shipping_address,payment_term_days,status,created_at,updated_at").order("created_at", { ascending: false });
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((customer) => ({ id: customer.id, name: customer.name, contactName: customer.contact_name, phone: customer.phone, email: customer.email ?? undefined, billingAddress: customer.billing_address, shippingAddress: customer.shipping_address ?? undefined, paymentTermDays: customer.payment_term_days, status: customer.status as CustomerStatus, createdAt: customer.created_at, updatedAt: customer.updated_at }));
 }

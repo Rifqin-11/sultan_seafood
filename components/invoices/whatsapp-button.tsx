@@ -2,19 +2,24 @@
 
 import { MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import type { Invoice } from "@/types";
+import type { CompanyProfilePublic, Invoice } from "@/types";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { toast } from "sonner";
 
 interface WhatsAppButtonProps {
   invoice: Invoice;
   customerPhone?: string;
+  company: CompanyProfilePublic;
 }
 
-export function WhatsAppButton({ invoice, customerPhone }: WhatsAppButtonProps) {
+export function WhatsAppButton({ invoice, customerPhone, company }: WhatsAppButtonProps) {
   const handleSendWhatsApp = () => {
     // 1. Format phone number
-    let rawPhone = customerPhone || "081234567890";
+    const rawPhone = customerPhone || "";
+    if (!rawPhone) {
+      toast.error("Nomor WhatsApp restoran belum tersedia.");
+      return;
+    }
     let cleanPhone = rawPhone.replace(/\D/g, "");
     if (cleanPhone.startsWith("0")) {
       cleanPhone = "62" + cleanPhone.slice(1);
@@ -27,7 +32,11 @@ export function WhatsAppButton({ invoice, customerPhone }: WhatsAppButtonProps) 
     if (typeof window !== "undefined" && window.location.origin && !window.location.origin.includes("localhost")) {
       origin = window.location.origin;
     }
-    const previewUrl = `${origin}/preview/invoices/${invoice.id}`;
+    if (!invoice.publicToken) {
+      toast.error("Token publik invoice belum tersedia. Terapkan migrasi database terbaru.");
+      return;
+    }
+    const previewUrl = `${origin}/preview/invoices/${invoice.publicToken}`;
 
     // 3. Format message cleanly with online invoice link
     const customerName = invoice.customerName || "Pelanggan";
@@ -38,7 +47,7 @@ export function WhatsAppButton({ invoice, customerPhone }: WhatsAppButtonProps) 
 
     const messageLines = [
       `Halo *${customerName}*,\n`,
-      `Berikut rincian Invoice resmi dari *Sultan Seafood*:`,
+      `Berikut rincian Invoice resmi dari *${company.name}*:`,
       `-  *Nomor Invoice*: ${invoiceNum}`,
       `-  *Tanggal*: ${dateStr}`,
       `-  *Total Tagihan*: ${totalStr}`,
@@ -46,7 +55,7 @@ export function WhatsAppButton({ invoice, customerPhone }: WhatsAppButtonProps) 
       `- *Lihat & Download PDF Invoice Online*:`,
       `${previewUrl}\n`,
       `Mohon dapat melakukan pembayaran via Transfer Bank:`,
-      `- *BCA*: 1234567890 a.n. Sultan Seafood\n`,
+      `- *${company.bankName}*: ${company.bankAccount} a.n. ${company.bankHolder}\n`,
       `Terima kasih atas kerja samanya! 🙏`
     ];
 

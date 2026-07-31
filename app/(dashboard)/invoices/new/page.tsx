@@ -5,35 +5,49 @@ import { InvoiceForm } from "@/components/invoices/invoice-form";
 import Link from "next/link";
 import { getCustomersAction } from "@/lib/actions/customers";
 import { getProductsAction } from "@/lib/actions/products";
+import { getCustomerPricesAction } from "@/lib/actions/pricing";
+import { requireApprovedUser } from "@/lib/security/auth";
 
 export const metadata: Metadata = {
   title: "Buat Invoice",
 };
 
 export default async function NewInvoicePage() {
-  const [customers, products] = await Promise.all([
+  const user = await requireApprovedUser();
+  const [customers, products, customerPrices] = await Promise.all([
     getCustomersAction(),
     getProductsAction(),
+    getCustomerPricesAction(),
   ]);
 
   return (
-    <div className="space-y-5">
-      <div className="flex items-center gap-3">
+    <div className="space-y-6">
+      <div className="flex items-start gap-3 border-b border-black/[0.06] pb-5">
         <Link
           href="/invoices"
-          className={buttonVariants({ variant: "ghost", size: "icon", className: "h-8 w-8" })}
+          aria-label="Kembali ke daftar invoice"
+          className={buttonVariants({
+            variant: "outline",
+            size: "icon",
+            className: "mt-0.5 h-9 w-9 rounded-xl bg-white shadow-sm",
+          })}
         >
           <ArrowLeft className="w-4 h-4" />
         </Link>
         <div>
-          <h2 className="text-xl font-semibold text-foreground">Buat Invoice</h2>
-          <p className="text-sm text-muted-foreground">
-            Buat invoice baru untuk restoran
+          <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+            Invoice Penjualan
+          </p>
+          <h1 className="text-2xl font-semibold tracking-[-0.03em] text-foreground">
+            Buat Invoice
+          </h1>
+          <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+            Susun detail pesanan, biaya, dan termin pembayaran restoran.
           </p>
         </div>
       </div>
 
-      <InvoiceForm customers={customers} products={products} />
+      <InvoiceForm customers={customers} products={products} customerPrices={customerPrices} canViewInternal={user.role !== "STAFF"} />
     </div>
   );
 }

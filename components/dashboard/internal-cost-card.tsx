@@ -1,4 +1,4 @@
-import { formatCurrency, formatPercent } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils";
 import type { InternalCostBreakdown } from "@/types";
 import Link from "next/link";
 

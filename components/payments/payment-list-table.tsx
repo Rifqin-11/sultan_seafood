@@ -18,7 +18,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Eye, FileText, Download } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Eye, FileText, Download, CreditCard } from "lucide-react";
 import { RecordPaymentDialog } from "@/components/payments/record-payment-dialog";
 
 interface PaymentListTableProps {
@@ -31,6 +32,7 @@ export function PaymentListTable({ payments, invoices }: PaymentListTableProps) 
     url: string;
     invoiceNumber: string;
     amount: number;
+    isPdf: boolean;
   } | null>(null);
 
   const methodLabel: Record<string, string> = {
@@ -61,8 +63,12 @@ export function PaymentListTable({ payments, invoices }: PaymentListTableProps) 
             <TableBody>
               {payments.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground text-xs">
-                    Belum ada riwayat pembayaran.
+                  <TableCell colSpan={5} className="h-48">
+                    <EmptyState
+                      icon={CreditCard}
+                      title="Tidak ada riwayat pembayaran"
+                      description="Belum ada transaksi pembayaran yang tercatat untuk saat ini."
+                    />
                   </TableCell>
                 </TableRow>
               ) : (
@@ -97,6 +103,7 @@ export function PaymentListTable({ payments, invoices }: PaymentListTableProps) 
                                 url: p.proofUrl!,
                                 invoiceNumber: invNum,
                                 amount: p.amount,
+                                isPdf: p.proofPath?.toLowerCase().endsWith(".pdf") ?? false,
                               })
                             }
                             className="h-7 text-xs px-2.5 bg-blue-50/50 hover:bg-blue-100 text-blue-700 border-blue-200"
@@ -146,13 +153,14 @@ export function PaymentListTable({ payments, invoices }: PaymentListTableProps) 
               </div>
 
               <div className="border border-border rounded-xl p-2 bg-slate-950/5 min-h-[260px] max-h-[420px] flex items-center justify-center overflow-auto">
-                {selectedProof.url.startsWith("data:application/pdf") ? (
+                {selectedProof.isPdf ? (
                   <div className="text-center p-6 space-y-3">
                     <FileText className="w-12 h-12 text-blue-600 mx-auto" />
                     <p className="text-xs text-muted-foreground">Dokumen PDF Bukti Pembayaran</p>
                     <a
                       href={selectedProof.url}
-                      download={`Bukti_${selectedProof.invoiceNumber}.pdf`}
+                      target="_blank"
+                      rel="noreferrer"
                       className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                     >
                       <Download className="w-3.5 h-3.5" /> Unduh PDF

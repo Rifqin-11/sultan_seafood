@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { mockProducts } from "@/lib/mock-data";
 import { formatCurrency, formatPercent } from "@/lib/utils";
 import type { Product } from "@/types";
 import { Search, MoreHorizontal, Edit, Power, Trash2, Loader2, Package } from "lucide-react";
@@ -31,10 +30,11 @@ import { toast } from "sonner";
 
 interface ProductTableProps {
   initialProducts?: Product[];
+  canManage?: boolean;
 }
 
-export function ProductTable({ initialProducts }: ProductTableProps) {
-  const productsList = initialProducts ?? mockProducts;
+export function ProductTable({ initialProducts = [], canManage = false }: ProductTableProps) {
+  const productsList = initialProducts;
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"ALL" | "ACTIVE" | "INACTIVE">("ALL");
@@ -140,7 +140,7 @@ export function ProductTable({ initialProducts }: ProductTableProps) {
                     Margin
                   </TableHead>
                   <TableHead className="text-xs font-semibold">Status</TableHead>
-                  <TableHead className="w-10" />
+                  {canManage && <TableHead className="w-10" />}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -192,7 +192,7 @@ export function ProductTable({ initialProducts }: ProductTableProps) {
                         "—"
                       )}
                     </TableCell>
-                    <TableCell>
+                    {canManage && <TableCell>
                       <Badge
                         variant={
                           product.status === "ACTIVE" ? "default" : "secondary"
@@ -201,7 +201,7 @@ export function ProductTable({ initialProducts }: ProductTableProps) {
                       >
                         {product.status === "ACTIVE" ? "Aktif" : "Nonaktif"}
                       </Badge>
-                    </TableCell>
+                    </TableCell>}
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger
@@ -255,7 +255,7 @@ export function ProductTable({ initialProducts }: ProductTableProps) {
         </div>
       </div>
 
-      {editingProduct && (
+      {canManage && editingProduct && (
         <EditProductDialog
           product={editingProduct}
           open={!!editingProduct}
@@ -265,7 +265,7 @@ export function ProductTable({ initialProducts }: ProductTableProps) {
         />
       )}
 
-      {deletingProduct && (
+      {canManage && deletingProduct && (
         <ConfirmDialog
           open={!!deletingProduct}
           onOpenChange={(open) => {

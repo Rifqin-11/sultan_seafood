@@ -15,51 +15,79 @@ import {
 import { toast } from "sonner";
 import {
   defaultCompanyProfile,
-  getCompanyProfile,
-  saveCompanyProfile,
   INDONESIAN_BANKS,
   type CompanyProfile,
 } from "@/lib/company-store";
+import { getCompanyProfileAction, updateCompanyProfileAction } from "@/lib/actions/company";
+import { createClient } from "@/lib/supabase/client";
 
 export default function CompanySettingsPage() {
   const [profile, setProfile] = useState<CompanyProfile>(defaultCompanyProfile);
   const [loading, setLoading] = useState(false);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
 
   useEffect(() => {
-    setProfile(getCompanyProfile());
+    async function fetchProfile() {
+      try {
+        const dbProfile = await getCompanyProfileAction();
+        setProfile(dbProfile);
+      } catch (err) {
+        console.error("Failed to load profile from database:", err);
+        toast.error("Profil bisnis gagal dimuat dari database.");
+      } finally {
+        // Errors are surfaced through the toast above.
+      }
+    }
+    fetchProfile();
   }, []);
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      setProfile((prev) => ({
-        ...prev,
-        logoUrl: ev.target?.result as string,
-      }));
-      toast.success("Logo berhasil dipilih. Klik 'Simpan Perubahan' untuk memperbarui.");
-    };
-    reader.readAsDataURL(file);
+    if (!["image/jpeg", "image/png", "image/webp", "image/svg+xml"].includes(file.type) || file.size > 2 * 1024 * 1024) {
+      toast.error("Logo harus JPG, PNG, WebP, atau SVG dengan ukuran maksimal 2 MB.");
+      return;
+    }
+    setLogoFile(file);
+    setProfile((prev) => ({ ...prev, logoUrl: URL.createObjectURL(file) }));
+    toast.success("Logo dipilih. Simpan perubahan untuk mengunggahnya.");
   };
 
-  const handleRemoveLogo = () => {
+  const handleRemoveLogo = async () => {
     const updated = { ...profile, logoUrl: undefined };
     setProfile(updated);
-    saveCompanyProfile(updated);
-    window.dispatchEvent(new Event("company-profile-updated"));
+    setLogoFile(null);
     toast.info("Logo dihapus. Menggunakan logo default.");
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    saveCompanyProfile(profile);
-    window.dispatchEvent(new Event("company-profile-updated"));
-    setTimeout(() => {
-      setLoading(false);
-      toast.success("Profil Bisnis berhasil diperbarui!");
-    }, 400);
+    let payload = profile;
+    if (logoFile) {
+      const supabase = createClient();
+      const extension = logoFile.name.split(".").pop()?.toLowerCase() || "png";
+      const path = `logo/company-${crypto.randomUUID()}.${extension}`;
+      const { error: uploadError } = await supabase.storage.from("company-assets").upload(path, logoFile, { upsert: false });
+      if (uploadError) {
+        setLoading(false);
+        toast.error(uploadError.message);
+        return;
+      }
+      const { data } = supabase.storage.from("company-assets").getPublicUrl(path);
+      payload = { ...profile, logoUrl: data.publicUrl };
+    }
+
+    const res = await updateCompanyProfileAction(payload);
+    setLoading(false);
+
+    if (res.error) {
+      toast.error(`Gagal menyimpan: ${res.error}`);
+    } else {
+      setProfile(payload);
+      setLogoFile(null);
+      toast.success(res.message || "Profil Bisnis berhasil diperbarui!");
+    }
   };
 
   return (

@@ -5,11 +5,11 @@ import { pdf } from "@react-pdf/renderer";
 import { Download, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { InvoicePdfDocument } from "./invoice-pdf-document";
-import type { Invoice } from "@/types";
+import type { CompanyProfilePublic, Invoice, PublicInvoice } from "@/types";
 
-export async function handleDownloadInvoicePdf(invoice: Invoice) {
+export async function handleDownloadInvoicePdf(invoice: Invoice | PublicInvoice, company?: CompanyProfilePublic) {
   try {
-    const blob = await pdf(<InvoicePdfDocument invoice={invoice} />).toBlob();
+    const blob = await pdf(<InvoicePdfDocument invoice={invoice} company={company} />).toBlob();
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
@@ -24,15 +24,16 @@ export async function handleDownloadInvoicePdf(invoice: Invoice) {
 }
 
 interface InvoicePdfDownloadProps {
-  invoice: Invoice;
+  invoice: Invoice | PublicInvoice;
+  company?: CompanyProfilePublic;
 }
 
-export function InvoicePdfDownload({ invoice }: InvoicePdfDownloadProps) {
+export function InvoicePdfDownload({ invoice, company }: InvoicePdfDownloadProps) {
   const [loading, setLoading] = useState(false);
 
   const onClick = async () => {
     setLoading(true);
-    await handleDownloadInvoicePdf(invoice);
+    await handleDownloadInvoicePdf(invoice, company);
     setLoading(false);
   };
 

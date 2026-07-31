@@ -1,18 +1,21 @@
 import type { Metadata } from "next";
-import { Plus, Download, FileText, Clock, CheckCircle2, AlertTriangle } from "lucide-react";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Plus, FileText, Clock, CheckCircle2, AlertTriangle } from "lucide-react";
+import { buttonVariants } from "@/components/ui/button";
 import { PageHeader } from "@/components/app-shell/page-header";
 import { InvoiceListTable } from "@/components/invoices/invoice-list-table";
 import { MetricCard } from "@/components/dashboard/metric-card";
 import { getInvoicesAction } from "@/lib/actions/invoices";
 import Link from "next/link";
+import { CsvExportButton } from "@/components/ui/csv-export-button";
+import { requireApprovedUser } from "@/lib/security/auth";
+import { getCompanyProfileAction } from "@/lib/actions/company";
 
 export const metadata: Metadata = {
   title: "Invoice",
 };
 
 export default async function InvoicesPage() {
-  const invoices = await getInvoicesAction();
+  const [invoices, user, company] = await Promise.all([getInvoicesAction(), requireApprovedUser(), getCompanyProfileAction()]);
 
   // Filter out VOID (Dibatalkan) invoices from total active billings calculation
   const activeInvoices = invoices.filter((inv) => inv.status !== "VOID");
@@ -38,10 +41,7 @@ export default async function InvoicesPage() {
         title="Invoice"
         description="Kelola invoice dan pembayaran restoran"
       >
-        <Button variant="outline" size="sm">
-          <Download className="w-4 h-4 mr-1" />
-          Ekspor
-        </Button>
+        <CsvExportButton filename="invoice.csv" label="Ekspor" headers={["Nomor", "Restoran", "Tanggal", "Status", "Total", "Dibayar", "Sisa"]} rows={invoices.map((invoice) => [invoice.invoiceNumber, invoice.customerName, invoice.issueDate, invoice.status, invoice.total, invoice.totalPaid, invoice.remainingBalance])} />
         <Link href="/invoices/new" className={buttonVariants({ size: "sm" })}>
           <Plus className="w-4 h-4 mr-1" />
           Buat Invoice
@@ -79,7 +79,7 @@ export default async function InvoicesPage() {
         />
       </div>
 
-      <InvoiceListTable initialInvoices={invoices} />
+      <InvoiceListTable initialInvoices={invoices} role={user.role} company={company} />
     </div>
   );
 }

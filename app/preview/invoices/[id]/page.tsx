@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getInvoiceByIdAction } from "@/lib/actions/invoices";
+import { getPublicInvoiceAction } from "@/lib/actions/invoices";
 import { formatCurrency, formatDate, parseProductDescription } from "@/lib/utils";
 import { InvoiceStatusBadge } from "@/components/invoices/invoice-status-badge";
 import { InvoicePdfDownload } from "@/components/invoices/invoice-pdf-download";
@@ -17,7 +17,7 @@ interface PageProps {
 
 export default async function CustomerInvoicePreviewPage({ params }: PageProps) {
   const { id } = await params;
-  const invoice = await getInvoiceByIdAction(id);
+  const invoice = await getPublicInvoiceAction(id);
   if (!invoice) notFound();
 
   return (
@@ -28,9 +28,9 @@ export default async function CustomerInvoicePreviewPage({ params }: PageProps) 
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-slate-900 text-white font-bold text-sm flex items-center justify-center">
-              S
+              {invoice.company.name.charAt(0).toUpperCase()}
             </div>
-            <span className="font-semibold text-slate-900 text-sm tracking-tight">Sultan Seafood</span>
+            <span className="font-semibold text-slate-900 text-sm tracking-tight">{invoice.company.name}</span>
           </div>
 
           <InvoicePdfDownload invoice={invoice} />
@@ -42,9 +42,9 @@ export default async function CustomerInvoicePreviewPage({ params }: PageProps) 
           {/* Header Info */}
           <div className="flex flex-col sm:flex-row justify-between items-start gap-6 border-b border-slate-100 pb-6">
             <div className="space-y-1">
-              <h1 className="text-lg font-bold text-slate-900">Sultan Seafood</h1>
-              <p className="text-xs text-slate-500">Jl. Pemasok Seafood No. 1, Jakarta Utara</p>
-              <p className="text-xs text-slate-500">Telp: 021-XXXXXXXX · info@sultansf.id</p>
+              <h1 className="text-lg font-bold text-slate-900">{invoice.company.name}</h1>
+              <p className="text-xs text-slate-500">{invoice.company.address}</p>
+              <p className="text-xs text-slate-500">{invoice.company.phone}{invoice.company.email ? ` · ${invoice.company.email}` : ""}</p>
             </div>
 
             <div className="sm:text-right space-y-1">
@@ -150,17 +150,17 @@ export default async function CustomerInvoicePreviewPage({ params }: PageProps) 
             
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3.5 rounded-lg border border-blue-100 shadow-2xs">
               <div className="space-y-0.5">
-                <p className="text-xs text-slate-500 font-medium">Bank BCA</p>
+                <p className="text-xs text-slate-500 font-medium">Bank {invoice.company.bankName}</p>
                 <div className="flex items-center gap-2">
                   <span className="font-mono font-extrabold text-base text-blue-900 tracking-wider">
-                    1234567890
+                    {invoice.company.bankAccount}
                   </span>
-                  <CopyAccountButton accountNumber="1234567890" />
+                  <CopyAccountButton accountNumber={invoice.company.bankAccount} />
                 </div>
               </div>
               <div className="sm:text-right border-t sm:border-t-0 border-slate-100 pt-2 sm:pt-0">
                 <p className="text-[11px] text-slate-400 font-medium uppercase tracking-wider">Atas Nama (A.N.)</p>
-                <p className="text-xs font-bold text-slate-900">Sultan Seafood</p>
+                <p className="text-xs font-bold text-slate-900">{invoice.company.bankHolder}</p>
               </div>
             </div>
           </div>
@@ -169,7 +169,7 @@ export default async function CustomerInvoicePreviewPage({ params }: PageProps) 
 
         {/* Footer */}
         <p className="text-center text-[11px] text-slate-400">
-          © {new Date().getFullYear()} Sultan Seafood ERP
+          © {new Date().getFullYear()} {invoice.company.name}
         </p>
 
       </div>

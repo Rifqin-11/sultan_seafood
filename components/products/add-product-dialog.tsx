@@ -11,7 +11,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { createProductAction } from "@/lib/actions/products";
 import { useRouter } from "next/navigation";

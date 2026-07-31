@@ -11,10 +11,11 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { createCustomerPriceAction } from "@/lib/actions/pricing";
 import type { Customer, Product } from "@/types";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 interface AddCustomerPriceDialogProps {
   customers: Customer[];
@@ -28,6 +29,7 @@ export function AddCustomerPriceDialog({
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const router = useRouter();
 
   const [customerId, setCustomerId] = useState(customers[0]?.id || "");
   const [productId, setProductId] = useState(products[0]?.id || "");
@@ -64,6 +66,8 @@ export function AddCustomerPriceDialog({
     } else {
       resetForm();
       setOpen(false);
+      toast.success(res.message);
+      router.refresh();
     }
   };
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Lock, Eye, EyeOff, Loader2, KeyRound } from "lucide-react";
+import { Eye, EyeOff, Loader2, KeyRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -34,8 +34,8 @@ export function ChangePasswordDialog({
     e.preventDefault();
     setError("");
 
-    if (!newPassword || newPassword.length < 6) {
-      setError("Password baru minimal harus 6 karakter.");
+    if (!newPassword || newPassword.length < 8) {
+      setError("Password baru minimal harus 8 karakter.");
       return;
     }
 
@@ -85,7 +85,7 @@ export function ChangePasswordDialog({
             <div className="relative">
               <Input
                 type={showPassword ? "text" : "password"}
-                placeholder="Minimal 6 karakter..."
+                placeholder="Minimal 8 karakter..."
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 className="h-9 text-xs pr-10"

@@ -1,14 +1,5 @@
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/app-shell/page-header";
-import { formatCurrency } from "@/lib/utils";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { getProductsAction } from "@/lib/actions/products";
 import { getCustomersAction } from "@/lib/actions/customers";
 import { getCustomerPricesAction } from "@/lib/actions/pricing";

@@ -6,12 +6,14 @@ import { getPaymentsAction } from "@/lib/actions/payments";
 import { getInvoicesAction } from "@/lib/actions/invoices";
 import { MetricCard } from "@/components/dashboard/metric-card";
 import { CreditCard, AlertCircle } from "lucide-react";
+import { requireRole } from "@/lib/security/auth";
 
 export const metadata: Metadata = {
   title: "Pembayaran",
 };
 
 export default async function PaymentsPage() {
+  await requireRole(["OWNER", "FINANCE"]);
   const payments = await getPaymentsAction();
   const invoices = await getInvoicesAction();
 

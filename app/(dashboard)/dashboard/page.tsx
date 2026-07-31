@@ -10,25 +10,16 @@ import { SalesChart } from "@/components/dashboard/sales-chart";
 import { ProfitChart } from "@/components/dashboard/profit-chart";
 import { InternalCostCard } from "@/components/dashboard/internal-cost-card";
 import { OutstandingInvoiceCard } from "@/components/dashboard/outstanding-invoice-card";
-import {
-  mockMetrics,
-  mockSalesData,
-  mockProfitData,
-  mockInternalCosts,
-  mockInvoices,
-} from "@/lib/mock-data";
 import { formatCurrency, formatPercent } from "@/lib/utils";
-import { getInvoicesAction } from "@/lib/actions/invoices";
+import { getDashboardDataAction } from "@/lib/actions/dashboard";
 
 export const metadata: Metadata = {
   title: "Dashboard",
 };
 
 export default async function DashboardPage() {
-  const realInvoices = await getInvoicesAction();
-  const invoices = realInvoices && realInvoices.length > 0 ? realInvoices : mockInvoices;
-
-  const m = mockMetrics;
+  const { invoices, metrics: m, salesData, profitData, internalCosts, periodLabel, user } = await getDashboardDataAction();
+  const canViewInternal = user.role !== "STAFF";
 
   return (
     <div className="space-y-6">
@@ -42,14 +33,14 @@ export default async function DashboardPage() {
 
       {/* Row 1 — Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <MetricCard
+        {canViewInternal && <MetricCard
           title="Order Hari Ini"
           value={m.ordersToday}
           icon={ShoppingBag}
           change={m.ordersTodayChange}
           changeLabel="vs kemarin"
           href="/invoices?filter=today"
-        />
+        />}
         <MetricCard
           title="Order Minggu Ini"
           value={m.ordersThisWeek}
@@ -81,19 +72,19 @@ export default async function DashboardPage() {
 
       {/* Row 2 — Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <SalesChart data={mockSalesData} />
-        <ProfitChart data={mockProfitData} />
+        <SalesChart data={salesData} periodLabel={periodLabel} />
+        {canViewInternal && <ProfitChart data={profitData} periodLabel={periodLabel} />}
       </div>
 
       {/* Row 3 — Internal Costs + Piutang summary */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <InternalCostCard
-          costs={mockInternalCosts}
+        {canViewInternal && <InternalCostCard
+          costs={internalCosts}
           total={m.totalDirectCostsThisMonth}
-        />
+        />}
 
         {/* Receivables summary */}
-        <div className="bg-white rounded-2xl border border-border p-5 shadow-card">
+        {canViewInternal && <div className="bg-white rounded-2xl border border-border p-5 shadow-card">
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">
             Status Piutang
           </p>
@@ -117,7 +108,7 @@ export default async function DashboardPage() {
             </div>
             <div className="h-px bg-border" />
             <div className="space-y-2">
-              {mockInvoices
+              {invoices
                 .filter((inv) => inv.status === "OVERDUE")
                 .slice(0, 2)
                 .map((inv) => (
@@ -135,7 +126,7 @@ export default async function DashboardPage() {
                 ))}
             </div>
           </div>
-        </div>
+        </div>}
 
         {/* Quick stats */}
         <div className="bg-white rounded-2xl border border-border p-5 shadow-card">
@@ -201,7 +192,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Row 4 — Outstanding Invoices */}
-      <OutstandingInvoiceCard invoices={mockInvoices} />
+      <OutstandingInvoiceCard invoices={invoices} />
     </div>
   );
 }

@@ -1,7 +1,8 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { createClient } from "@/lib/supabase/server";
+import { normalizeActionError, requireApprovedUser, requirePermission } from "@/lib/security/auth";
 
 export interface CreatePurchasePricePayload {
   productId: string;
@@ -12,292 +13,104 @@ export interface CreatePurchasePricePayload {
 }
 
 export async function createPurchasePriceAction(payload: CreatePurchasePricePayload) {
-  const supabase = await createClient();
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-
-  if (!supabaseUrl || supabaseUrl.includes("placeholder")) {
-    revalidatePath("/pricing/purchase");
-    revalidatePath("/products");
-    return { success: true, message: "Harga beli berhasil disimpan (Mode Demo)." };
-  }
-
   try {
-    // 1. Insert into product_costs table
-    const { error: costError } = await supabase.from("product_costs").insert({
-      product_id: payload.productId,
-      supplier_id: payload.supplierId || null,
-      unit_cost: payload.unitCost,
-      effective_at: payload.effectiveAt || new Date().toISOString(),
-      notes: payload.notes || null,
+    await requirePermission("manage_purchase_price");
+    if (!payload.productId || !Number.isFinite(payload.unitCost) || payload.unitCost <= 0) return { error: "Produk dan harga beli wajib valid." };
+    const supabase = await createClient();
+    const { error } = await supabase.rpc("set_product_cost", {
+      p_product_id: payload.productId,
+      p_supplier_id: payload.supplierId || null,
+      p_unit_cost: payload.unitCost,
+      p_effective_at: payload.effectiveAt || new Date().toISOString(),
+      p_notes: payload.notes || null,
     });
-
-    if (costError) {
-      console.warn("Product costs insert error, attempting direct update on products:", costError);
-    }
-
-    // 2. Also update active_cost on products table if column exists
-    try {
-      await supabase
-        .from("products")
-        .update({ active_cost: payload.unitCost })
-        .eq("id", payload.productId);
-    } catch {
-      // ignore if active_cost column doesn't exist
-    }
-
-    revalidatePath("/pricing/purchase");
-    revalidatePath("/products");
-    revalidatePath("/reports/profit");
-    revalidatePath("/reports/sales");
-
-    return { success: true, message: "Harga beli berhasil ditambahkan." };
-  } catch (err: unknown) {
-    const error = err as { message?: string };
-    return { error: error.message || "Gagal menambahkan harga beli." };
-  }
+    if (error) throw error;
+    revalidatePath("/pricing/purchase"); revalidatePath("/products"); revalidatePath("/reports/profit");
+    return { success: true, message: "Harga beli aktif berhasil diperbarui." };
+  } catch (error) { return { error: normalizeActionError(error, "Gagal menyimpan harga beli.") }; }
 }
 
 export async function getPurchasePricesAction() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  if (!supabaseUrl || supabaseUrl.includes("placeholder")) {
-    const { mockProductCosts } = await import("@/lib/mock-data");
-    return mockProductCosts;
-  }
-
-  try {
-    const supabase = await createClient();
-    const { data: costs, error } = await supabase
-      .from("product_costs")
-      .select(`
-        *,
-        products ( id, name, default_unit ),
-        suppliers ( id, name )
-      `)
-      .order("effective_at", { ascending: false });
-
-    if (error || !costs || costs.length === 0) {
-      // Fallback: try fetching products with active_cost
-      const { data: products } = await supabase.from("products").select("id, name, default_unit, active_cost, created_at");
-      if (products && products.length > 0) {
-        return products
-          .filter((p) => Number(p.active_cost) > 0)
-          .map((p) => ({
-            id: `cost_${p.id}`,
-            productId: p.id,
-            productName: p.name,
-            unit: p.default_unit || "kg",
-            supplierId: "",
-            supplierName: "—",
-            unitCost: Number(p.active_cost),
-            effectiveAt: p.created_at || new Date().toISOString(),
-            notes: "Harga Beli Default Produk",
-            createdBy: "System",
-            createdAt: p.created_at || new Date().toISOString(),
-          }));
-      }
-      const { mockProductCosts } = await import("@/lib/mock-data");
-      return mockProductCosts;
-    }
-
-    const { mockProducts } = await import("@/lib/mock-data");
-
-    return costs.map((c) => {
-      const dbProductName = c.products?.name;
-      const fallbackMockName = mockProducts.find((p) => p.id === c.product_id)?.name;
-      const isTechnicalId = !dbProductName || dbProductName.startsWith("prod_") || dbProductName.startsWith("cost_");
-      const productName = isTechnicalId ? (fallbackMockName || "Ikan Kakap Merah") : dbProductName;
-
-      return {
-        id: c.id,
-        productId: c.product_id,
-        productName: productName,
-        unit: c.products?.default_unit || "kg",
-        supplierId: c.supplier_id || "",
-        supplierName: c.suppliers?.name || "—",
-        unitCost: Number(c.unit_cost),
-        effectiveAt: c.effective_at,
-        endedAt: c.ended_at || undefined,
-        notes: c.notes || "",
-        createdBy: "System",
-        createdAt: c.created_at,
-      };
-    });
-  } catch {
-    const { mockProductCosts } = await import("@/lib/mock-data");
-    return mockProductCosts;
-  }
+  await requirePermission("view_purchase_price");
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("product_costs").select("id,product_id,supplier_id,unit_cost,effective_at,ended_at,notes,created_at,products(name,default_unit),suppliers(name)").order("effective_at", { ascending: false });
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((cost) => {
+    const product = Array.isArray(cost.products) ? cost.products[0] : cost.products;
+    const supplier = Array.isArray(cost.suppliers) ? cost.suppliers[0] : cost.suppliers;
+    return {
+    id: cost.id, productId: cost.product_id, productName: product?.name ?? "Produk", unit: product?.default_unit ?? "kg",
+    supplierId: cost.supplier_id ?? "", supplierName: supplier?.name ?? "-", unitCost: Number(cost.unit_cost),
+    effectiveAt: cost.effective_at, endedAt: cost.ended_at ?? undefined, notes: cost.notes ?? "", createdBy: "system", createdAt: cost.created_at,
+  }});
 }
 
-export interface CreateCustomerPricePayload {
-  customerId: string;
-  productId: string;
-  sellingPrice: number;
-}
+export interface CreateCustomerPricePayload { customerId: string; productId: string; sellingPrice: number }
 
 export async function createCustomerPriceAction(payload: CreateCustomerPricePayload) {
-  const supabase = await createClient();
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-
-  if (!supabaseUrl || supabaseUrl.includes("placeholder")) {
-    revalidatePath("/pricing/selling");
-    return { success: true, message: "Harga khusus berhasil disimpan (Mode Demo)." };
-  }
-
   try {
-    const { error } = await supabase.from("customer_prices").upsert(
-      {
-        customer_id: payload.customerId,
-        product_id: payload.productId,
-        selling_price: payload.sellingPrice,
-        effective_at: new Date().toISOString(),
-      },
-      { onConflict: "customer_id,product_id" }
-    );
-
+    await requirePermission("manage_selling_price");
+    if (!payload.customerId || !payload.productId || !Number.isFinite(payload.sellingPrice) || payload.sellingPrice <= 0) return { error: "Restoran, produk, dan harga jual wajib valid." };
+    const supabase = await createClient();
+    const { error } = await supabase.rpc("set_customer_price", { p_customer_id: payload.customerId, p_product_id: payload.productId, p_selling_price: payload.sellingPrice, p_effective_at: new Date().toISOString() });
     if (error) throw error;
-
     revalidatePath("/pricing/selling");
     return { success: true, message: "Harga khusus restoran berhasil disimpan." };
-  } catch (err: unknown) {
-    const error = err as { message?: string };
-    return { error: error.message || "Gagal menyimpan harga khusus." };
-  }
+  } catch (error) { return { error: normalizeActionError(error, "Gagal menyimpan harga khusus.") }; }
 }
 
 export async function getCustomerPricesAction() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  if (!supabaseUrl || supabaseUrl.includes("placeholder")) {
-    return [];
-  }
-
-  try {
-    const supabase = await createClient();
-    const { data, error } = await supabase
-      .from("customer_prices")
-      .select("*");
-
-    if (error || !data) return [];
-
-    return data.map((cp) => ({
-      id: cp.id,
-      customerId: cp.customer_id,
-      productId: cp.product_id,
-      sellingPrice: Number(cp.selling_price),
-      effectiveAt: cp.effective_at,
-    }));
-  } catch {
-    return [];
-  }
+  await requireApprovedUser();
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("customer_prices").select("id,customer_id,product_id,selling_price,effective_at,ended_at,products(name,default_selling_price)").is("ended_at", null).order("effective_at", { ascending: false });
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((price) => {
+    const product = Array.isArray(price.products) ? price.products[0] : price.products;
+    return {
+    id: price.id, customerId: price.customer_id, productId: price.product_id, productName: product?.name ?? "Produk",
+    sellingPrice: Number(price.selling_price), defaultPrice: Number(product?.default_selling_price ?? 0), effectiveAt: price.effective_at,
+    endedAt: price.ended_at ?? undefined,
+  }});
 }
 
 export async function updatePurchasePriceAction(id: string, unitCost: number, notes?: string) {
-  const supabase = await createClient();
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-
-  if (!supabaseUrl || supabaseUrl.includes("placeholder")) {
-    revalidatePath("/pricing/purchase");
-    revalidatePath("/products");
-    return { success: true, message: "Harga beli diperbarui (Demo)." };
-  }
-
   try {
-    // Update product_costs
-    const { data: updatedCost, error } = await supabase
-      .from("product_costs")
-      .update({ unit_cost: unitCost, notes: notes || null })
-      .eq("id", id)
-      .select("product_id")
-      .maybeSingle();
-
-    if (error) throw error;
-
-    if (updatedCost?.product_id) {
-      try {
-        await supabase
-          .from("products")
-          .update({ active_cost: unitCost })
-          .eq("id", updatedCost.product_id);
-      } catch {
-        // ignore if active_cost doesn't exist
-      }
-    }
-
-    revalidatePath("/pricing/purchase");
-    revalidatePath("/products");
-    revalidatePath("/reports/profit");
-    return { success: true, message: "Harga beli berhasil diperbarui." };
-  } catch (err: unknown) {
-    const error = err as { message?: string };
-    return { error: error.message || "Gagal memperbarui harga beli." };
-  }
+    await requirePermission("manage_purchase_price");
+    const supabase = await createClient();
+    const { data: current, error: fetchError } = await supabase.from("product_costs").select("product_id,supplier_id").eq("id", id).single();
+    if (fetchError) throw fetchError;
+    return createPurchasePriceAction({ productId: current.product_id, supplierId: current.supplier_id ?? undefined, unitCost, notes });
+  } catch (error) { return { error: normalizeActionError(error, "Gagal memperbarui harga beli.") }; }
 }
 
 export async function deletePurchasePriceAction(id: string) {
-  const supabase = await createClient();
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-
-  if (!supabaseUrl || supabaseUrl.includes("placeholder")) {
-    revalidatePath("/pricing/purchase");
-    revalidatePath("/products");
-    return { success: true, message: "Harga beli dihapus (Demo)." };
-  }
-
   try {
-    const { error } = await supabase.from("product_costs").delete().eq("id", id);
+    await requirePermission("manage_purchase_price");
+    const supabase = await createClient();
+    const { error } = await supabase.from("product_costs").update({ ended_at: new Date().toISOString() }).eq("id", id).is("ended_at", null);
     if (error) throw error;
-
-    revalidatePath("/pricing/purchase");
-    revalidatePath("/products");
-    revalidatePath("/reports/profit");
-    return { success: true, message: "Harga beli berhasil dihapus." };
-  } catch (err: unknown) {
-    const error = err as { message?: string };
-    return { error: error.message || "Gagal menghapus harga beli." };
-  }
+    revalidatePath("/pricing/purchase"); revalidatePath("/products");
+    return { success: true, message: "Harga beli dinonaktifkan tanpa menghapus riwayat." };
+  } catch (error) { return { error: normalizeActionError(error, "Gagal menonaktifkan harga beli.") }; }
 }
 
 export async function updateCustomerPriceAction(id: string, sellingPrice: number) {
-  const supabase = await createClient();
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-
-  if (!supabaseUrl || supabaseUrl.includes("placeholder")) {
-    revalidatePath("/pricing/selling");
-    return { success: true, message: "Harga khusus diperbarui (Demo)." };
-  }
-
   try {
-    const { error } = await supabase
-      .from("customer_prices")
-      .update({ selling_price: sellingPrice })
-      .eq("id", id);
-
+    await requirePermission("manage_selling_price");
+    const supabase = await createClient();
+    const { data: current, error } = await supabase.from("customer_prices").select("customer_id,product_id").eq("id", id).single();
     if (error) throw error;
-
-    revalidatePath("/pricing/selling");
-    return { success: true, message: "Harga khusus berhasil diperbarui." };
-  } catch (err: unknown) {
-    const error = err as { message?: string };
-    return { error: error.message || "Gagal memperbarui harga khusus." };
-  }
+    return createCustomerPriceAction({ customerId: current.customer_id, productId: current.product_id, sellingPrice });
+  } catch (error) { return { error: normalizeActionError(error, "Gagal memperbarui harga khusus.") }; }
 }
 
 export async function deleteCustomerPriceAction(id: string) {
-  const supabase = await createClient();
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-
-  if (!supabaseUrl || supabaseUrl.includes("placeholder")) {
-    revalidatePath("/pricing/selling");
-    return { success: true, message: "Harga khusus dihapus (Demo)." };
-  }
-
   try {
-    const { error } = await supabase.from("customer_prices").delete().eq("id", id);
+    await requirePermission("manage_selling_price");
+    const supabase = await createClient();
+    const { error } = await supabase.from("customer_prices").update({ ended_at: new Date().toISOString() }).eq("id", id).is("ended_at", null);
     if (error) throw error;
-
     revalidatePath("/pricing/selling");
-    return { success: true, message: "Harga khusus berhasil dihapus." };
-  } catch (err: unknown) {
-    const error = err as { message?: string };
-    return { error: error.message || "Gagal menghapus harga khusus." };
-  }
+    return { success: true, message: "Harga khusus dinonaktifkan; harga default kembali digunakan." };
+  } catch (error) { return { error: normalizeActionError(error, "Gagal menonaktifkan harga khusus.") }; }
 }

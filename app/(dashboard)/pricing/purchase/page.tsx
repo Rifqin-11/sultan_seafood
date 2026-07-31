@@ -1,15 +1,5 @@
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/app-shell/page-header";
-import { formatCurrency, formatDateShort } from "@/lib/utils";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { getPurchasePricesAction } from "@/lib/actions/pricing";
 import { getProductsAction } from "@/lib/actions/products";
 import { getSuppliersAction } from "@/lib/actions/suppliers";

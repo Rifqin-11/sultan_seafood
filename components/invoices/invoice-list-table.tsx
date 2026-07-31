@@ -1,13 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { mockInvoices } from "@/lib/mock-data";
 import {
   formatCurrency,
   formatDateShort,
-  getInvoiceStatusLabel,
 } from "@/lib/utils";
-import type { Invoice, InvoiceStatus } from "@/types";
+import type { Invoice, InvoiceStatus, Role } from "@/types";
+import type { CompanyProfile } from "@/lib/company-store";
 import {
   Search,
   MoreHorizontal,
@@ -58,11 +57,16 @@ const STATUS_FILTERS: { label: string; value: InvoiceStatus | "ALL" }[] = [
 
 interface InvoiceListTableProps {
   initialInvoices?: Invoice[];
+  role: Role;
+  company: CompanyProfile;
 }
 
-export function InvoiceListTable({ initialInvoices }: InvoiceListTableProps) {
+export function InvoiceListTable({ initialInvoices = [], role, company }: InvoiceListTableProps) {
   const router = useRouter();
-  const invoicesList = initialInvoices && initialInvoices.length > 0 ? initialInvoices : mockInvoices;
+  const [invoicesList, setInvoicesList] = useState<Invoice[]>(
+    initialInvoices
+  );
+
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<InvoiceStatus | "ALL">(
     "ALL"
@@ -71,12 +75,19 @@ export function InvoiceListTable({ initialInvoices }: InvoiceListTableProps) {
   const [deletingInvoice, setDeletingInvoice] = useState<Invoice | null>(null);
   const [voidingInvoice, setVoidingInvoice] = useState<Invoice | null>(null);
   const [selectedPaymentInvoiceId, setSelectedPaymentInvoiceId] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
 
   const handleConfirmDeleteInvoice = async () => {
     if (!deletingInvoice) return;
-    const res = await deleteInvoiceAction(deletingInvoice.id);
+    const targetId = deletingInvoice.id;
+    setDeletingInvoice(null);
+    setInvoicesList((prev) => prev.filter((inv) => inv.id !== targetId));
+
+    const res = await deleteInvoiceAction(targetId);
     if (res.error) {
       toast.error(`Gagal menghapus: ${res.error}`);
+      router.refresh();
     } else {
       toast.success(res.message || "Invoice berhasil dihapus");
       router.refresh();
@@ -85,9 +96,16 @@ export function InvoiceListTable({ initialInvoices }: InvoiceListTableProps) {
 
   const handleConfirmVoidInvoice = async () => {
     if (!voidingInvoice) return;
-    const res = await voidInvoiceAction(voidingInvoice.id);
+    const targetId = voidingInvoice.id;
+    setVoidingInvoice(null);
+    setInvoicesList((prev) =>
+      prev.map((inv) => (inv.id === targetId ? { ...inv, status: "VOID", remainingBalance: 0 } : inv))
+    );
+
+    const res = await voidInvoiceAction(targetId);
     if (res.error) {
       toast.error(`Gagal membatalkan: ${res.error}`);
+      router.refresh();
     } else {
       toast.success(res.message || "Invoice berhasil dibatalkan");
       router.refresh();
@@ -96,7 +114,7 @@ export function InvoiceListTable({ initialInvoices }: InvoiceListTableProps) {
 
   const handleDownload = async (inv: Invoice) => {
     setDownloadingId(inv.id);
-    await handleDownloadInvoicePdf(inv);
+    await handleDownloadInvoicePdf(inv, company);
     setDownloadingId(null);
   };
 
@@ -110,6 +128,8 @@ export function InvoiceListTable({ initialInvoices }: InvoiceListTableProps) {
       statusFilter === "ALL" || inv.status === statusFilter;
     return matchSearch && matchStatus;
   });
+  const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const pageRows = filtered.slice((page - 1) * pageSize, page * pageSize);
 
   return (
     <div className="bg-white rounded-2xl border border-border shadow-card overflow-hidden">
@@ -121,7 +141,7 @@ export function InvoiceListTable({ initialInvoices }: InvoiceListTableProps) {
             <Input
               placeholder="Cari nomor invoice atau restoran..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(event) => { setSearch(event.target.value); setPage(1); }}
               className="pl-9 h-9 w-full"
             />
           </div>
@@ -132,7 +152,7 @@ export function InvoiceListTable({ initialInvoices }: InvoiceListTableProps) {
           {STATUS_FILTERS.map((f) => (
             <button
               key={f.value}
-              onClick={() => setStatusFilter(f.value)}
+              onClick={() => { setStatusFilter(f.value); setPage(1); }}
               className={`px-3 py-1.5 text-xs rounded-lg font-medium whitespace-nowrap transition-colors flex-shrink-0 ${
                 statusFilter === f.value
                   ? "bg-foreground text-background"
@@ -174,7 +194,7 @@ export function InvoiceListTable({ initialInvoices }: InvoiceListTableProps) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((inv) => (
+              {pageRows.map((inv) => (
                 <TableRow key={inv.id} className="hover:bg-muted/20">
                   <TableCell>
                     <Link
@@ -263,7 +283,7 @@ export function InvoiceListTable({ initialInvoices }: InvoiceListTableProps) {
                           )}
                           {downloadingId === inv.id ? "Menyiapkan PDF..." : "Download PDF"}
                         </DropdownMenuItem>
-                        {(inv.status === "ISSUED" ||
+                        {role !== "STAFF" && (inv.status === "ISSUED" ||
                           inv.status === "PARTIALLY_PAID" ||
                           inv.status === "OVERDUE") && (
                           <DropdownMenuItem
@@ -275,24 +295,22 @@ export function InvoiceListTable({ initialInvoices }: InvoiceListTableProps) {
                           </DropdownMenuItem>
                         )}
                         <DropdownMenuSeparator />
-                        {inv.status === "DRAFT" && (
+                        {role === "OWNER" && inv.status !== "VOID" && inv.status !== "DRAFT" && inv.totalPaid === 0 && (
                           <DropdownMenuItem
-                            className="cursor-pointer text-red-600 focus:text-red-600"
-                            onClick={() => setDeletingInvoice(inv)}
-                          >
-                            <Trash2 className="w-3.5 h-3.5 mr-2 text-red-600" />
-                            Hapus Draft
-                          </DropdownMenuItem>
-                        )}
-                        {inv.status !== "VOID" && inv.status !== "DRAFT" && (
-                          <DropdownMenuItem
-                            className="cursor-pointer text-red-600 focus:text-red-600"
+                            className="cursor-pointer text-amber-600 focus:text-amber-600"
                             onClick={() => setVoidingInvoice(inv)}
                           >
-                            <Ban className="w-3.5 h-3.5 mr-2 text-red-600" />
+                            <Ban className="w-3.5 h-3.5 mr-2 text-amber-600" />
                             Batalkan Invoice
                           </DropdownMenuItem>
                         )}
+                        {inv.status === "DRAFT" && <DropdownMenuItem
+                          className="cursor-pointer text-red-600 focus:text-red-600 font-medium"
+                          onClick={() => setDeletingInvoice(inv)}
+                        >
+                          <Trash2 className="w-3.5 h-3.5 mr-2 text-red-600" />
+                          Hapus Draft
+                        </DropdownMenuItem>}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -309,10 +327,11 @@ export function InvoiceListTable({ initialInvoices }: InvoiceListTableProps) {
           {filtered.length} dari {invoicesList.length} invoice
         </p>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" disabled>
+          <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((value) => Math.max(1, value - 1))}>
             Sebelumnya
           </Button>
-          <Button variant="outline" size="sm" disabled>
+          <span className="text-xs text-muted-foreground">{page}/{pageCount}</span>
+          <Button variant="outline" size="sm" disabled={page >= pageCount} onClick={() => setPage((value) => Math.min(pageCount, value + 1))}>
             Berikutnya
           </Button>
         </div>
@@ -336,8 +355,8 @@ export function InvoiceListTable({ initialInvoices }: InvoiceListTableProps) {
             if (!open) setDeletingInvoice(null);
           }}
           title="Hapus Draft Invoice?"
-          description={`Apakah Anda yakin ingin menghapus draft invoice "${deletingInvoice.invoiceNumber || deletingInvoice.id}"?`}
-          confirmLabel="Hapus Invoice"
+          description={`Draft "${deletingInvoice.invoiceNumber || deletingInvoice.id}" akan dihapus. Invoice yang sudah diterbitkan tidak dapat dihapus.`}
+          confirmLabel="Hapus Draft"
           onConfirm={handleConfirmDeleteInvoice}
         />
       )}
@@ -349,7 +368,7 @@ export function InvoiceListTable({ initialInvoices }: InvoiceListTableProps) {
             if (!open) setVoidingInvoice(null);
           }}
           title="Batalkan Invoice?"
-          description={`Apakah Anda yakin ingin membatalkan invoice "${voidingInvoice.invoiceNumber || voidingInvoice.id}"? Status akan diubah menjadi VOID.`}
+          description={`Apakah Anda yakin ingin membatalkan invoice "${voidingInvoice.invoiceNumber || voidingInvoice.id}"? Status invoice akan diubah menjadi Dibatalkan.`}
           confirmLabel="Batalkan Invoice"
           onConfirm={handleConfirmVoidInvoice}
         />

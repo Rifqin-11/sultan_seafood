@@ -36,12 +36,17 @@ DO $$ BEGIN
   );
 EXCEPTION WHEN duplicate_object THEN null; END $$;
 
+DO $$ BEGIN
+  CREATE TYPE profile_status AS ENUM ('PENDING', 'APPROVED', 'REJECTED');
+EXCEPTION WHEN duplicate_object THEN null; END $$;
+
 -- 2. PROFILES (Extends auth.users)
 CREATE TABLE IF NOT EXISTS public.profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   email TEXT NOT NULL,
   full_name TEXT NOT NULL,
   role user_role NOT NULL DEFAULT 'STAFF',
+  status profile_status NOT NULL DEFAULT 'PENDING',
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -99,9 +104,23 @@ CREATE TABLE IF NOT EXISTS public.product_costs (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS public.customer_prices (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  customer_id UUID NOT NULL REFERENCES public.customers(id) ON DELETE CASCADE,
+  product_id UUID NOT NULL REFERENCES public.products(id) ON DELETE CASCADE,
+  selling_price NUMERIC(12, 2) NOT NULL CHECK (selling_price > 0),
+  effective_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  ended_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CHECK (ended_at IS NULL OR ended_at > effective_at)
+);
+CREATE UNIQUE INDEX IF NOT EXISTS customer_prices_one_active_price
+  ON public.customer_prices(customer_id, product_id) WHERE ended_at IS NULL;
+
 -- 7. INVOICES (Header)
 CREATE TABLE IF NOT EXISTS public.invoices (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  public_token UUID NOT NULL DEFAULT gen_random_uuid() UNIQUE,
   invoice_number TEXT UNIQUE,
   customer_id UUID NOT NULL REFERENCES public.customers(id) ON DELETE RESTRICT,
   issue_date DATE NOT NULL DEFAULT CURRENT_DATE,
@@ -156,11 +175,12 @@ CREATE TABLE IF NOT EXISTS public.invoice_direct_costs (
 -- 10. PAYMENTS
 CREATE TABLE IF NOT EXISTS public.payments (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  invoice_id UUID NOT NULL REFERENCES public.invoices(id) ON DELETE RESTRICT,
+  invoice_id UUID NOT NULL REFERENCES public.invoices(id) ON DELETE CASCADE,
   amount NUMERIC(12, 2) NOT NULL,
   payment_date DATE NOT NULL DEFAULT CURRENT_DATE,
   method payment_method NOT NULL DEFAULT 'TRANSFER',
   reference_number TEXT,
+  proof_path TEXT,
   notes TEXT,
   recorded_by UUID REFERENCES auth.users(id),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -211,8 +231,9 @@ BEGIN
     year_str := TO_CHAR(NEW.issue_date, 'YYYY');
     month_str := TO_CHAR(NEW.issue_date, 'MM');
     prefix := 'INV/' || year_str || '/' || month_str || '/';
-    
-    SELECT COALESCE(MAX(CAST(SUBSTRING(invoice_number FROM 16 FOR 4) AS INT)), 0) + 1
+
+    PERFORM pg_advisory_xact_lock(hashtext(prefix));
+    SELECT COALESCE(MAX(split_part(invoice_number, '/', 4)::INT), 0) + 1
     INTO next_seq
     FROM public.invoices
     WHERE invoice_number LIKE prefix || '%';
@@ -235,6 +256,7 @@ ALTER TABLE public.customers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.suppliers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.product_costs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.customer_prices ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.invoices ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.invoice_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.invoice_direct_costs ENABLE ROW LEVEL SECURITY;
@@ -242,65 +264,73 @@ ALTER TABLE public.payments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.expenses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
 
-CREATE OR REPLACE FUNCTION get_user_role(user_id UUID)
+CREATE OR REPLACE FUNCTION public.current_user_role()
 RETURNS user_role AS $$
-  SELECT role FROM public.profiles WHERE id = user_id;
-$$ LANGUAGE sql SECURITY DEFINER;
+  SELECT role FROM public.profiles WHERE id = auth.uid() AND status = 'APPROVED';
+$$ LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public;
 
--- DROP OLD POLICIES IF RE-RUNNING
-DROP POLICY IF EXISTS "Allow authenticated read master data" ON public.customers;
-DROP POLICY IF EXISTS "Allow authenticated read suppliers" ON public.suppliers;
-DROP POLICY IF EXISTS "Allow authenticated read products" ON public.products;
-DROP POLICY IF EXISTS "Allow authenticated read invoices" ON public.invoices;
-DROP POLICY IF EXISTS "Allow authenticated read invoice items" ON public.invoice_items;
-DROP POLICY IF EXISTS "Restricted read product costs" ON public.product_costs;
-DROP POLICY IF EXISTS "Restricted read invoice direct costs" ON public.invoice_direct_costs;
-DROP POLICY IF EXISTS "Allow authenticated insert customers" ON public.customers;
-DROP POLICY IF EXISTS "Allow authenticated update customers" ON public.customers;
-DROP POLICY IF EXISTS "Allow authenticated delete customers" ON public.customers;
-DROP POLICY IF EXISTS "Allow authenticated insert products" ON public.products;
-DROP POLICY IF EXISTS "Allow authenticated update products" ON public.products;
-DROP POLICY IF EXISTS "Allow authenticated delete products" ON public.products;
-DROP POLICY IF EXISTS "Allow authenticated insert product_costs" ON public.product_costs;
-DROP POLICY IF EXISTS "Allow authenticated update product_costs" ON public.product_costs;
-DROP POLICY IF EXISTS "Allow authenticated delete product_costs" ON public.product_costs;
-DROP POLICY IF EXISTS "Allow authenticated delete customer_prices" ON public.customer_prices;
-DROP POLICY IF EXISTS "Allow authenticated insert invoices" ON public.invoices;
-DROP POLICY IF EXISTS "Allow authenticated update invoices" ON public.invoices;
-DROP POLICY IF EXISTS "Allow authenticated insert invoice items" ON public.invoice_items;
-DROP POLICY IF EXISTS "Allow authenticated insert invoice direct costs" ON public.invoice_direct_costs;
-DROP POLICY IF EXISTS "Allow authenticated insert payments" ON public.payments;
+CREATE OR REPLACE FUNCTION public.is_approved_user()
+RETURNS BOOLEAN AS $$
+  SELECT EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND status = 'APPROVED');
+$$ LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public;
 
-CREATE POLICY "Allow authenticated read master data" ON public.customers FOR SELECT TO authenticated USING (true);
-CREATE POLICY "Allow authenticated read suppliers" ON public.suppliers FOR SELECT TO authenticated USING (true);
-CREATE POLICY "Allow authenticated read products" ON public.products FOR SELECT TO authenticated USING (true);
-CREATE POLICY "Allow authenticated read invoices" ON public.invoices FOR SELECT TO authenticated USING (true);
-CREATE POLICY "Allow authenticated read invoice items" ON public.invoice_items FOR SELECT TO authenticated USING (true);
+CREATE POLICY profiles_self_or_owner_read ON public.profiles FOR SELECT TO authenticated
+  USING (id = auth.uid() OR public.current_user_role() = 'OWNER');
+CREATE POLICY approved_customers_read ON public.customers FOR SELECT TO authenticated USING (public.is_approved_user());
+CREATE POLICY approved_suppliers_read ON public.suppliers FOR SELECT TO authenticated USING (public.is_approved_user());
+CREATE POLICY approved_products_read ON public.products FOR SELECT TO authenticated USING (public.is_approved_user());
+CREATE POLICY finance_costs_read ON public.product_costs FOR SELECT TO authenticated USING (public.current_user_role() IN ('OWNER','FINANCE'));
+CREATE POLICY approved_customer_prices_read ON public.customer_prices FOR SELECT TO authenticated USING (public.is_approved_user());
+CREATE POLICY finance_invoices_read ON public.invoices FOR SELECT TO authenticated USING (public.current_user_role() IN ('OWNER','FINANCE'));
+CREATE POLICY finance_invoice_items_read ON public.invoice_items FOR SELECT TO authenticated USING (public.current_user_role() IN ('OWNER','FINANCE'));
+CREATE POLICY finance_direct_costs_read ON public.invoice_direct_costs FOR SELECT TO authenticated USING (public.current_user_role() IN ('OWNER','FINANCE'));
+CREATE POLICY finance_payments_read ON public.payments FOR SELECT TO authenticated USING (public.current_user_role() IN ('OWNER','FINANCE'));
+CREATE POLICY finance_customers_write ON public.customers FOR ALL TO authenticated USING (public.current_user_role() IN ('OWNER','FINANCE')) WITH CHECK (public.current_user_role() IN ('OWNER','FINANCE'));
+CREATE POLICY finance_suppliers_write ON public.suppliers FOR ALL TO authenticated USING (public.current_user_role() IN ('OWNER','FINANCE')) WITH CHECK (public.current_user_role() IN ('OWNER','FINANCE'));
+CREATE POLICY finance_products_write ON public.products FOR ALL TO authenticated USING (public.current_user_role() IN ('OWNER','FINANCE')) WITH CHECK (public.current_user_role() IN ('OWNER','FINANCE'));
+CREATE POLICY finance_costs_write ON public.product_costs FOR ALL TO authenticated USING (public.current_user_role() IN ('OWNER','FINANCE')) WITH CHECK (public.current_user_role() IN ('OWNER','FINANCE'));
+CREATE POLICY finance_customer_prices_write ON public.customer_prices FOR ALL TO authenticated USING (public.current_user_role() IN ('OWNER','FINANCE')) WITH CHECK (public.current_user_role() IN ('OWNER','FINANCE'));
 
-CREATE POLICY "Restricted read product costs" ON public.product_costs
-FOR SELECT TO authenticated
-USING (get_user_role(auth.uid()) IN ('OWNER', 'FINANCE'));
+-- 13. COMPANY PROFILE
+CREATE TABLE IF NOT EXISTS public.company_profile (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL DEFAULT 'Sultan Seafood',
+  address TEXT,
+  phone TEXT,
+  email TEXT,
+  website TEXT,
+  npwp TEXT,
+  bank_name TEXT NOT NULL DEFAULT 'BCA',
+  bank_account TEXT NOT NULL DEFAULT '1234567890',
+  bank_holder TEXT NOT NULL DEFAULT 'Sultan Seafood',
+  logo_url TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
 
-CREATE POLICY "Restricted read invoice direct costs" ON public.invoice_direct_costs
-FOR SELECT TO authenticated
-USING (get_user_role(auth.uid()) IN ('OWNER', 'FINANCE'));
+ALTER TABLE public.company_profile ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Allow authenticated insert customers" ON public.customers FOR INSERT TO authenticated WITH CHECK (true);
-CREATE POLICY "Allow authenticated update customers" ON public.customers FOR UPDATE TO authenticated USING (true);
-CREATE POLICY "Allow authenticated delete customers" ON public.customers FOR DELETE TO authenticated USING (true);
+DROP POLICY IF EXISTS "Allow authenticated read company profile" ON public.company_profile;
+DROP POLICY IF EXISTS "Allow anon read company profile" ON public.company_profile;
+DROP POLICY IF EXISTS "Allow authenticated insert company profile" ON public.company_profile;
+DROP POLICY IF EXISTS "Allow authenticated update company profile" ON public.company_profile;
 
-CREATE POLICY "Allow authenticated insert products" ON public.products FOR INSERT TO authenticated WITH CHECK (true);
-CREATE POLICY "Allow authenticated update products" ON public.products FOR UPDATE TO authenticated USING (true);
-CREATE POLICY "Allow authenticated delete products" ON public.products FOR DELETE TO authenticated USING (true);
+CREATE POLICY approved_company_read ON public.company_profile FOR SELECT TO authenticated USING (public.is_approved_user());
+CREATE POLICY owner_company_write ON public.company_profile FOR ALL TO authenticated
+  USING (public.current_user_role() = 'OWNER') WITH CHECK (public.current_user_role() = 'OWNER');
 
-CREATE POLICY "Allow authenticated insert product_costs" ON public.product_costs FOR INSERT TO authenticated WITH CHECK (true);
-CREATE POLICY "Allow authenticated update product_costs" ON public.product_costs FOR UPDATE TO authenticated USING (true);
-CREATE POLICY "Allow authenticated delete product_costs" ON public.product_costs FOR DELETE TO authenticated USING (true);
+-- 15. AUTOMATIC OWNER ASSIGNMENT TRIGGER
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.profiles (id, email, full_name, role, status)
+  VALUES (NEW.id, COALESCE(NEW.email, ''), COALESCE(NEW.raw_user_meta_data->>'full_name', 'User'), 'STAFF', 'PENDING')
+  ON CONFLICT (id) DO NOTHING;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
-CREATE POLICY "Allow authenticated delete customer_prices" ON public.customer_prices FOR DELETE TO authenticated USING (true);
-
-CREATE POLICY "Allow authenticated insert invoices" ON public.invoices FOR INSERT TO authenticated WITH CHECK (true);
-CREATE POLICY "Allow authenticated update invoices" ON public.invoices FOR UPDATE TO authenticated USING (true);
-CREATE POLICY "Allow authenticated insert invoice items" ON public.invoice_items FOR INSERT TO authenticated WITH CHECK (true);
-CREATE POLICY "Allow authenticated insert invoice direct costs" ON public.invoice_direct_costs FOR INSERT TO authenticated WITH CHECK (true);
-CREATE POLICY "Allow authenticated insert payments" ON public.payments FOR INSERT TO authenticated WITH CHECK (true);
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();

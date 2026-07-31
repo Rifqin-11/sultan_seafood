@@ -1,111 +1,95 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { getApprovedUser, normalizeActionError, requireApprovedUser } from "@/lib/security/auth";
 import { redirect } from "next/navigation";
 
 export async function signInAction(formData: FormData) {
-  const email = formData.get("email") as string;
-  const password = formData.get("password") as string;
-
-  if (!email || !password) {
-    return { error: "Email dan password wajib diisi." };
-  }
-
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-
-  // If Supabase env is not configured yet
-  if (!supabaseUrl || supabaseUrl.includes("placeholder")) {
-    return { error: "Supabase Environment belum dikonfigurasi di server." };
-  }
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const password = String(formData.get("password") ?? "");
+  if (!email || !password) return { error: "Email dan password wajib diisi." };
 
   try {
     const supabase = await createClient();
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error) {
-      if (error.message.includes("Invalid login credentials")) {
-        return { error: "Email atau password yang Anda masukkan salah." };
-      }
-      return { error: error.message };
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error || !data.user) {
+      return { error: error?.message.includes("Invalid login credentials") ? "Email atau password salah." : error?.message ?? "Pengguna tidak ditemukan." };
     }
 
-    if (!data.user) {
-      return { error: "Pengguna tidak ditemukan." };
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("status")
+      .eq("id", data.user.id)
+      .maybeSingle();
+
+    if (profileError || !profile) {
+      await supabase.auth.signOut();
+      return { error: "Profil akun tidak tersedia. Hubungi Owner." };
+    }
+    if (profile.status !== "APPROVED") {
+      await supabase.auth.signOut();
+      return { error: profile.status === "REJECTED" ? "Pendaftaran akun ditolak oleh Owner." : "Akun masih menunggu persetujuan Owner." };
     }
 
     return { success: true };
-  } catch (err: unknown) {
-    const e = err as { message?: string };
-    return { error: e.message || "Gagal verifikasi login Supabase." };
+  } catch (error) {
+    return { error: normalizeActionError(error, "Gagal memverifikasi login.") };
+  }
+}
+
+export async function signUpAction(formData: FormData) {
+  const fullName = String(formData.get("fullName") ?? "").trim();
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const password = String(formData.get("password") ?? "");
+  const confirmPassword = String(formData.get("confirmPassword") ?? "");
+
+  if (!fullName || !email || !password) return { error: "Semua kolom wajib diisi." };
+  if (password !== confirmPassword) return { error: "Konfirmasi password tidak cocok." };
+  if (password.length < 8) return { error: "Password minimal 8 karakter." };
+
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { full_name: fullName, role: "STAFF" } },
+    });
+    if (error || !data.user) {
+      return { error: error?.message.includes("User already registered") ? "Email sudah terdaftar." : error?.message ?? "Gagal membuat akun." };
+    }
+    await supabase.auth.signOut();
+    return {
+      success: true,
+      isPendingApproval: true,
+      message: "Pendaftaran berhasil. Akun menunggu persetujuan Owner.",
+    };
+  } catch (error) {
+    return { error: normalizeActionError(error, "Gagal melakukan pendaftaran.") };
   }
 }
 
 export async function signOutAction() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-
-  if (supabaseUrl && !supabaseUrl.includes("placeholder")) {
-    try {
-      const supabase = await createClient();
-      await supabase.auth.signOut();
-    } catch {
-      // ignore
-    }
+  try {
+    const supabase = await createClient();
+    await supabase.auth.signOut();
+  } finally {
+    redirect("/login");
   }
-
-  redirect("/login");
 }
 
 export async function getCurrentUserAction() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  if (!supabaseUrl || supabaseUrl.includes("placeholder")) {
-    return { email: "owner@sultansf.id", role: "Owner" };
-  }
-
-  try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) return null;
-
-    return {
-      id: user.id,
-      email: user.email || "user@sultansf.id",
-      role: (user.user_metadata?.role as string) || "User",
-    };
-  } catch {
-    return null;
-  }
+  return getApprovedUser();
 }
 
 export async function updatePasswordAction(newPassword: string) {
-  if (!newPassword || newPassword.length < 6) {
-    return { error: "Password minimal harus 6 karakter." };
-  }
-
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-
-  if (!supabaseUrl || supabaseUrl.includes("placeholder")) {
-    return { success: true, message: "Password berhasil diperbarui (Demo Mode)." };
-  }
-
+  if (!newPassword || newPassword.length < 8) return { error: "Password minimal 8 karakter." };
   try {
+    await requireApprovedUser();
     const supabase = await createClient();
-    const { error } = await supabase.auth.updateUser({
-      password: newPassword,
-    });
-
-    if (error) {
-      return { error: error.message };
-    }
-
-    return { success: true, message: "Password akun Supabase Auth berhasil diperbarui." };
-  } catch (err: unknown) {
-    const e = err as { message?: string };
-    return { error: e.message || "Gagal memperbarui password." };
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) throw error;
+    return { success: true, message: "Password berhasil diperbarui." };
+  } catch (error) {
+    return { error: normalizeActionError(error, "Gagal memperbarui password.") };
   }
 }

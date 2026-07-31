@@ -45,9 +45,10 @@ export interface UserProfileInfo {
 interface TopbarProps {
   onMobileMenuToggle: () => void;
   user?: UserProfileInfo;
+  notificationCount?: number;
 }
 
-export function Topbar({ onMobileMenuToggle, user }: TopbarProps) {
+export function Topbar({ onMobileMenuToggle, user, notificationCount = 0 }: TopbarProps) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -96,9 +97,11 @@ export function Topbar({ onMobileMenuToggle, user }: TopbarProps) {
           size="icon"
           className="relative"
           aria-label="Notifikasi"
+          onClick={() => router.push("/reports/receivables")}
+          title={`${notificationCount} notifikasi perlu ditinjau`}
         >
           <Bell className="w-4 h-4" />
-          <span className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-red-500" />
+          {notificationCount > 0 && <span className="absolute top-1 right-1 min-w-4 h-4 px-1 rounded-full bg-red-500 text-[9px] text-white flex items-center justify-center">{notificationCount > 9 ? "9+" : notificationCount}</span>}
         </Button>
 
         {/* User menu */}
@@ -128,13 +131,11 @@ export function Topbar({ onMobileMenuToggle, user }: TopbarProps) {
               <div className="font-semibold text-foreground mt-0.5 truncate">{userEmail}</div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => router.push("/settings/users")}>
-              Profil & Pengguna
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => router.push("/settings/company")}>
-              Pengaturan Bisnis
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
+            {user?.role === "OWNER" && <>
+              <DropdownMenuItem onClick={() => router.push("/settings/users")}>Profil & Pengguna</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => router.push("/settings/company")}>Pengaturan Bisnis</DropdownMenuItem>
+              <DropdownMenuSeparator />
+            </>}
             <DropdownMenuItem
               className="text-red-600 cursor-pointer"
               onClick={async () => {

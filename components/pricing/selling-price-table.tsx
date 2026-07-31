@@ -12,7 +12,8 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Edit2, Trash2, Loader2, Plus } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Edit2, Trash2, Loader2, Plus, Tag } from "lucide-react";
 import { deleteCustomerPriceAction, createCustomerPriceAction } from "@/lib/actions/pricing";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
@@ -146,8 +147,19 @@ export function SellingPriceTable({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {products.map((p) => (
-                <TableRow key={p.id} className="hover:bg-muted/20">
+              {products.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={customers.length + 2} className="h-48">
+                    <EmptyState
+                      icon={Tag}
+                      title="Belum ada harga jual khusus"
+                      description="Tambahkan produk dan pelanggan terlebih dahulu untuk mulai mengatur harga jual khusus."
+                    />
+                  </TableCell>
+                </TableRow>
+              ) : (
+                products.map((p) => (
+                  <TableRow key={p.id} className="hover:bg-muted/20">
                   <TableCell className="text-sm font-medium sticky left-0 bg-white z-10">
                     <div>
                       <p className="font-semibold text-foreground">
@@ -220,7 +232,7 @@ export function SellingPriceTable({
                     );
                   })}
                 </TableRow>
-              ))}
+              )))}
             </TableBody>
           </Table>
         </div>

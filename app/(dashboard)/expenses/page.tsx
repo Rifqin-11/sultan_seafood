@@ -1,24 +1,19 @@
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/app-shell/page-header";
 import { getExpensesAction } from "@/lib/actions/expenses";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils";
 import { AddExpenseDialog } from "@/components/expenses/add-expense-dialog";
 import { MetricCard } from "@/components/dashboard/metric-card";
 import { DollarSign, Receipt, PieChart, TrendingUp } from "lucide-react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { ExpenseTable } from "@/components/expenses/expense-table";
+import { requireRole } from "@/lib/security/auth";
 
 export const metadata: Metadata = {
   title: "Pengeluaran Operasional",
 };
 
 export default async function ExpensesPage() {
+  await requireRole(["OWNER", "FINANCE"]);
   const expenses = await getExpensesAction();
   const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
   const totalCount = expenses.length;
@@ -81,50 +76,7 @@ export default async function ExpensesPage() {
           <h3 className="text-sm font-semibold">Riwayat Pengeluaran Operasional</h3>
           <AddExpenseDialog />
         </div>
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/30 hover:bg-muted/30">
-                <TableHead className="text-xs font-semibold">Tanggal</TableHead>
-                <TableHead className="text-xs font-semibold">Kategori</TableHead>
-                <TableHead className="text-xs font-semibold">Deskripsi</TableHead>
-                <TableHead className="text-xs font-semibold">Dicatat oleh</TableHead>
-                <TableHead className="text-xs font-semibold text-right">Nominal</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {expenses.map((e) => (
-                <TableRow key={e.id} className="hover:bg-muted/20">
-                  <TableCell className="text-sm text-muted-foreground">
-                    {formatDate(e.expenseDate)}
-                  </TableCell>
-                  <TableCell className="text-sm font-medium">
-                    <span className="inline-block px-2.5 py-0.5 bg-amber-50 text-amber-800 text-xs font-medium rounded-full border border-amber-200">
-                      {e.category}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {e.description}
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {e.userName}
-                  </TableCell>
-                  <TableCell className="text-right text-sm font-semibold tabular-nums text-red-600">
-                    -{formatCurrency(e.amount)}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-        <div className="flex items-center justify-between px-4 py-3 border-t border-border">
-          <p className="text-xs text-muted-foreground">
-            {expenses.length} pengeluaran
-          </p>
-          <div className="text-sm font-bold">
-            Total: {formatCurrency(totalExpenses)}
-          </div>
-        </div>
+        <ExpenseTable expenses={expenses} totalExpenses={totalExpenses} />
       </div>
     </div>
   );

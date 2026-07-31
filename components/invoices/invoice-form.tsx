@@ -1,7 +1,23 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Plus, Trash2, Lock, AlertCircle, CheckCircle, Loader2 } from "lucide-react";
+import { useState } from "react";
+import {
+  AlertCircle,
+  CalendarDays,
+  CheckCircle,
+  Eye,
+  FileText,
+  Loader2,
+  Lock,
+  PackageOpen,
+  Plus,
+  ReceiptText,
+  Save,
+  Send,
+  Trash2,
+  UserRound,
+  WalletCards,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
@@ -20,15 +36,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { mockCustomers, mockProducts } from "@/lib/mock-data";
 import {
   formatCurrency,
   calculateInvoice,
   formatPercent,
   getDirectCostLabel,
 } from "@/lib/utils";
-import type { DirectCostCategory } from "@/types";
-import { cn } from "@/lib/utils";
+import type { CustomerPrice, DirectCostCategory } from "@/types";
 import { createInvoiceAction } from "@/lib/actions/invoices";
 import { useRouter } from "next/navigation";
 
@@ -67,11 +81,13 @@ const DIRECT_COST_CATEGORIES: DirectCostCategory[] = [
 interface InvoiceFormProps {
   customers?: Customer[];
   products?: Product[];
+  customerPrices?: CustomerPrice[];
+  canViewInternal?: boolean;
 }
 
-export function InvoiceForm({ customers, products }: InvoiceFormProps) {
-  const customersList = customers && customers.length > 0 ? customers : mockCustomers;
-  const productsList = products && products.length > 0 ? products : mockProducts;
+export function InvoiceForm({ customers = [], products = [], customerPrices = [], canViewInternal = false }: InvoiceFormProps) {
+  const customersList = customers;
+  const productsList = products;
 
   const [customerId, setCustomerId] = useState("");
   const [issueDate, setIssueDate] = useState(
@@ -85,19 +101,17 @@ export function InvoiceForm({ customers, products }: InvoiceFormProps) {
   const [costs, setCosts] = useState<DirectCostRow[]>([]);
 
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);
+  const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
   const [formError, setFormError] = useState("");
 
   const selectedCustomer = customersList.find((c) => c.id === customerId);
 
-  // Auto-fill due date from payment terms
-  useEffect(() => {
-    if (selectedCustomer && issueDate) {
-      const date = new Date(issueDate);
-      date.setDate(date.getDate() + selectedCustomer.paymentTermDays);
-      setDueDate(date.toISOString().slice(0, 10));
-    }
-  }, [customerId, issueDate, selectedCustomer]);
+  const calculateDueDate = (dateValue: string, paymentTermDays: number) => {
+    const date = new Date(`${dateValue}T00:00:00`);
+    date.setDate(date.getDate() + paymentTermDays);
+    return date.toISOString().slice(0, 10);
+  };
 
   // Add item
   const addItem = () => {
@@ -135,8 +149,8 @@ export function InvoiceForm({ customers, products }: InvoiceFormProps) {
               productId: value as string,
               description: product.size ? `${product.name} (${product.size})` : product.name,
               unit: product.defaultUnit,
-              sellingPrice: product.defaultSellingPrice ?? 0,
-              purchasePrice: product.activeCost ?? 0,
+              sellingPrice: customerPrices.find((price) => price.customerId === customerId && price.productId === product.id)?.sellingPrice ?? product.defaultSellingPrice ?? 0,
+              purchasePrice: canViewInternal ? product.activeCost ?? 0 : 0,
             };
           }
         }
@@ -183,6 +197,7 @@ export function InvoiceForm({ customers, products }: InvoiceFormProps) {
     costs.map((c) => ({ amount: c.amount })),
     discount
   );
+  const marginProgress = Math.min(100, Math.max(0, calc.transactionMargin));
 
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
@@ -191,11 +206,11 @@ export function InvoiceForm({ customers, products }: InvoiceFormProps) {
     setFormError("");
     if (!customerId) {
       setFormError("Pilih restoran pelanggan terlebih dahulu.");
-      return;
+      return false;
     }
     if (items.length === 0) {
       setFormError("Tambahkan minimal 1 item produk ke dalam invoice.");
-      return;
+      return false;
     }
 
     setSubmitting(true);
@@ -210,7 +225,7 @@ export function InvoiceForm({ customers, products }: InvoiceFormProps) {
       issueDate,
       dueDate,
       notes,
-      discount,
+      discount: canViewInternal ? discount : 0,
       status,
       items: items.map((i) => ({
         productId: i.productId,
@@ -220,12 +235,12 @@ export function InvoiceForm({ customers, products }: InvoiceFormProps) {
         sellingPrice: i.sellingPrice,
         purchasePrice: i.purchasePrice,
       })),
-      costs: costs.map((c) => ({
+      costs: canViewInternal ? costs.map((c) => ({
         category: c.category,
         name: c.name,
         amount: c.amount,
         notes: c.notes,
-      })),
+      })) : [],
     });
 
     setSubmitting(false);
@@ -234,21 +249,25 @@ export function InvoiceForm({ customers, products }: InvoiceFormProps) {
     if (res.error) {
       setFormError(res.error);
       toast.error(`Gagal: ${res.error}`);
-    } else if (res.success) {
+      return false;
+    } else if ("success" in res && res.success) {
       toast.success(
         status === "ISSUED" ? "Invoice berhasil diterbitkan!" : "Draft invoice berhasil disimpan!"
       );
       setPublishDialogOpen(false);
-      const invoiceId = res.invoiceId || "inv_1";
+      const invoiceId = res.invoiceId;
       router.push(`/invoices/${invoiceId}`);
+      return true;
     }
+
+    return false;
   };
 
   const handleSaveDraft = async () => {
     setSaveState("saving");
-    await submitInvoice("DRAFT");
-    setSaveState("saved");
-    setTimeout(() => setSaveState("idle"), 2000);
+    const saved = await submitInvoice("DRAFT");
+    setSaveState(saved ? "saved" : "idle");
+    if (saved) setTimeout(() => setSaveState("idle"), 2000);
   };
 
   const handlePublish = async () => {
@@ -256,27 +275,42 @@ export function InvoiceForm({ customers, products }: InvoiceFormProps) {
   };
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 items-start">
+    <div className="flex flex-col items-start gap-6 xl:flex-row xl:gap-7">
       {/* Left Panel — Main Form */}
-      <div className="flex-1 min-w-0 w-full space-y-5">
+      <div className="w-full min-w-0 flex-1 space-y-5">
         {formError && (
-          <div className="flex items-center gap-2 p-3 text-xs text-red-600 bg-red-50 border border-red-200 rounded-xl">
+          <div className="flex items-start gap-2.5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 shadow-sm" role="alert">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
             <span>{formError}</span>
           </div>
         )}
         {/* Customer info */}
-        <div className="bg-white rounded-2xl border border-border shadow-card p-5">
-          <h3 className="text-sm font-semibold text-foreground mb-4">
-            Informasi Pelanggan
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <section className="rounded-[20px] border border-black/[0.07] bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.03),0_12px_30px_rgba(15,23,42,0.035)] sm:p-6">
+          <div className="mb-5 flex items-center gap-3">
+            <div className="flex size-9 items-center justify-center rounded-xl bg-stone-100 text-stone-700">
+              <UserRound className="size-4" />
+            </div>
+            <div>
+              <h2 className="text-sm font-semibold tracking-[-0.01em] text-foreground">
+                Informasi Pelanggan
+              </h2>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Tentukan restoran dan periode pembayaran invoice.
+              </p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2">
-              <label className="block text-xs font-medium text-muted-foreground mb-1.5">
+              <label className="mb-2 block text-xs font-semibold text-stone-600">
                 Restoran <span className="text-red-500">*</span>
               </label>
-              <Select value={customerId} onValueChange={(v) => setCustomerId(v || "")}>
-                <SelectTrigger className="h-9">
+              <Select value={customerId} onValueChange={(value) => {
+                const nextCustomerId = value || "";
+                setCustomerId(nextCustomerId);
+                const customer = customersList.find((item) => item.id === nextCustomerId);
+                if (customer) setDueDate(calculateDueDate(issueDate, customer.paymentTermDays));
+              }}>
+                <SelectTrigger className="h-10 w-full rounded-xl border-stone-200 bg-stone-50/60 px-3 hover:bg-stone-50">
                   <SelectValue placeholder="Pilih restoran...">
                     {selectedCustomer ? selectedCustomer.name : undefined}
                   </SelectValue>
@@ -294,104 +328,130 @@ export function InvoiceForm({ customers, products }: InvoiceFormProps) {
             </div>
 
             {selectedCustomer && (
-              <div className="sm:col-span-2 p-3 bg-muted/40 rounded-lg">
-                <p className="text-xs text-muted-foreground mb-1">
-                  Kontak: {selectedCustomer.contactName}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Alamat: {selectedCustomer.billingAddress}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Termin: {selectedCustomer.paymentTermDays} hari
-                </p>
+              <div className="grid gap-3 rounded-xl border border-stone-200/80 bg-stone-50/70 p-3.5 sm:col-span-2 sm:grid-cols-[0.8fr_1.6fr_auto]">
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-stone-400">Kontak</p>
+                  <p className="mt-1 text-xs font-medium text-stone-700">{selectedCustomer.contactName || "—"}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-stone-400">Alamat Tagihan</p>
+                  <p className="mt-1 text-xs leading-relaxed text-stone-600">{selectedCustomer.billingAddress || "—"}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-stone-400">Termin</p>
+                  <p className="mt-1 text-xs font-semibold text-stone-700">{selectedCustomer.paymentTermDays} hari</p>
+                </div>
               </div>
             )}
 
             <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1.5">
+              <label className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-stone-600">
+                <CalendarDays className="size-3.5 text-stone-400" />
                 Tanggal Invoice
               </label>
               <Input
                 type="date"
                 value={issueDate}
-                onChange={(e) => setIssueDate(e.target.value)}
-                className="h-9"
+                onChange={(event) => {
+                  setIssueDate(event.target.value);
+                  if (selectedCustomer) setDueDate(calculateDueDate(event.target.value, selectedCustomer.paymentTermDays));
+                }}
+                className="h-10 rounded-xl border-stone-200 bg-stone-50/60 px-3"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1.5">
+              <label className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-stone-600">
+                <CalendarDays className="size-3.5 text-stone-400" />
                 Jatuh Tempo
               </label>
               <Input
                 type="date"
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
-                className="h-9"
+                className="h-10 rounded-xl border-stone-200 bg-stone-50/60 px-3"
               />
             </div>
           </div>
-        </div>
+        </section>
 
         {/* Items table */}
-        <div className="bg-white rounded-2xl border border-border shadow-card overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-            <h3 className="text-sm font-semibold text-foreground">
-              Item Produk
-            </h3>
-            <Button onClick={addItem} size="sm" variant="outline">
-              <Plus className="w-3.5 h-3.5 mr-1" />
+        <section className="overflow-hidden rounded-[20px] border border-black/[0.07] bg-white shadow-[0_1px_2px_rgba(15,23,42,0.03),0_12px_30px_rgba(15,23,42,0.035)]">
+          <div className="flex items-center justify-between gap-3 border-b border-black/[0.06] px-5 py-4 sm:px-6">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-stone-100 text-stone-700">
+                <PackageOpen className="size-4" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-sm font-semibold tracking-[-0.01em] text-foreground">Item Produk</h2>
+                  {items.length > 0 && (
+                    <span className="rounded-full bg-stone-100 px-2 py-0.5 text-[10px] font-semibold text-stone-500">
+                      {items.length} item
+                    </span>
+                  )}
+                </div>
+                <p className="mt-0.5 truncate text-xs text-muted-foreground">Produk dan harga mengikuti data aktif.</p>
+              </div>
+            </div>
+            <Button onClick={addItem} size="sm" variant="outline" className="h-8 rounded-xl bg-white px-3 shadow-sm">
+              <Plus className="w-3.5 h-3.5" />
               Tambah Item
             </Button>
           </div>
 
           {items.length === 0 ? (
-            <div className="py-10 flex flex-col items-center gap-2 text-center">
-              <p className="text-sm text-muted-foreground">
-                Belum ada item. Klik &quot;Tambah Item&quot; untuk mulai.
-              </p>
+            <div className="flex flex-col items-center px-5 py-12 text-center sm:py-14">
+              <div className="mb-3 flex size-11 items-center justify-center rounded-2xl border border-dashed border-stone-300 bg-stone-50 text-stone-400">
+                <PackageOpen className="size-5" />
+              </div>
+              <p className="text-sm font-medium text-stone-700">Belum ada produk</p>
+              <p className="mt-1 max-w-xs text-xs leading-relaxed text-muted-foreground">Tambahkan produk yang dipesan restoran untuk mulai menghitung invoice.</p>
+              <Button onClick={addItem} size="sm" variant="outline" className="mt-4 h-8 rounded-xl">
+                <Plus className="size-3.5" /> Tambah produk pertama
+              </Button>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="hidden overflow-x-auto md:block">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="bg-muted/30 border-b border-border">
-                    <th className="text-left text-xs font-semibold text-muted-foreground px-4 py-2.5 min-w-[160px]">
+                  <tr className="border-b border-stone-200 bg-stone-50/80">
+                    <th className="min-w-[180px] px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-stone-500">
                       Produk
                     </th>
-                    <th className="text-left text-xs font-semibold text-muted-foreground px-3 py-2.5 w-24">
+                    <th className="w-24 px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-stone-500">
                       Size
                     </th>
-                    <th className="text-right text-xs font-semibold text-muted-foreground px-3 py-2.5 w-20">
+                    <th className="w-20 px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-stone-500">
                       Qty
                     </th>
-                    <th className="text-left text-xs font-semibold text-muted-foreground px-3 py-2.5 w-20">
+                    <th className="w-20 px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-stone-500">
                       Satuan
                     </th>
-                    <th className="text-right text-xs font-semibold text-amber-700 px-3 py-2.5 w-32 bg-amber-50/50">
+                    {canViewInternal && <th className="w-32 bg-amber-50/70 px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-amber-700">
                       <span className="inline-flex items-center justify-end gap-1">
                         <Lock className="w-3 h-3 text-amber-600" /> Harga Beli
                       </span>
-                    </th>
-                    <th className="text-right text-xs font-semibold text-muted-foreground px-3 py-2.5 w-32">
+                    </th>}
+                    <th className="w-32 px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-stone-500">
                       Harga Jual
                     </th>
-                    <th className="text-right text-xs font-semibold text-muted-foreground px-3 py-2.5 w-32">
+                    <th className="w-32 px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-stone-500">
                       Subtotal
                     </th>
                     <th className="w-10 px-2" />
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border">
+                <tbody className="divide-y divide-stone-100">
                   {items.map((item) => (
-                    <tr key={item.id}>
-                      <td className="px-4 py-2">
+                    <tr key={item.id} className="transition-colors hover:bg-stone-50/60">
+                      <td className="px-5 py-3">
                         <Select
                           value={item.productId}
                           onValueChange={(v) =>
                             updateItem(item.id, "productId", v || "")
                           }
                         >
-                          <SelectTrigger className="h-8 text-xs">
+                          <SelectTrigger className="h-9 w-full rounded-xl border-stone-200 bg-white text-xs">
                             <SelectValue placeholder="Pilih produk...">
                               {(() => {
                                 const p = productsList.find((prod) => prod.id === item.productId);
@@ -410,11 +470,11 @@ export function InvoiceForm({ customers, products }: InvoiceFormProps) {
                           </SelectContent>
                         </Select>
                       </td>
-                      <td className="px-3 py-2 text-xs">
+                      <td className="px-3 py-3 text-xs">
                         {(() => {
                           const p = productsList.find((prod) => prod.id === item.productId);
                           return p?.size ? (
-                            <span className="inline-block px-2 py-0.5 bg-blue-50 text-blue-700 font-semibold rounded border border-blue-200">
+                            <span className="inline-block rounded-lg border border-sky-200 bg-sky-50 px-2 py-1 font-semibold text-sky-700">
                               {p.size}
                             </span>
                           ) : (
@@ -422,7 +482,7 @@ export function InvoiceForm({ customers, products }: InvoiceFormProps) {
                           );
                         })()}
                       </td>
-                      <td className="px-3 py-2">
+                      <td className="px-3 py-3">
                         <Input
                           type="number"
                           min={0}
@@ -435,56 +495,43 @@ export function InvoiceForm({ customers, products }: InvoiceFormProps) {
                               parseFloat(e.target.value) || 0
                             )
                           }
-                          className="h-8 text-xs text-right w-full"
+                          className="h-9 w-full rounded-xl border-stone-200 text-right text-xs tabular-nums"
                         />
                       </td>
-                      <td className="px-3 py-2">
+                      <td className="px-3 py-3">
                         <Input
                           value={item.unit}
-                          onChange={(e) =>
-                            updateItem(item.id, "unit", e.target.value)
-                          }
-                          className="h-8 text-xs w-full"
+                          readOnly
+                          className="h-9 w-full rounded-xl border-stone-200 bg-stone-50 text-xs"
                         />
                       </td>
-                      <td className="px-3 py-2 bg-amber-50/30">
+                      {canViewInternal && <td className="bg-amber-50/40 px-3 py-3">
                         <Input
                           type="number"
                           min={0}
                           value={item.purchasePrice}
-                          onChange={(e) =>
-                            updateItem(
-                              item.id,
-                              "purchasePrice",
-                              parseFloat(e.target.value) || 0
-                            )
-                          }
-                          className="h-8 text-xs text-right w-full bg-amber-50/50 border-amber-200 focus:border-amber-400 font-medium text-amber-900"
+                          readOnly
+                          className="h-9 w-full rounded-xl border-amber-200 bg-amber-50/70 text-right text-xs font-semibold tabular-nums text-amber-900"
                           placeholder="0"
                         />
-                      </td>
-                      <td className="px-3 py-2">
+                      </td>}
+                      <td className="px-3 py-3">
                         <Input
                           type="number"
                           min={0}
                           value={item.sellingPrice}
-                          onChange={(e) =>
-                            updateItem(
-                              item.id,
-                              "sellingPrice",
-                              parseFloat(e.target.value) || 0
-                            )
-                          }
-                          className="h-8 text-xs text-right w-full font-medium"
+                          readOnly
+                          className="h-9 w-full rounded-xl border-stone-200 bg-stone-50 text-right text-xs font-semibold tabular-nums"
                         />
                       </td>
-                      <td className="px-3 py-2 text-right text-xs font-semibold tabular-nums">
+                      <td className="px-3 py-3 text-right text-xs font-bold tabular-nums text-stone-800">
                         {formatCurrency(item.quantity * item.sellingPrice)}
                       </td>
-                      <td className="px-2 py-2">
+                      <td className="px-2 py-3">
                         <button
+                          type="button"
                           onClick={() => removeItem(item.id)}
-                          className="text-muted-foreground hover:text-red-500 transition-colors"
+                          className="flex size-8 items-center justify-center rounded-lg text-stone-400 transition-colors hover:bg-red-50 hover:text-red-600"
                           aria-label="Hapus item"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -497,11 +544,88 @@ export function InvoiceForm({ customers, products }: InvoiceFormProps) {
             </div>
           )}
 
+          {items.length > 0 && (
+            <div className="divide-y divide-stone-100 md:hidden">
+              {items.map((item, index) => {
+                const selectedProduct = productsList.find((product) => product.id === item.productId);
+                return (
+                  <div key={item.id} className="space-y-4 px-4 py-5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-stone-400">Item {index + 1}</span>
+                      <button
+                        type="button"
+                        onClick={() => removeItem(item.id)}
+                        className="flex h-8 items-center gap-1.5 rounded-lg px-2 text-xs font-medium text-stone-400 transition-colors hover:bg-red-50 hover:text-red-600"
+                        aria-label={`Hapus item ${index + 1}`}
+                      >
+                        <Trash2 className="size-3.5" /> Hapus
+                      </button>
+                    </div>
+                    <div>
+                      <label className="mb-2 block text-xs font-semibold text-stone-600">Produk</label>
+                      <Select value={item.productId} onValueChange={(value) => updateItem(item.id, "productId", value || "")}>
+                        <SelectTrigger className="h-10 w-full rounded-xl border-stone-200 bg-stone-50/60 text-xs">
+                          <SelectValue placeholder="Pilih produk...">{selectedProduct?.name}</SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {productsList.filter((product) => product.status === "ACTIVE").map((product) => (
+                            <SelectItem key={product.id} value={product.id}>
+                              {product.name} {product.size ? `[${product.size}]` : ""}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="mb-2 block text-xs font-semibold text-stone-600">Jumlah</label>
+                        <Input
+                          type="number"
+                          min={0}
+                          step="0.1"
+                          value={item.quantity}
+                          onChange={(event) => updateItem(item.id, "quantity", parseFloat(event.target.value) || 0)}
+                          className="h-10 rounded-xl border-stone-200 text-right text-sm tabular-nums"
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-2 block text-xs font-semibold text-stone-600">Satuan</label>
+                        <Input value={item.unit} readOnly className="h-10 rounded-xl border-stone-200 bg-stone-50 text-sm" />
+                      </div>
+                    </div>
+                    <div className={canViewInternal ? "grid grid-cols-2 gap-3" : "grid grid-cols-1"}>
+                      {canViewInternal && (
+                        <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-3">
+                          <label className="mb-2 flex items-center gap-1 text-xs font-semibold text-amber-700"><Lock className="size-3" /> Harga Beli</label>
+                          <p className="text-sm font-bold tabular-nums text-amber-900">{formatCurrency(item.purchasePrice)}</p>
+                        </div>
+                      )}
+                      <div className="rounded-xl border border-stone-200 bg-stone-50/70 p-3">
+                        <label className="mb-2 block text-xs font-semibold text-stone-500">Harga Jual</label>
+                        <p className="text-sm font-bold tabular-nums text-stone-800">{formatCurrency(item.sellingPrice)}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-end justify-between border-t border-dashed border-stone-200 pt-3">
+                      <div>
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-stone-400">Ukuran</p>
+                        <p className="mt-1 text-xs font-medium text-stone-600">{selectedProduct?.size || "—"}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-stone-400">Subtotal</p>
+                        <p className="mt-1 text-base font-bold tabular-nums text-stone-900">{formatCurrency(item.quantity * item.sellingPrice)}</p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
           {/* Discount row */}
           {items.length > 0 && (
-            <div className="border-t border-border px-5 py-3 flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <label className="text-xs font-medium text-muted-foreground whitespace-nowrap">
+            <div className="flex flex-col gap-4 border-t border-stone-200 bg-stone-50/50 px-5 py-4 sm:flex-row sm:items-end sm:justify-between sm:px-6">
+              {canViewInternal && <div className="flex items-center justify-between gap-3 sm:justify-start">
+                <label className="whitespace-nowrap text-xs font-semibold text-stone-600">
                   Diskon (Rp)
                 </label>
                 <Input
@@ -511,143 +635,157 @@ export function InvoiceForm({ customers, products }: InvoiceFormProps) {
                   onChange={(e) =>
                     setDiscount(parseFloat(e.target.value) || 0)
                   }
-                  className="h-8 text-xs w-36 text-right"
+                  className="h-9 w-36 rounded-xl border-stone-200 bg-white text-right text-xs tabular-nums"
                 />
-              </div>
-              <div className="text-right">
-                <p className="text-xs text-muted-foreground">Subtotal</p>
-                <p className="text-base font-bold tabular-nums">
+              </div>}
+              <div className="flex items-end justify-between gap-6 text-right sm:block">
+                <p className="text-xs font-medium text-muted-foreground">Total setelah diskon</p>
+                <p className="text-lg font-bold tracking-[-0.02em] tabular-nums text-stone-900">
                   {formatCurrency(calc.revenue)}
                 </p>
               </div>
             </div>
           )}
-        </div>
+        </section>
 
         {/* Internal costs panel */}
-        <div className="bg-white rounded-2xl border border-amber-200 shadow-card overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-amber-200 bg-amber-50/50">
-            <div className="flex items-center gap-2">
-              <Lock className="w-4 h-4 text-amber-600" />
-              <h3 className="text-sm font-semibold text-amber-800">
-                Biaya Internal
-              </h3>
-              <span className="text-[10px] font-medium px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded border border-amber-200">
-                Tidak tampil di invoice pelanggan
-              </span>
+        {canViewInternal && <section className="overflow-hidden rounded-[20px] border border-amber-200/80 bg-white shadow-[0_1px_2px_rgba(120,53,15,0.03),0_12px_30px_rgba(120,53,15,0.035)]">
+          <div className="flex items-center justify-between gap-3 border-b border-amber-200/80 bg-amber-50/60 px-5 py-4 sm:px-6">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-amber-200 bg-amber-100/70 text-amber-700">
+                <WalletCards className="size-4" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-sm font-semibold tracking-[-0.01em] text-amber-950">Biaya Internal</h2>
+                  <span className="hidden rounded-full border border-amber-200 bg-white/70 px-2 py-0.5 text-[10px] font-semibold text-amber-700 sm:inline-flex">
+                    Privat
+                  </span>
+                </div>
+                <p className="mt-0.5 truncate text-xs text-amber-700/75">Tidak tampil pada invoice pelanggan.</p>
+              </div>
             </div>
             <Button
               onClick={addCost}
               size="sm"
               variant="outline"
-              className="h-7 text-xs border-amber-300 text-amber-700 hover:bg-amber-50"
+              className="h-8 rounded-xl border-amber-300 bg-white/70 px-3 text-xs text-amber-800 shadow-sm hover:bg-white"
             >
-              <Plus className="w-3 h-3 mr-1" />
-              Tambah
+              <Plus className="size-3.5" />
+              Tambah Biaya
             </Button>
           </div>
 
           {costs.length === 0 ? (
-            <div className="py-6 text-center">
-              <p className="text-xs text-muted-foreground">
-                Belum ada biaya internal (packaging, ongkir, dll.)
-              </p>
+            <div className="flex items-center justify-between gap-4 px-5 py-5 sm:px-6">
+              <div>
+                <p className="text-sm font-medium text-stone-700">Belum ada biaya tambahan</p>
+                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">Tambahkan packaging, pengiriman, bahan bakar, atau biaya transaksi lain bila ada.</p>
+              </div>
+              <Button onClick={addCost} size="sm" variant="ghost" className="hidden shrink-0 rounded-xl text-amber-700 hover:bg-amber-50 sm:inline-flex">
+                <Plus className="size-3.5" /> Tambah
+              </Button>
             </div>
           ) : (
-            <div className="divide-y divide-border">
+            <div className="divide-y divide-stone-100">
               {costs.map((cost) => (
-                <div key={cost.id} className="flex items-center gap-3 px-5 py-3">
-                  <Select
-                    value={cost.category}
-                    onValueChange={(v) =>
-                      updateCost(cost.id, "category", v as DirectCostCategory)
-                    }
-                  >
-                    <SelectTrigger className="h-8 text-xs w-36 flex-shrink-0">
-                      <SelectValue>
-                        {getDirectCostLabel(cost.category)}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      {DIRECT_COST_CATEGORIES.map((cat) => (
-                        <SelectItem key={cat} value={cat}>
-                          {getDirectCostLabel(cat)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div key={cost.id} className="grid gap-3 px-5 py-4 sm:grid-cols-[144px_minmax(0,1fr)_144px_32px] sm:items-end sm:px-6">
+                  <div>
+                    <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-stone-400 sm:hidden">Kategori</label>
+                    <Select value={cost.category} onValueChange={(value) => updateCost(cost.id, "category", value as DirectCostCategory)}>
+                      <SelectTrigger className="h-9 w-full rounded-xl border-stone-200 text-xs">
+                        <SelectValue>{getDirectCostLabel(cost.category)}</SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {DIRECT_COST_CATEGORIES.map((category) => (
+                          <SelectItem key={category} value={category}>{getDirectCostLabel(category)}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                  <Input
-                    placeholder="Nama biaya"
-                    value={cost.name}
-                    onChange={(e) => updateCost(cost.id, "name", e.target.value)}
-                    className="h-8 text-xs flex-1"
-                  />
-
-                  <div className="relative flex-shrink-0 w-36">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">
-                      Rp
-                    </span>
+                  <div>
+                    <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-stone-400 sm:hidden">Keterangan</label>
                     <Input
-                      type="number"
-                      min={0}
-                      value={cost.amount}
-                      onChange={(e) =>
-                        updateCost(
-                          cost.id,
-                          "amount",
-                          parseFloat(e.target.value) || 0
-                        )
-                      }
-                      className="h-8 text-xs pl-8 text-right"
+                      placeholder="Contoh: Box styrofoam"
+                      value={cost.name}
+                      onChange={(event) => updateCost(cost.id, "name", event.target.value)}
+                      className="h-9 rounded-xl border-stone-200 text-xs"
                     />
                   </div>
 
-                  <button
-                    onClick={() => removeCost(cost.id)}
-                    className="text-muted-foreground hover:text-red-500 transition-colors flex-shrink-0"
-                    aria-label="Hapus biaya"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
+                  <div>
+                    <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-stone-400 sm:hidden">Nominal</label>
+                    <div className="relative">
+                      <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs font-medium text-stone-400">Rp</span>
+                      <Input
+                        type="number"
+                        min={0}
+                        value={cost.amount}
+                        onChange={(event) => updateCost(cost.id, "amount", parseFloat(event.target.value) || 0)}
+                        className="h-9 rounded-xl border-stone-200 pl-8 text-right text-xs tabular-nums"
+                      />
+                    </div>
+                  </div>
+
+                  <button type="button" onClick={() => removeCost(cost.id)} className="flex h-9 items-center justify-center gap-1.5 rounded-xl text-xs font-medium text-stone-400 transition-colors hover:bg-red-50 hover:text-red-600" aria-label="Hapus biaya">
+                    <Trash2 className="size-3.5" /><span className="sm:hidden">Hapus biaya</span>
                   </button>
                 </div>
               ))}
             </div>
           )}
-        </div>
+        </section>}
 
         {/* Notes */}
-        <div className="bg-white rounded-2xl border border-border shadow-card p-5">
-          <label className="block text-xs font-medium text-muted-foreground mb-1.5">
-            Catatan
-          </label>
+        <section className="rounded-[20px] border border-black/[0.07] bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.03),0_12px_30px_rgba(15,23,42,0.035)] sm:p-6">
+          <div className="mb-4 flex items-center gap-3">
+            <div className="flex size-9 items-center justify-center rounded-xl bg-stone-100 text-stone-700"><FileText className="size-4" /></div>
+            <div>
+              <label htmlFor="invoice-notes" className="block text-sm font-semibold tracking-[-0.01em] text-foreground">Catatan Invoice</label>
+              <p className="mt-0.5 text-xs text-muted-foreground">Informasi ini akan terlihat oleh pelanggan.</p>
+            </div>
+          </div>
           <textarea
+            id="invoice-notes"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            placeholder="Catatan untuk pelanggan (opsional)..."
+            placeholder="Contoh: Mohon periksa jumlah dan kualitas produk saat pesanan diterima."
             rows={3}
-            className="w-full text-sm resize-none border border-input rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring bg-background"
+            className="w-full resize-none rounded-xl border border-stone-200 bg-stone-50/60 px-3.5 py-3 text-sm leading-relaxed outline-none transition-colors placeholder:text-stone-400 focus:border-stone-400 focus:ring-3 focus:ring-stone-900/10"
           />
-        </div>
+        </section>
 
         {/* Actions */}
-        <div className="flex items-center gap-3 justify-end">
-          <Button variant="outline" onClick={handleSaveDraft} size="sm">
+        <div className="flex flex-col-reverse gap-2 rounded-[18px] border border-black/[0.06] bg-white/90 p-3 shadow-[0_8px_30px_rgba(15,23,42,0.06)] backdrop-blur sm:flex-row sm:items-center sm:justify-end">
+          <Button
+            variant="ghost"
+            onClick={handleSaveDraft}
+            disabled={submitting || saveState === "saving"}
+            size="lg"
+            className="w-full rounded-xl text-stone-600 sm:w-auto"
+          >
             {saveState === "saving" ? (
-              "Menyimpan..."
+              <><Loader2 className="size-4 animate-spin" /> Menyimpan...</>
             ) : saveState === "saved" ? (
               <span className="flex items-center gap-1.5">
                 <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
                 Tersimpan
               </span>
             ) : (
-              "Simpan Draft"
+              <><Save className="size-4" /> Simpan Draft</>
             )}
           </Button>
-          <Button variant="outline" size="sm">
-            Preview
-          </Button>
           <Button
+            variant="outline"
+            size="lg"
+            className="w-full rounded-xl bg-white sm:w-auto"
+            onClick={() => setPreviewDialogOpen(true)}
+            disabled={submitting || !customerId || items.length === 0}
+          >
+            <Eye className="size-4" /> Preview
+          </Button>
+          {canViewInternal && <Button
             disabled={submitting || saveState === "saving"}
             onClick={() => {
               if (!customerId || items.length === 0) {
@@ -656,7 +794,8 @@ export function InvoiceForm({ customers, products }: InvoiceFormProps) {
                 setPublishDialogOpen(true);
               }
             }}
-            size="sm"
+            size="lg"
+            className="w-full rounded-xl px-4 shadow-sm sm:w-auto"
           >
             {submitting ? (
               <>
@@ -664,94 +803,94 @@ export function InvoiceForm({ customers, products }: InvoiceFormProps) {
                 Memproses...
               </>
             ) : (
-              "Terbitkan Invoice"
+              <><Send className="size-4" /> Terbitkan Invoice</>
             )}
-          </Button>
+          </Button>}
         </div>
       </div>
 
       {/* Right Panel — Internal Summary (sticky on lg) */}
-      <div className="w-full lg:w-72 shrink-0 lg:sticky lg:top-24 space-y-4">
-        <div className="bg-white rounded-2xl border border-border shadow-card p-5">
-          <div className="flex items-center gap-1.5 mb-4">
-            <Lock className="w-3.5 h-3.5 text-amber-600" />
-            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-              Ringkasan Internal
-            </h3>
+      {canViewInternal && <aside className="w-full shrink-0 space-y-4 xl:sticky xl:top-24 xl:w-80">
+        <div className="overflow-hidden rounded-[20px] border border-black/[0.07] bg-white shadow-[0_1px_2px_rgba(15,23,42,0.03),0_14px_36px_rgba(15,23,42,0.05)]">
+          <div className="flex items-center justify-between border-b border-stone-100 px-5 py-4">
+            <div className="flex items-center gap-2.5">
+              <div className="flex size-8 items-center justify-center rounded-xl bg-stone-100 text-stone-700"><ReceiptText className="size-4" /></div>
+              <div>
+                <h2 className="text-sm font-semibold tracking-[-0.01em] text-stone-900">Ringkasan Internal</h2>
+                <p className="mt-0.5 text-[10px] font-medium uppercase tracking-wider text-stone-400">Analisis transaksi</p>
+              </div>
+            </div>
+            <span className="flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-1 text-[10px] font-semibold text-amber-700"><Lock className="size-3" /> Privat</span>
           </div>
 
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Subtotal Produk</span>
-              <span className="font-medium tabular-nums">
-                {formatCurrency(calc.subtotal)}
-              </span>
-            </div>
-            {discount > 0 && (
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Diskon</span>
-                <span className="font-medium text-red-600 tabular-nums">
-                  -{formatCurrency(discount)}
+          <div className="space-y-4 p-5 text-sm">
+            <div className="space-y-2.5 rounded-xl bg-stone-50 p-3.5">
+              <div className="flex justify-between gap-4">
+                <span className="text-muted-foreground">Subtotal Produk</span>
+                <span className="font-medium tabular-nums">
+                  {formatCurrency(calc.subtotal)}
                 </span>
               </div>
-            )}
-            <div className="flex justify-between font-semibold">
-              <span>Pendapatan</span>
-              <span className="tabular-nums">
-                {formatCurrency(calc.revenue)}
-              </span>
+              {discount > 0 && (
+                <div className="flex justify-between gap-4">
+                  <span className="text-muted-foreground">Diskon</span>
+                  <span className="font-medium text-red-600 tabular-nums">
+                    -{formatCurrency(discount)}
+                  </span>
+                </div>
+              )}
+              <div className="flex justify-between gap-4 border-t border-stone-200 pt-2.5 font-semibold">
+                <span className="text-stone-800">Pendapatan</span>
+                <span className="tabular-nums text-stone-900">
+                  {formatCurrency(calc.revenue)}
+                </span>
+              </div>
             </div>
 
-            <div className="h-px bg-border my-2" />
-
-            <div className="flex justify-between text-muted-foreground">
-              <span className="flex items-center gap-1">
-                HPP Produk
-                <Lock className="w-3 h-3 text-amber-500" />
-              </span>
-              <span className="tabular-nums">
-                {formatCurrency(calc.totalProductCost)}
-              </span>
-            </div>
-
-            {costs.length > 0 && (
-              <div className="flex justify-between text-muted-foreground">
+            <div className="space-y-2.5 px-1">
+              <div className="flex justify-between gap-4 text-muted-foreground">
                 <span className="flex items-center gap-1">
-                  Biaya Internal
+                  HPP Produk
                   <Lock className="w-3 h-3 text-amber-500" />
                 </span>
                 <span className="tabular-nums">
-                  {formatCurrency(calc.totalDirectCost)}
+                  {formatCurrency(calc.totalProductCost)}
                 </span>
               </div>
-            )}
 
-            <div className="h-px bg-border my-2" />
-
-            <div className="flex justify-between text-emerald-700">
-              <span className="flex items-center gap-1">
-                Laba Produk
-                <Lock className="w-3 h-3 text-amber-500" />
-              </span>
-              <span className="font-semibold tabular-nums">
-                {formatCurrency(calc.productProfit)}
-              </span>
-            </div>
-            <div className="flex justify-between text-emerald-700">
-              <span className="flex items-center gap-1">
-                Laba Transaksi
-                <Lock className="w-3 h-3 text-amber-500" />
-              </span>
-              <span className="font-bold tabular-nums">
-                {formatCurrency(calc.transactionProfit)}
-              </span>
+              {costs.length > 0 && (
+                <div className="flex justify-between gap-4 text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    Biaya Internal
+                    <Lock className="w-3 h-3 text-amber-500" />
+                  </span>
+                  <span className="tabular-nums">
+                    {formatCurrency(calc.totalDirectCost)}
+                  </span>
+                </div>
+              )}
             </div>
 
-            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 mt-3 text-center">
-              <p className="text-xs text-emerald-600 mb-0.5">Margin Transaksi</p>
-              <p className="text-2xl font-bold text-emerald-700 tabular-nums">
-                {formatPercent(calc.transactionMargin)}
-              </p>
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4">
+              <div className="mb-3 flex items-center justify-between gap-4 text-emerald-800">
+                <span className="text-xs font-semibold">Laba Transaksi</span>
+                <span className="text-base font-bold tracking-[-0.02em] tabular-nums">
+                  {formatCurrency(calc.transactionProfit)}
+                </span>
+              </div>
+              <div className="flex items-end justify-between gap-4">
+                <p className="text-xs font-medium text-emerald-700">Margin</p>
+                <p className="text-3xl font-bold tracking-[-0.04em] text-emerald-800 tabular-nums">
+                  {formatPercent(calc.transactionMargin)}
+                </p>
+              </div>
+              <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-emerald-200/70">
+                <div className="h-full rounded-full bg-emerald-600 transition-[width] duration-300" style={{ width: `${marginProgress}%` }} />
+              </div>
+              <div className="mt-3 flex justify-between text-[10px] text-emerald-700/80">
+                <span>Laba produk</span>
+                <span className="font-semibold tabular-nums">{formatCurrency(calc.productProfit)}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -759,15 +898,32 @@ export function InvoiceForm({ customers, products }: InvoiceFormProps) {
         {/* Validation warnings */}
         {items.length > 0 &&
           items.some((i) => i.purchasePrice === 0) && (
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex gap-2">
-              <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
-              <p className="text-xs text-amber-700">
+            <div className="flex gap-2.5 rounded-2xl border border-amber-200 bg-amber-50 p-4 shadow-sm">
+              <AlertCircle className="mt-0.5 size-4 flex-shrink-0 text-amber-600" />
+              <p className="text-xs leading-relaxed text-amber-800">
                 Beberapa item belum memiliki harga beli. Harga beli diperlukan
                 untuk menerbitkan invoice.
               </p>
             </div>
           )}
-      </div>
+      </aside>}
+
+      <Dialog open={previewDialogOpen} onOpenChange={setPreviewDialogOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Preview Invoice</DialogTitle>
+            <DialogDescription>Pratinjau ini memakai harga database. Nilai final tetap dihitung ulang secara aman saat disimpan.</DialogDescription>
+          </DialogHeader>
+          <div className="rounded-xl border p-4 space-y-4 text-sm">
+            <div className="flex justify-between"><span className="text-muted-foreground">Restoran</span><span className="font-semibold">{selectedCustomer?.name}</span></div>
+            <div className="divide-y">
+              {items.map((item) => <div key={item.id} className="py-2 flex justify-between gap-4"><span>{item.description} x {item.quantity} {item.unit}</span><span className="font-medium">{formatCurrency(item.quantity * item.sellingPrice)}</span></div>)}
+            </div>
+            <div className="border-t pt-3 flex justify-between text-base font-bold"><span>Total</span><span>{formatCurrency(calc.revenue)}</span></div>
+          </div>
+          <DialogFooter><Button onClick={() => setPreviewDialogOpen(false)}>Tutup Preview</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Publish confirmation dialog */}
       <Dialog open={publishDialogOpen} onOpenChange={(op) => !submitting && setPublishDialogOpen(op)}>

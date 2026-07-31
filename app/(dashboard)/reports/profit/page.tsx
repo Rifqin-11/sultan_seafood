@@ -1,20 +1,20 @@
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/app-shell/page-header";
-import { getInvoicesAction } from "@/lib/actions/invoices";
-import { mockInvoices, mockProfitData } from "@/lib/mock-data";
+import { getDashboardDataAction } from "@/lib/actions/dashboard";
 import { formatCurrency, formatPercent, getDirectCostLabel } from "@/lib/utils";
 import { MetricCard } from "@/components/dashboard/metric-card";
 import { ProfitChart } from "@/components/dashboard/profit-chart";
 import { InternalCostCard } from "@/components/dashboard/internal-cost-card";
 import type { DirectCostCategory, InternalCostBreakdown } from "@/types";
+import { requireRole } from "@/lib/security/auth";
 
 export const metadata: Metadata = {
   title: "Laporan Laba",
 };
 
 export default async function ProfitReportPage() {
-  const realInvoices = await getInvoicesAction();
-  const invoices = realInvoices && realInvoices.length > 0 ? realInvoices : mockInvoices;
+  await requireRole(["OWNER", "FINANCE"]);
+  const { invoices, profitData, periodLabel } = await getDashboardDataAction();
 
   const issuedInvoices = invoices.filter(
     (inv) => inv.status !== "DRAFT" && inv.status !== "VOID"
@@ -61,7 +61,7 @@ export default async function ProfitReportPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2">
-          <ProfitChart data={mockProfitData} />
+          <ProfitChart data={profitData} periodLabel={periodLabel} />
         </div>
         <InternalCostCard
           costs={internalCosts.length > 0 ? internalCosts : []}

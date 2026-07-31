@@ -6,7 +6,8 @@ import {
   View,
   StyleSheet,
 } from "@react-pdf/renderer";
-import type { Invoice } from "@/types";
+import type { CompanyProfilePublic, Invoice, PublicInvoice } from "@/types";
+import { defaultCompanyProfile } from "@/lib/company-store";
 import { formatCurrency, formatDate, parseProductDescription } from "@/lib/utils";
 
 // Create styles for clean monochrome invoice PDF
@@ -152,22 +153,24 @@ const styles = StyleSheet.create({
 });
 
 interface InvoicePdfDocumentProps {
-  invoice: Invoice;
+  invoice: Invoice | PublicInvoice;
+  company?: CompanyProfilePublic;
 }
 
-export function InvoicePdfDocument({ invoice }: InvoicePdfDocumentProps) {
+export function InvoicePdfDocument({ invoice, company }: InvoicePdfDocumentProps) {
+  const companyData = company ?? ("company" in invoice ? invoice.company : defaultCompanyProfile);
   return (
     <Document title={`Invoice_${invoice.invoiceNumber ?? "Draft"}`}>
       <Page size="A4" style={styles.page}>
         {/* Header */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.companyTitle}>SULTAN SEAFOOD</Text>
+            <Text style={styles.companyTitle}>{companyData.name.toUpperCase()}</Text>
             <Text style={styles.companySubtitle}>
-              Pemasok Seafood Berkualitas untuk Restoran
+              {companyData.address}
             </Text>
             <Text style={styles.companySubtitle}>
-              Jl. Pemasok Seafood No. 1, Jakarta Utara · Telp: 021-XXXXXXXX
+              {companyData.phone}{companyData.email ? ` · ${companyData.email}` : ""}
             </Text>
           </View>
           <View>
@@ -261,14 +264,14 @@ export function InvoicePdfDocument({ invoice }: InvoicePdfDocumentProps) {
             <Text style={styles.metaLabel}>CATATAN & INSTRUKSI PEMBAYARAN:</Text>
             <Text style={{ fontSize: 9, color: "#444444" }}>{invoice.notes}</Text>
             <Text style={{ fontSize: 8, color: "#666666", marginTop: 4 }}>
-              Transfer Pembayaran ke: Bank BCA No. Rek: 1234567890 (a.n. Sultan Seafood)
+              Transfer Pembayaran ke: {companyData.bankName} No. Rek: {companyData.bankAccount} (a.n. {companyData.bankHolder})
             </Text>
           </View>
         )}
 
         {/* Footer */}
         <Text style={styles.footer}>
-          Terima kasih atas kerja sama Anda · Sultan Seafood ERP Document
+          Terima kasih atas kerja sama Anda · {companyData.name}
         </Text>
       </Page>
     </Document>

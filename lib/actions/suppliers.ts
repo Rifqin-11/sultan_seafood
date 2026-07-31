@@ -1,164 +1,34 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { createClient } from "@/lib/supabase/server";
+import { normalizeActionError, requireApprovedUser, requireRole } from "@/lib/security/auth";
+import type { SupplierStatus } from "@/types";
 
-export interface CreateSupplierPayload {
-  name: string;
-  contactName: string;
-  phone: string;
-  address: string;
-}
+export interface CreateSupplierPayload { name: string; contactName: string; phone: string; address: string }
+export interface UpdateSupplierPayload extends CreateSupplierPayload { id: string; status?: SupplierStatus }
 
-export interface UpdateSupplierPayload extends CreateSupplierPayload {
-  id: string;
-  status?: "ACTIVE" | "INACTIVE";
-}
+function invalid(payload: CreateSupplierPayload) { return !payload.name.trim() || !payload.contactName.trim() || !payload.phone.trim() || !payload.address.trim(); }
 
 export async function createSupplierAction(payload: CreateSupplierPayload) {
-  const supabase = await createClient();
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-
-  if (!supabaseUrl || supabaseUrl.includes("placeholder")) {
-    revalidatePath("/suppliers");
-    return { success: true, message: "Supplier berhasil ditambahkan (Demo Mode)." };
-  }
-
-  try {
-    const { error } = await supabase.from("suppliers").insert({
-      name: payload.name,
-      contact_name: payload.contactName,
-      phone: payload.phone,
-      address: payload.address,
-      status: "ACTIVE",
-    });
-
-    if (error) throw error;
-
-    revalidatePath("/suppliers");
-    return { success: true, message: "Supplier berhasil ditambahkan." };
-  } catch (err: unknown) {
-    const error = err as { message?: string };
-    return { error: error.message || "Gagal menambahkan supplier." };
-  }
+  if (invalid(payload)) return { error: "Data wajib supplier belum lengkap." };
+  try { await requireRole(["OWNER", "FINANCE"]); const supabase = await createClient(); const { error } = await supabase.from("suppliers").insert({ name: payload.name.trim(), contact_name: payload.contactName.trim(), phone: payload.phone.trim(), address: payload.address.trim(), status: "ACTIVE" }); if (error) throw error; revalidatePath("/suppliers"); return { success: true, message: "Supplier berhasil ditambahkan." }; }
+  catch (error) { return { error: normalizeActionError(error, "Gagal menambahkan supplier.") }; }
 }
-
 export async function updateSupplierAction(payload: UpdateSupplierPayload) {
-  const supabase = await createClient();
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-
-  if (!supabaseUrl || supabaseUrl.includes("placeholder")) {
-    revalidatePath("/suppliers");
-    return { success: true, message: "Supplier berhasil diperbarui." };
-  }
-
-  try {
-    const { error } = await supabase
-      .from("suppliers")
-      .update({
-        name: payload.name,
-        contact_name: payload.contactName,
-        phone: payload.phone,
-        address: payload.address,
-        status: payload.status,
-      })
-      .eq("id", payload.id);
-
-    if (error) throw error;
-
-    revalidatePath("/suppliers");
-    return { success: true, message: "Supplier berhasil diperbarui." };
-  } catch (err: unknown) {
-    const error = err as { message?: string };
-    return { error: error.message || "Gagal memperbarui data supplier." };
-  }
+  if (invalid(payload)) return { error: "Data wajib supplier belum lengkap." };
+  try { await requireRole(["OWNER", "FINANCE"]); const supabase = await createClient(); const { error } = await supabase.from("suppliers").update({ name: payload.name.trim(), contact_name: payload.contactName.trim(), phone: payload.phone.trim(), address: payload.address.trim(), status: payload.status }).eq("id", payload.id); if (error) throw error; revalidatePath("/suppliers"); return { success: true, message: "Supplier berhasil diperbarui." }; }
+  catch (error) { return { error: normalizeActionError(error, "Gagal memperbarui supplier.") }; }
 }
-
-export async function toggleSupplierStatusAction(id: string, currentStatus: "ACTIVE" | "INACTIVE") {
-  const supabase = await createClient();
-  const newStatus = currentStatus === "ACTIVE" ? "INACTIVE" : "ACTIVE";
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-
-  if (!supabaseUrl || supabaseUrl.includes("placeholder")) {
-    revalidatePath("/suppliers");
-    return { success: true, message: `Status supplier diubah ke ${newStatus}.` };
-  }
-
-  try {
-    const { error } = await supabase
-      .from("suppliers")
-      .update({ status: newStatus })
-      .eq("id", id);
-
-    if (error) throw error;
-
-    revalidatePath("/suppliers");
-    return { success: true, message: `Status supplier diubah ke ${newStatus}.` };
-  } catch (err: unknown) {
-    const error = err as { message?: string };
-    return { error: error.message || "Gagal mengubah status supplier." };
-  }
+export async function toggleSupplierStatusAction(id: string, currentStatus: SupplierStatus) {
+  try { await requireRole(["OWNER", "FINANCE"]); const next = currentStatus === "ACTIVE" ? "INACTIVE" : "ACTIVE"; const supabase = await createClient(); const { error } = await supabase.from("suppliers").update({ status: next }).eq("id", id); if (error) throw error; revalidatePath("/suppliers"); return { success: true, message: `Status supplier diubah ke ${next}.` }; }
+  catch (error) { return { error: normalizeActionError(error, "Gagal mengubah status supplier.") }; }
 }
-
 export async function deleteSupplierAction(id: string) {
-  const supabase = await createClient();
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-
-  if (!supabaseUrl || supabaseUrl.includes("placeholder")) {
-    revalidatePath("/suppliers");
-    return { success: true, message: "Supplier berhasil dihapus." };
-  }
-
-  try {
-    const { error } = await supabase.from("suppliers").delete().eq("id", id);
-    if (error) {
-      if (error.code === "23503") {
-        await supabase.from("suppliers").update({ status: "INACTIVE" }).eq("id", id);
-        revalidatePath("/suppliers");
-        return { success: true, message: "Supplier memiliki riwayat data. Status diubah ke Nonaktif." };
-      }
-      throw error;
-    }
-
-    revalidatePath("/suppliers");
-    return { success: true, message: "Supplier berhasil dihapus." };
-  } catch (err: unknown) {
-    const error = err as { message?: string };
-    return { error: error.message || "Gagal menghapus supplier." };
-  }
+  try { await requireRole(["OWNER", "FINANCE"]); const supabase = await createClient(); const { count, error: countError } = await supabase.from("product_costs").select("id", { count: "exact", head: true }).eq("supplier_id", id); if (countError) throw countError; if ((count ?? 0) > 0) { const { error } = await supabase.from("suppliers").update({ status: "INACTIVE" }).eq("id", id); if (error) throw error; revalidatePath("/suppliers"); return { success: true, isWarning: true, message: "Supplier memiliki riwayat HPP dan dinonaktifkan tanpa menghapus histori." }; } const { error } = await supabase.from("suppliers").delete().eq("id", id); if (error) throw error; revalidatePath("/suppliers"); return { success: true, isWarning: false, message: "Supplier berhasil dihapus." }; }
+  catch (error) { return { error: normalizeActionError(error, "Gagal menghapus supplier.") }; }
 }
-
 export async function getSuppliersAction() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  if (!supabaseUrl || supabaseUrl.includes("placeholder")) {
-    const { mockSuppliers } = await import("@/lib/mock-data");
-    return mockSuppliers;
-  }
-
-  try {
-    const supabase = await createClient();
-    const { data: suppliers, error } = await supabase
-      .from("suppliers")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    if (error || !suppliers) {
-      const { mockSuppliers } = await import("@/lib/mock-data");
-      return mockSuppliers;
-    }
-
-    return suppliers.map((s) => ({
-      id: s.id,
-      name: s.name,
-      contactName: s.contact_name,
-      phone: s.phone,
-      address: s.address,
-      status: s.status,
-      createdAt: s.created_at,
-      updatedAt: s.updated_at,
-    }));
-  } catch {
-    const { mockSuppliers } = await import("@/lib/mock-data");
-    return mockSuppliers;
-  }
+  await requireApprovedUser(); const supabase = await createClient(); const { data, error } = await supabase.from("suppliers").select("id,name,contact_name,phone,address,status,created_at,updated_at").order("created_at", { ascending: false }); if (error) throw new Error(error.message);
+  return (data ?? []).map((supplier) => ({ id: supplier.id, name: supplier.name, contactName: supplier.contact_name, phone: supplier.phone, address: supplier.address, status: supplier.status as SupplierStatus, createdAt: supplier.created_at, updatedAt: supplier.updated_at }));
 }

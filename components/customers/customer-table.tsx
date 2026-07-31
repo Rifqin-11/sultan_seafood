@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { EmptyState } from "@/components/ui/empty-state";
 import type { Customer } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -45,10 +46,12 @@ import Link from "next/link";
 
 interface CustomerTableProps {
   customers: Customer[];
+  canManage?: boolean;
 }
 
-export function CustomerTable({ customers }: CustomerTableProps) {
+export function CustomerTable({ customers, canManage = false }: CustomerTableProps) {
   const router = useRouter();
+  const [customersList, setCustomersList] = useState<Customer[]>(customers);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [deletingCustomer, setDeletingCustomer] = useState<Customer | null>(null);
   const [loadingId, setLoadingId] = useState<string | null>(null);
@@ -58,16 +61,16 @@ export function CustomerTable({ customers }: CustomerTableProps) {
   const [statusFilter, setStatusFilter] = useState<"ALL" | "ACTIVE" | "INACTIVE">("ALL");
 
   // Stats calculation
-  const totalCount = customers.length;
-  const activeCount = customers.filter((c) => c.status === "ACTIVE").length;
-  const inactiveCount = customers.filter((c) => c.status === "INACTIVE").length;
+  const totalCount = customersList.length;
+  const activeCount = customersList.filter((c) => c.status === "ACTIVE").length;
+  const inactiveCount = customersList.filter((c) => c.status === "INACTIVE").length;
   const avgTermDays = totalCount > 0
-    ? Math.round(customers.reduce((acc, c) => acc + (c.paymentTermDays || 7), 0) / totalCount)
+    ? Math.round(customersList.reduce((acc, c) => acc + (c.paymentTermDays || 7), 0) / totalCount)
     : 7;
 
   // Filtered customer list
   const filteredCustomers = useMemo(() => {
-    return customers.filter((c) => {
+    return customersList.filter((c) => {
       const matchSearch =
         c.name.toLowerCase().includes(search.toLowerCase()) ||
         c.contactName.toLowerCase().includes(search.toLowerCase()) ||
@@ -81,7 +84,7 @@ export function CustomerTable({ customers }: CustomerTableProps) {
 
       return matchSearch && matchStatus;
     });
-  }, [customers, search, statusFilter]);
+  }, [customersList, search, statusFilter]);
 
   const handleToggleStatus = async (customer: Customer) => {
     setLoadingId(customer.id);
@@ -97,19 +100,27 @@ export function CustomerTable({ customers }: CustomerTableProps) {
 
   const handleConfirmDelete = async () => {
     if (!deletingCustomer) return;
-    setLoadingId(deletingCustomer.id);
-    const res = await deleteCustomerAction(deletingCustomer.id);
+    const idToDelete = deletingCustomer.id;
+    setLoadingId(idToDelete);
+
+    // Optimistic update
+    setCustomersList((prev) => prev.filter((c) => c.id !== idToDelete));
+    setDeletingCustomer(null);
+
+    const res = await deleteCustomerAction(idToDelete);
     setLoadingId(null);
     if (res.error) {
       toast.error(`Gagal menghapus: ${res.error}`);
+      // Revert optimistic update
+      setCustomersList(customers);
     } else {
       if (res.isWarning) {
         toast.warning(res.message);
+        router.refresh();
       } else {
         toast.success(res.message || "Restoran berhasil dihapus");
+        router.refresh();
       }
-      setDeletingCustomer(null);
-      router.refresh();
     }
   };
 
@@ -218,14 +229,18 @@ export function CustomerTable({ customers }: CustomerTableProps) {
                 <TableHead className="text-xs font-semibold py-3">Alamat Tagihan</TableHead>
                 <TableHead className="text-xs font-semibold py-3">Termin Bayar</TableHead>
                 <TableHead className="text-xs font-semibold py-3">Status</TableHead>
-                <TableHead className="w-12 py-3" />
+                {canManage && <TableHead className="w-12 py-3" />}
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredCustomers.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-32 text-center text-muted-foreground text-xs">
-                    {search ? "Tidak ada restoran yang cocok dengan pencarian." : "Belum ada data restoran."}
+                  <TableCell colSpan={6} className="h-48">
+                    <EmptyState
+                      icon={Building2}
+                      title="Tidak ada restoran"
+                      description={search ? "Tidak ada restoran yang cocok dengan pencarian." : "Belum ada data restoran yang terdaftar."}
+                    />
                   </TableCell>
                 </TableRow>
               ) : (
@@ -234,7 +249,7 @@ export function CustomerTable({ customers }: CustomerTableProps) {
 
                   return (
                     <TableRow key={c.id} className="hover:bg-slate-50/60 transition-colors">
-                      <TableCell className="py-3">
+                      {canManage && <TableCell className="py-3">
                         <div className="flex items-center gap-3">
                           <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold text-sm shadow-sm shrink-0">
                             {initial}
@@ -251,7 +266,7 @@ export function CustomerTable({ customers }: CustomerTableProps) {
                             )}
                           </div>
                         </div>
-                      </TableCell>
+                      </TableCell>}
                       <TableCell className="py-3">
                         <div className="space-y-1">
                           <p className="text-sm font-medium text-slate-800">{c.contactName}</p>
@@ -357,7 +372,7 @@ export function CustomerTable({ customers }: CustomerTableProps) {
         </div>
       </div>
 
-      {editingCustomer && (
+      {canManage && editingCustomer && (
         <EditCustomerDialog
           customer={editingCustomer}
           open={!!editingCustomer}
@@ -367,7 +382,7 @@ export function CustomerTable({ customers }: CustomerTableProps) {
         />
       )}
 
-      {deletingCustomer && (
+      {canManage && deletingCustomer && (
         <ConfirmDialog
           open={!!deletingCustomer}
           onOpenChange={(open) => {

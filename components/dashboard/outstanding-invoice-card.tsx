@@ -1,7 +1,6 @@
 import {
   formatCurrency,
   formatDateShort,
-  getInvoiceStatusLabel,
 } from "@/lib/utils";
 import type { Invoice } from "@/types";
 import Link from "next/link";

@@ -2,6 +2,8 @@
 
 export type Role = "OWNER" | "FINANCE" | "STAFF";
 
+export type ProfileStatus = "PENDING" | "APPROVED" | "REJECTED";
+
 export type UserStatus = "ACTIVE" | "INACTIVE";
 
 export interface User {
@@ -133,6 +135,7 @@ export interface InvoiceDirectCost {
 
 export interface Invoice {
   id: string;
+  publicToken?: string;
   invoiceNumber?: string;
   customerId: string;
   customerName: string;
@@ -157,6 +160,43 @@ export interface Invoice {
   updatedAt: string;
 }
 
+export interface CompanyProfilePublic {
+  name: string;
+  address: string;
+  phone: string;
+  email: string;
+  website: string;
+  bankName: string;
+  bankAccount: string;
+  bankHolder: string;
+  logoUrl?: string;
+}
+
+export interface PublicInvoiceItem {
+  id: string;
+  descriptionSnapshot: string;
+  quantity: number;
+  unit: string;
+  sellingPriceSnapshot: number;
+  subtotal: number;
+}
+
+export interface PublicInvoice {
+  publicToken: string;
+  invoiceNumber: string;
+  customerName: string;
+  customerPhone?: string;
+  issueDate: string;
+  dueDate?: string;
+  status: InvoiceStatus;
+  subtotal: number;
+  discount: number;
+  total: number;
+  notes?: string;
+  items: PublicInvoiceItem[];
+  company: CompanyProfilePublic;
+}
+
 // ─── Payment ───
 
 export type PaymentMethod = "CASH" | "TRANSFER" | "CHECK" | "OTHER";
@@ -169,6 +209,7 @@ export interface Payment {
   method: PaymentMethod;
   referenceNumber?: string;
   proofUrl?: string;
+  proofPath?: string;
   notes?: string;
   createdBy: string;
 }

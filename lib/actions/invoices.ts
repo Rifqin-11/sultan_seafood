@@ -1,10 +1,10 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
-import { mockInvoices } from "@/lib/mock-data";
-import { calculateInvoice } from "@/lib/utils";
-import type { Invoice, DirectCostCategory } from "@/types";
 import { revalidatePath } from "next/cache";
+import { createClient } from "@/lib/supabase/server";
+import { normalizeActionError, requireApprovedUser, requirePermission } from "@/lib/security/auth";
+import { isPublicInvoice, sanitizeInvoiceForRole } from "@/lib/domain/invoices";
+import type { DirectCostCategory, Invoice, PublicInvoice } from "@/types";
 
 export interface CreateInvoicePayload {
   customerId: string;
@@ -15,302 +15,103 @@ export interface CreateInvoicePayload {
   status: "DRAFT" | "ISSUED";
   items: Array<{
     productId: string;
-    description: string;
+    description?: string;
     quantity: number;
-    unit: string;
-    sellingPrice: number;
-    purchasePrice: number;
+    unit?: string;
+    sellingPrice?: number;
+    purchasePrice?: number;
   }>;
-  costs: Array<{
-    category: DirectCostCategory;
-    name: string;
-    amount: number;
-    notes?: string;
-  }>;
+  costs: Array<{ category: DirectCostCategory; name: string; amount: number; notes?: string }>;
+}
+
+function validateCreatePayload(payload: CreateInvoicePayload) {
+  if (!payload.customerId || !payload.issueDate || payload.items.length === 0) return "Restoran, tanggal, dan item invoice wajib diisi.";
+  if (payload.items.some((item) => !item.productId || !Number.isFinite(item.quantity) || item.quantity <= 0)) return "Semua item harus memiliki produk dan jumlah yang valid.";
+  if ((payload.discount ?? 0) < 0) return "Diskon tidak boleh negatif.";
+  if (payload.costs.some((cost) => !cost.name.trim() || !Number.isFinite(cost.amount) || cost.amount <= 0)) return "Biaya internal tidak valid.";
+  return null;
 }
 
 export async function createInvoiceAction(payload: CreateInvoicePayload) {
-  const supabase = await createClient();
-
-  // Perform invoice calculations
-  const calc = calculateInvoice(
-    payload.items.map((i) => ({
-      quantity: i.quantity,
-      sellingPrice: i.sellingPrice,
-      purchasePrice: i.purchasePrice,
-    })),
-    payload.costs.map((c) => ({ amount: c.amount })),
-    payload.discount || 0
-  );
-
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-
-  // Fallback if Supabase is not configured yet
-  if (!supabaseUrl || supabaseUrl.includes("placeholder")) {
-    console.log("Supabase env vars not set. Mock save successful:", payload);
-    revalidatePath("/invoices");
-    return { success: true, message: "Invoice berhasil disimpan (Mode Demo)." };
-  }
+  const validationError = validateCreatePayload(payload);
+  if (validationError) return { error: validationError };
 
   try {
-    // 1. Insert Invoice Header
-    const { data: invData, error: invError } = await supabase
-      .from("invoices")
-      .insert({
-        customer_id: payload.customerId,
-        issue_date: payload.issueDate,
-        due_date: payload.dueDate || null,
-        status: payload.status,
-        subtotal: calc.subtotal,
-        discount: payload.discount || 0,
-        total: calc.revenue,
-        remaining_balance: calc.revenue,
-        total_product_cost: calc.totalProductCost,
-        total_direct_cost: calc.totalDirectCost,
-        product_profit: calc.productProfit,
-        transaction_profit: calc.transactionProfit,
-        transaction_margin: calc.transactionMargin,
-        notes: payload.notes || null,
-      })
-      .select("id, invoice_number")
-      .single();
-
-    if (invError) throw invError;
-    const invoiceId = invData.id;
-
-    // 2. Insert Line Items
-    if (payload.items.length > 0) {
-      const itemsToInsert = payload.items.map((item) => {
-        const itemSubtotal = item.quantity * item.sellingPrice;
-        const itemCost = item.quantity * item.purchasePrice;
-        return {
-          invoice_id: invoiceId,
-          product_id: item.productId,
-          description_snapshot: item.description,
-          quantity: item.quantity,
-          unit: item.unit,
-          selling_price_snapshot: item.sellingPrice,
-          purchase_price_snapshot: item.purchasePrice,
-          subtotal: itemSubtotal,
-          product_cost_total: itemCost,
-          profit: itemSubtotal - itemCost,
-        };
-      });
-
-      const { error: itemsError } = await supabase
-        .from("invoice_items")
-        .insert(itemsToInsert);
-
-      if (itemsError) throw itemsError;
-    }
-
-    // 3. Insert Direct Costs
-    if (payload.costs.length > 0) {
-      const costsToInsert = payload.costs.map((cost) => ({
-        invoice_id: invoiceId,
-        category: cost.category,
-        name: cost.name,
-        amount: cost.amount,
-        notes: cost.notes || null,
-      }));
-
-      const { error: costsError } = await supabase
-        .from("invoice_direct_costs")
-        .insert(costsToInsert);
-
-      if (costsError) throw costsError;
-    }
-
+    const user = await requirePermission("create_invoice_draft");
+    if (payload.status === "ISSUED" && user.role === "STAFF") return { error: "Staff hanya dapat menyimpan invoice sebagai draft." };
+    const supabase = await createClient();
+    const { data, error } = await supabase.rpc("create_invoice_transaction", { p_payload: payload });
+    if (error) throw error;
+    const result = data as { invoiceId: string; invoiceNumber?: string; publicToken: string };
+    revalidatePath("/dashboard");
     revalidatePath("/invoices");
-    return {
-      success: true,
-      invoiceId,
-      invoiceNumber: invData.invoice_number,
-      message: "Invoice berhasil diterbitkan.",
-    };
-  } catch (error: unknown) {
-    const err = error as { message?: string };
-    console.error("Create Invoice Error:", err);
-    return { error: err.message || "Gagal menyimpan invoice." };
+    return { success: true, ...result, message: payload.status === "ISSUED" ? "Invoice berhasil diterbitkan." : "Draft invoice berhasil disimpan." };
+  } catch (error) {
+    return { error: normalizeActionError(error, "Gagal menyimpan invoice.") };
   }
 }
 
 export async function getInvoicesAction(): Promise<Invoice[]> {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-
-  if (!supabaseUrl || supabaseUrl.includes("placeholder")) {
-    return mockInvoices;
-  }
-
-  try {
-    const supabase = await createClient();
-    const { data, error } = await supabase
-      .from("invoices")
-      .select(
-        `
-        *,
-        customers ( name )
-      `
-      )
-      .order("created_at", { ascending: false });
-
-    if (error || !data) return mockInvoices;
-
-    return data.map((inv) => ({
-      id: inv.id,
-      invoiceNumber: inv.invoice_number,
-      customerId: inv.customer_id,
-      customerName: inv.customers?.name || "Restoran",
-      issueDate: inv.issue_date,
-      dueDate: inv.due_date,
-      status: inv.status,
-      subtotal: Number(inv.subtotal),
-      discount: Number(inv.discount),
-      total: Number(inv.total),
-      totalPaid: Number(inv.total_paid),
-      remainingBalance: Number(inv.remaining_balance),
-      totalProductCost: Number(inv.total_product_cost),
-      totalDirectCost: Number(inv.total_direct_cost),
-      productProfit: Number(inv.product_profit),
-      transactionProfit: Number(inv.transaction_profit),
-      transactionMargin: Number(inv.transaction_margin),
-      items: [],
-      directCosts: [],
-      notes: inv.notes,
-      createdBy: inv.created_by || "system",
-      createdAt: inv.created_at,
-      updatedAt: inv.updated_at,
-    }));
-  } catch {
-    return mockInvoices;
-  }
+  const user = await requireApprovedUser();
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("get_invoices_secure", { p_invoice_id: null });
+  if (error) throw new Error(error.message);
+  const rows = Array.isArray(data) ? data as Invoice[] : [];
+  return rows.map((invoice) => sanitizeInvoiceForRole(invoice, user.role !== "STAFF"));
 }
 
 export async function getInvoiceByIdAction(id: string): Promise<(Invoice & { customerPhone?: string }) | null> {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const user = await requireApprovedUser();
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return null;
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("get_invoices_secure", { p_invoice_id: id });
+  if (error) throw new Error(error.message);
+  const invoice = Array.isArray(data) ? data[0] as (Invoice & { customerPhone?: string }) | undefined : undefined;
+  return invoice ? sanitizeInvoiceForRole(invoice, user.role !== "STAFF") : null;
+}
 
-  if (!supabaseUrl || supabaseUrl.includes("placeholder")) {
-    const mock = mockInvoices.find((i) => i.id === id);
-    if (!mock) return null;
-    return { ...mock, customerPhone: "081234567890" };
-  }
-
-  try {
-    const supabase = await createClient();
-    const { data: inv, error: invErr } = await supabase
-      .from("invoices")
-      .select(
-        `
-        *,
-        customers ( name, phone ),
-        invoice_items ( * ),
-        invoice_direct_costs ( * )
-      `
-      )
-      .eq("id", id)
-      .single();
-
-    if (invErr || !inv) {
-      const mock = mockInvoices.find((i) => i.id === id);
-      if (!mock) return null;
-      return { ...mock, customerPhone: "081234567890" };
-    }
-
-    return {
-      id: inv.id,
-      invoiceNumber: inv.invoice_number,
-      customerId: inv.customer_id,
-      customerName: inv.customers?.name || "Restoran",
-      customerPhone: inv.customers?.phone || undefined,
-      issueDate: inv.issue_date,
-      dueDate: inv.due_date,
-      status: inv.status,
-      subtotal: Number(inv.subtotal),
-      discount: Number(inv.discount),
-      total: Number(inv.total),
-      totalPaid: Number(inv.total_paid),
-      remainingBalance: Number(inv.remaining_balance),
-      totalProductCost: Number(inv.total_product_cost),
-      totalDirectCost: Number(inv.total_direct_cost),
-      productProfit: Number(inv.product_profit),
-      transactionProfit: Number(inv.transaction_profit),
-      transactionMargin: Number(inv.transaction_margin),
-      items: (inv.invoice_items || []).map((item: any) => ({
-        id: item.id,
-        invoiceId: item.invoice_id,
-        productId: item.product_id,
-        descriptionSnapshot: item.description_snapshot,
-        quantity: Number(item.quantity),
-        unit: item.unit,
-        sellingPriceSnapshot: Number(item.selling_price_snapshot),
-        purchasePriceSnapshot: Number(item.purchase_price_snapshot),
-        subtotal: Number(item.subtotal),
-        productCostTotal: Number(item.product_cost_total),
-        profit: Number(item.profit),
-      })),
-      directCosts: (inv.invoice_direct_costs || []).map((cost: any) => ({
-        id: cost.id,
-        invoiceId: cost.invoice_id,
-        category: cost.category,
-        name: cost.name,
-        amount: Number(cost.amount),
-        notes: cost.notes,
-      })),
-      notes: inv.notes,
-      createdBy: inv.created_by || "system",
-      createdAt: inv.created_at,
-      updatedAt: inv.updated_at,
-    };
-  } catch {
-    const mock = mockInvoices.find((i) => i.id === id);
-    if (!mock) return null;
-    return { ...mock, customerPhone: "081234567890" };
-  }
+export async function getPublicInvoiceAction(token: string): Promise<PublicInvoice | null> {
+  if (!/^[0-9a-f-]{36}$/i.test(token)) return null;
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("get_public_invoice", { p_token: token });
+  if (error) throw new Error(error.message);
+  return isPublicInvoice(data) ? data : null;
 }
 
 export async function deleteInvoiceAction(id: string) {
-  const supabase = await createClient();
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-
-  if (!supabaseUrl || supabaseUrl.includes("placeholder")) {
-    revalidatePath("/invoices");
-    return { success: true, message: "Invoice berhasil dihapus." };
-  }
-
   try {
-    const { error } = await supabase.from("invoices").delete().eq("id", id);
+    await requirePermission("create_invoice_draft");
+    const supabase = await createClient();
+    const { error } = await supabase.rpc("delete_draft_invoice", { p_invoice_id: id });
     if (error) throw error;
-
     revalidatePath("/invoices");
-    return { success: true, message: "Invoice berhasil dihapus." };
-  } catch (err: unknown) {
-    const error = err as { message?: string };
-    return { error: error.message || "Gagal menghapus invoice." };
+    return { success: true, message: "Draft invoice berhasil dihapus." };
+  } catch (error) {
+    return { error: normalizeActionError(error, "Gagal menghapus draft invoice.") };
   }
 }
 
-export async function voidInvoiceAction(id: string) {
-  const supabase = await createClient();
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-
-  if (!supabaseUrl || supabaseUrl.includes("placeholder")) {
-    revalidatePath("/invoices");
-    return { success: true, message: "Invoice berhasil dibatalkan." };
-  }
-
+export async function voidInvoiceAction(id: string, reason?: string) {
   try {
-    const { error } = await supabase
-      .from("invoices")
-      .update({ status: "VOID", remaining_balance: 0 })
-      .eq("id", id);
-
+    await requirePermission("void_invoice");
+    const supabase = await createClient();
+    const { error } = await supabase.rpc("void_invoice", { p_invoice_id: id, p_reason: reason ?? null });
     if (error) throw error;
-
+    revalidatePath("/dashboard");
     revalidatePath("/invoices");
-    return { success: true, message: "Invoice berhasil dibatalkan." };
-  } catch (err: unknown) {
-    const error = err as { message?: string };
-    return { error: error.message || "Gagal membatalkan invoice." };
+    return { success: true, message: "Invoice berhasil dibatalkan tanpa menghapus riwayat." };
+  } catch (error) {
+    return { error: normalizeActionError(error, "Gagal membatalkan invoice.") };
   }
 }
 
+export async function issueInvoiceAction(id: string) {
+  try {
+    await requirePermission("issue_invoice");
+    const supabase = await createClient();
+    const { data, error } = await supabase.rpc("issue_invoice", { p_invoice_id: id });
+    if (error) throw error;
+    revalidatePath("/dashboard"); revalidatePath("/invoices"); revalidatePath(`/invoices/${id}`);
+    return { success: true, invoiceNumber: data as string, message: "Draft berhasil diterbitkan." };
+  } catch (error) { return { error: normalizeActionError(error, "Gagal menerbitkan draft.") }; }
+}
