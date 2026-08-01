@@ -45,25 +45,24 @@ export function ConfirmDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-sm">
+      <DialogContent className="max-w-sm">
         <DialogHeader className="flex flex-col items-center text-center pt-2">
-          <div className="w-12 h-12 rounded-full bg-red-100 border border-red-200 flex items-center justify-center text-red-600 mb-3">
-            <AlertTriangle className="w-6 h-6" />
+          <div className="w-14 h-14 rounded-full bg-red-100 border border-red-200 flex items-center justify-center text-red-600 mb-4">
+            <AlertTriangle className="w-7 h-7" />
           </div>
-          <DialogTitle className="text-base font-semibold text-foreground">
+          <DialogTitle className="text-lg font-semibold text-foreground">
             {title}
           </DialogTitle>
-          <DialogDescription className="text-xs text-muted-foreground mt-1">
+          <DialogDescription className="text-sm text-muted-foreground mt-1.5 leading-relaxed">
             {description}
           </DialogDescription>
         </DialogHeader>
 
-        <DialogFooter className="mt-4 flex items-center gap-2 sm:justify-center">
+        <DialogFooter className="mt-5 flex items-center gap-3 sm:justify-center">
           <Button
             type="button"
             variant="outline"
-            size="sm"
-            className="flex-1 text-xs"
+            className="flex-1 h-11 text-sm"
             onClick={() => onOpenChange(false)}
             disabled={loading}
           >
@@ -72,12 +71,11 @@ export function ConfirmDialog({
           <Button
             type="button"
             variant={variant === "destructive" ? "destructive" : "default"}
-            size="sm"
-            className="flex-1 text-xs"
+            className="flex-1 h-11 text-sm"
             onClick={handleConfirm}
             disabled={loading}
           >
-            {loading && <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />}
+            {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
             {confirmLabel}
           </Button>
         </DialogFooter>

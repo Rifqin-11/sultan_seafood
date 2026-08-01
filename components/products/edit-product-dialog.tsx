@@ -81,7 +81,7 @@ export function EditProductDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Edit Produk Seafood</DialogTitle>
           <DialogDescription>
@@ -89,28 +89,27 @@ export function EditProductDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-3.5 py-2">
+        <form onSubmit={handleSubmit} className="space-y-4 py-2">
           <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1">
+            <label className="block text-sm font-medium text-muted-foreground mb-1.5">
               Nama Produk <span className="text-red-500">*</span>
             </label>
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="h-8 text-xs"
               required
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">
+              <label className="block text-sm font-medium text-muted-foreground mb-1.5">
                 Kategori <span className="text-red-500">*</span>
               </label>
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                className="w-full h-8 text-xs border border-input rounded-md px-2 bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+                className="w-full h-10 text-sm border border-input rounded-md px-3 bg-background focus:outline-none focus:ring-1 focus:ring-ring"
                 required
               >
                 <option value="Ikan Laut">Ikan Laut</option>
@@ -121,26 +120,25 @@ export function EditProductDialog({
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">
+              <label className="block text-sm font-medium text-muted-foreground mb-1.5">
                 Ukuran / Size (Opsional)
               </label>
               <Input
                 placeholder="40-50, Size L, Big"
                 value={size}
                 onChange={(e) => setSize(e.target.value)}
-                className="h-8 text-xs"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1">
+            <label className="block text-sm font-medium text-muted-foreground mb-1.5">
               Satuan Default <span className="text-red-500">*</span>
             </label>
             <select
               value={defaultUnit}
               onChange={(e) => setDefaultUnit(e.target.value)}
-              className="w-full h-8 text-xs border border-input rounded-md px-2 bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+              className="w-full h-10 text-sm border border-input rounded-md px-3 bg-background focus:outline-none focus:ring-1 focus:ring-ring"
               required
             >
               <option value="kg">Kilogram (kg)</option>
@@ -152,46 +150,39 @@ export function EditProductDialog({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">
+              <label className="block text-sm font-medium text-muted-foreground mb-1.5">
                 Harga Jual Default (Rp)
               </label>
               <Input
                 type="number"
                 value={defaultSellingPrice}
                 onChange={(e) => setDefaultSellingPrice(e.target.value)}
-                className="h-8 text-xs"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">
+              <label className="block text-sm font-medium text-muted-foreground mb-1.5">
                 Harga Beli HPP (Rp)
               </label>
               <Input
                 type="number"
                 value={activeCost}
                 onChange={(e) => setActiveCost(e.target.value)}
-                className="h-8 text-xs"
               />
             </div>
           </div>
 
           {error && (
-            <p className="text-xs text-red-500 bg-red-50 border border-red-200 rounded p-2">
+            <p className="text-sm text-red-500 bg-red-50 border border-red-200 rounded p-2.5">
               {error}
             </p>
           )}
 
-          <DialogFooter className="mt-4">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => onOpenChange(false)}
-            >
+          <DialogFooter className="mt-2">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Batal
             </Button>
-            <Button type="submit" size="sm" disabled={loading}>
-              {loading && <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />}
+            <Button type="submit" disabled={loading}>
+              {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Simpan Perubahan
             </Button>
           </DialogFooter>

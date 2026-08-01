@@ -75,15 +75,14 @@ export function AddProductDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <Button
-        size="sm"
         onClick={() => setOpen(true)}
-        className="h-8 px-3 text-xs cursor-pointer"
+        className="cursor-pointer"
       >
-        <Plus className="w-3.5 h-3.5 mr-1" />
+        <Plus className="w-4 h-4 mr-1.5" />
         Tambah Produk
       </Button>
 
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Tambah Produk Baru</DialogTitle>
           <DialogDescription>
@@ -91,59 +90,55 @@ export function AddProductDialog() {
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-3.5 py-2">
+        <form onSubmit={handleSubmit} className="space-y-4 py-2">
           <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1">
+            <label className="block text-sm font-medium text-muted-foreground mb-1.5">
               Nama Produk <span className="text-red-500">*</span>
             </label>
             <Input
               placeholder="Udang Vaname Size 30"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="h-8 text-xs"
               required
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">
+              <label className="block text-sm font-medium text-muted-foreground mb-1.5">
                 Kategori
               </label>
               <Input
                 placeholder="Ikan / Udang / Cumi"
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                className="h-8 text-xs"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">
+              <label className="block text-sm font-medium text-muted-foreground mb-1.5">
                 Size / Ukuran
               </label>
               <Input
                 placeholder="Size 30 / 500g-700g / Jumbo"
                 value={size}
                 onChange={(e) => setSize(e.target.value)}
-                className="h-8 text-xs"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">
+              <label className="block text-sm font-medium text-muted-foreground mb-1.5">
                 Satuan
               </label>
               <Input
                 placeholder="kg / ekor"
                 value={defaultUnit}
                 onChange={(e) => setDefaultUnit(e.target.value)}
-                className="h-8 text-xs"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">
+              <label className="block text-sm font-medium text-muted-foreground mb-1.5">
                 Harga Jual (Rp)
               </label>
               <Input
@@ -151,11 +146,10 @@ export function AddProductDialog() {
                 placeholder="110000"
                 value={defaultSellingPrice}
                 onChange={(e) => setDefaultSellingPrice(e.target.value)}
-                className="h-8 text-xs"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">
+              <label className="block text-sm font-medium text-muted-foreground mb-1.5">
                 HPP Beli (Rp)
               </label>
               <Input
@@ -163,28 +157,22 @@ export function AddProductDialog() {
                 placeholder="85000"
                 value={activeCost}
                 onChange={(e) => setActiveCost(e.target.value)}
-                className="h-8 text-xs"
               />
             </div>
           </div>
 
           {error && (
-            <p className="text-xs text-red-500 bg-red-50 border border-red-200 rounded p-2">
+            <p className="text-sm text-red-500 bg-red-50 border border-red-200 rounded p-2.5">
               {error}
             </p>
           )}
 
-          <DialogFooter className="mt-4">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setOpen(false)}
-            >
+          <DialogFooter className="mt-2">
+            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               Batal
             </Button>
-            <Button type="submit" size="sm" disabled={loading}>
-              {loading && <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />}
+            <Button type="submit" disabled={loading}>
+              {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Simpan Produk
             </Button>
           </DialogFooter>

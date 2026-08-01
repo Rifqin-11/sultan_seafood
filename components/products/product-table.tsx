@@ -121,130 +121,158 @@ export function ProductTable({ initialProducts = [], canManage = false }: Produc
             description="Coba ubah kata kunci pencarian atau filter."
           />
         ) : (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/30 hover:bg-muted/30">
-                  <TableHead className="text-xs font-semibold">ID Produk</TableHead>
-                  <TableHead className="text-xs font-semibold">Nama Produk</TableHead>
-                  <TableHead className="text-xs font-semibold">Kategori</TableHead>
-                  <TableHead className="text-xs font-semibold">Ukuran / Size</TableHead>
-                  <TableHead className="text-xs font-semibold">Satuan</TableHead>
-                  <TableHead className="text-xs font-semibold text-right">
-                    Harga Beli
-                  </TableHead>
-                  <TableHead className="text-xs font-semibold text-right">
-                    Harga Jual
-                  </TableHead>
-                  <TableHead className="text-xs font-semibold text-right">
-                    Margin
-                  </TableHead>
-                  <TableHead className="text-xs font-semibold">Status</TableHead>
-                  {canManage && <TableHead className="w-10" />}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filtered.map((product) => (
-                  <TableRow key={product.id} className="hover:bg-muted/20">
-                    <TableCell className="font-mono text-xs text-muted-foreground">
-                      {product.id.includes("-") ? product.id.split("-")[0] : product.id.slice(0, 8)}
-                    </TableCell>
-                    <TableCell className="font-medium text-sm">
-                      {product.name}
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {product.category}
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {product.size ? (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
-                          {product.size}
-                        </span>
-                      ) : (
-                        "—"
+          <>
+            {/* Desktop table */}
+            <div className="hidden sm:block overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/30 hover:bg-muted/30">
+                    <TableHead className="text-xs font-semibold">ID Produk</TableHead>
+                    <TableHead className="text-xs font-semibold">Nama Produk</TableHead>
+                    <TableHead className="text-xs font-semibold">Kategori</TableHead>
+                    <TableHead className="text-xs font-semibold">Ukuran / Size</TableHead>
+                    <TableHead className="text-xs font-semibold">Satuan</TableHead>
+                    <TableHead className="text-xs font-semibold text-right">Harga Beli</TableHead>
+                    <TableHead className="text-xs font-semibold text-right">Harga Jual</TableHead>
+                    <TableHead className="text-xs font-semibold text-right">Margin</TableHead>
+                    <TableHead className="text-xs font-semibold">Status</TableHead>
+                    {canManage && <TableHead className="w-10" />}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filtered.map((product) => (
+                    <TableRow key={product.id} className="hover:bg-muted/20">
+                      <TableCell className="font-mono text-xs text-muted-foreground">
+                        {product.id.includes("-") ? product.id.split("-")[0] : product.id.slice(0, 8)}
+                      </TableCell>
+                      <TableCell className="font-medium text-sm">{product.name}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{product.category}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {product.size ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                            {product.size}
+                          </span>
+                        ) : "—"}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{product.defaultUnit}</TableCell>
+                      <TableCell className="text-right text-sm font-medium tabular-nums">
+                        {product.activeCost ? formatCurrency(product.activeCost) : "—"}
+                      </TableCell>
+                      <TableCell className="text-right text-sm font-medium tabular-nums">
+                        {product.defaultSellingPrice ? formatCurrency(product.defaultSellingPrice) : "—"}
+                      </TableCell>
+                      <TableCell className="text-right text-sm tabular-nums">
+                        {product.estimatedMargin != null ? (
+                          <span className={product.estimatedMargin >= 20 ? "text-emerald-600 font-medium" : "text-muted-foreground"}>
+                            {formatPercent(product.estimatedMargin)}
+                          </span>
+                        ) : "—"}
+                      </TableCell>
+                      {canManage && (
+                        <TableCell>
+                          <Badge variant={product.status === "ACTIVE" ? "default" : "secondary"} className="text-[11px]">
+                            {product.status === "ACTIVE" ? "Aktif" : "Nonaktif"}
+                          </Badge>
+                        </TableCell>
                       )}
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {product.defaultUnit}
-                    </TableCell>
-                    <TableCell className="text-right text-sm font-medium tabular-nums">
-                      {product.activeCost
-                        ? formatCurrency(product.activeCost)
-                        : "—"}
-                    </TableCell>
-                    <TableCell className="text-right text-sm font-medium tabular-nums">
-                      {product.defaultSellingPrice
-                        ? formatCurrency(product.defaultSellingPrice)
-                        : "—"}
-                    </TableCell>
-                    <TableCell className="text-right text-sm tabular-nums">
-                      {product.estimatedMargin != null ? (
-                        <span
-                          className={
-                            product.estimatedMargin >= 20
-                              ? "text-emerald-600 font-medium"
-                              : "text-muted-foreground"
-                          }
-                        >
-                          {formatPercent(product.estimatedMargin)}
-                        </span>
-                      ) : (
-                        "—"
-                      )}
-                    </TableCell>
-                    {canManage && <TableCell>
-                      <Badge
-                        variant={
-                          product.status === "ACTIVE" ? "default" : "secondary"
-                        }
-                        className="text-[11px]"
-                      >
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger
+                            className="inline-flex items-center justify-center h-7 w-7 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                            aria-label="Aksi produk"
+                          >
+                            {loadingId === product.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                            ) : (
+                              <MoreHorizontal className="w-4 h-4" />
+                            )}
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-44">
+                            <DropdownMenuItem className="cursor-pointer" onClick={() => setEditingProduct(product)}>
+                              <Edit className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
+                              Edit Produk
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem className="cursor-pointer" onClick={() => handleToggleStatus(product)}>
+                              <Power className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
+                              {product.status === "ACTIVE" ? "Nonaktifkan" : "Aktifkan"}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="cursor-pointer text-red-600 focus:text-red-600" onClick={() => setDeletingProduct(product)}>
+                              <Trash2 className="w-3.5 h-3.5 mr-2 text-red-600" />
+                              Hapus Produk
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Mobile card list */}
+            <div className="sm:hidden divide-y divide-border">
+              {filtered.map((product) => (
+                <div key={product.id} className="p-4 flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0 space-y-1.5">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-sm font-semibold text-foreground">{product.name}</p>
+                      <Badge variant={product.status === "ACTIVE" ? "default" : "secondary"} className="text-xs">
                         {product.status === "ACTIVE" ? "Aktif" : "Nonaktif"}
                       </Badge>
-                    </TableCell>}
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger
-                          className="inline-flex items-center justify-center h-7 w-7 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                          aria-label="Aksi produk"
-                        >
-                          {loadingId === product.id ? (
-                            <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-                          ) : (
-                            <MoreHorizontal className="w-4 h-4" />
-                          )}
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-44">
-                          <DropdownMenuItem
-                            className="cursor-pointer"
-                            onClick={() => setEditingProduct(product)}
-                          >
-                            <Edit className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
-                            Edit Produk
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            className="cursor-pointer"
-                            onClick={() => handleToggleStatus(product)}
-                          >
-                            <Power className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
-                            {product.status === "ACTIVE" ? "Nonaktifkan" : "Aktifkan"}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            className="cursor-pointer text-red-600 focus:text-red-600"
-                            onClick={() => setDeletingProduct(product)}
-                          >
-                            <Trash2 className="w-3.5 h-3.5 mr-2 text-red-600" />
-                            Hapus Produk
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {product.category}{product.size ? ` · ${product.size}` : ""} · {product.defaultUnit}
+                    </p>
+                    <div className="flex items-center gap-3 flex-wrap text-xs">
+                      <span className="text-muted-foreground">
+                        Jual: <span className="font-medium text-foreground">{product.defaultSellingPrice ? formatCurrency(product.defaultSellingPrice) : "—"}</span>
+                      </span>
+                      {product.activeCost != null && (
+                        <span className="text-muted-foreground">
+                          Beli: <span className="font-medium text-foreground">{formatCurrency(product.activeCost)}</span>
+                        </span>
+                      )}
+                      {product.estimatedMargin != null && (
+                        <span className={product.estimatedMargin >= 20 ? "text-emerald-600 font-medium" : "text-muted-foreground"}>
+                          {formatPercent(product.estimatedMargin)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  {canManage && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger
+                        className="inline-flex items-center justify-center h-9 w-9 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer shrink-0"
+                        aria-label="Aksi produk"
+                      >
+                        {loadingId === product.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <MoreHorizontal className="w-5 h-5" />
+                        )}
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-44">
+                        <DropdownMenuItem className="cursor-pointer" onClick={() => setEditingProduct(product)}>
+                          <Edit className="w-4 h-4 mr-2 text-muted-foreground" />
+                          Edit Produk
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem className="cursor-pointer" onClick={() => handleToggleStatus(product)}>
+                          <Power className="w-4 h-4 mr-2 text-muted-foreground" />
+                          {product.status === "ACTIVE" ? "Nonaktifkan" : "Aktifkan"}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem className="cursor-pointer text-red-600 focus:text-red-600" onClick={() => setDeletingProduct(product)}>
+                          <Trash2 className="w-4 h-4 mr-2 text-red-600" />
+                          Hapus Produk
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+                </div>
+              ))}
+            </div>
+          </>
         )}
 
         {/* Footer */}

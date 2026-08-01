@@ -50,8 +50,7 @@ export async function toggleProductStatusAction(id: string, currentStatus: Produ
 export async function deleteProductAction(id: string) {
   try {
     await requireRole(["OWNER", "FINANCE"]); const supabase = await createClient();
-    const { count, error: countError } = await supabase.from("invoice_items").select("id", { count: "exact", head: true }).eq("product_id", id); if (countError) throw countError;
-    if ((count ?? 0) > 0) { const { error } = await supabase.from("products").update({ status: "INACTIVE" }).eq("id", id); if (error) throw error; revalidatePath("/products"); return { success: true, isWarning: true, message: "Produk memiliki riwayat invoice dan dinonaktifkan tanpa menghapus histori." }; }
+    const { error: nullifyError } = await supabase.from("invoice_items").update({ product_id: null }).eq("product_id", id); if (nullifyError) throw nullifyError;
     const { error: priceError } = await supabase.from("customer_prices").delete().eq("product_id", id); if (priceError) throw priceError;
     const { error: costError } = await supabase.from("product_costs").delete().eq("product_id", id); if (costError) throw costError;
     const { error } = await supabase.from("products").delete().eq("id", id); if (error) throw error;

@@ -70,12 +70,8 @@ export function AddExpenseDialog() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <Button
-        size="sm"
-        onClick={() => setOpen(true)}
-        className="h-8 px-3 text-xs cursor-pointer"
-      >
-        <Plus className="w-3.5 h-3.5 mr-1" />
+      <Button onClick={() => setOpen(true)} className="cursor-pointer">
+        <Plus className="w-4 h-4 mr-1.5" />
         Tambah Pengeluaran
       </Button>
 
@@ -87,14 +83,14 @@ export function AddExpenseDialog() {
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-3.5 py-2">
+        <form onSubmit={handleSubmit} className="space-y-4 py-2">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">
+              <label className="block text-sm font-medium text-muted-foreground mb-1.5">
                 Kategori
               </label>
               <Select value={category} onValueChange={(v) => setCategory(v || "Operasional")}>
-                <SelectTrigger className="h-8 text-xs">
+                <SelectTrigger>
                   <SelectValue>{category}</SelectValue>
                 </SelectTrigger>
                 <SelectContent>
@@ -108,33 +104,31 @@ export function AddExpenseDialog() {
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">
+              <label className="block text-sm font-medium text-muted-foreground mb-1.5">
                 Tanggal Pengeluaran
               </label>
               <Input
                 type="date"
                 value={expenseDate}
                 onChange={(e) => setExpenseDate(e.target.value)}
-                className="h-8 text-xs"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1">
+            <label className="block text-sm font-medium text-muted-foreground mb-1.5">
               Deskripsi Pengeluaran <span className="text-red-500">*</span>
             </label>
             <Input
               placeholder="Pembelian Kantong Plastik & Lakban Gudang"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="h-8 text-xs"
               required
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1">
+            <label className="block text-sm font-medium text-muted-foreground mb-1.5">
               Jumlah (Rp) <span className="text-red-500">*</span>
             </label>
             <Input
@@ -142,28 +136,22 @@ export function AddExpenseDialog() {
               placeholder="350000"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              className="h-8 text-xs"
               required
             />
           </div>
 
           {error && (
-            <p className="text-xs text-red-500 bg-red-50 border border-red-200 rounded p-2">
+            <p className="text-sm text-red-500 bg-red-50 border border-red-200 rounded p-2.5">
               {error}
             </p>
           )}
 
-          <DialogFooter className="mt-4">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setOpen(false)}
-            >
+          <DialogFooter className="mt-2">
+            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               Batal
             </Button>
-            <Button type="submit" size="sm" disabled={loading}>
-              {loading && <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />}
+            <Button type="submit" disabled={loading}>
+              {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Simpan Pengeluaran
             </Button>
           </DialogFooter>

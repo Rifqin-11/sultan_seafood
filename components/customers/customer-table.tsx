@@ -220,7 +220,9 @@ export function CustomerTable({ customers, canManage = false }: CustomerTablePro
 
       {/* ─── Customers Table ─── */}
       <div className="bg-white rounded-2xl border border-border shadow-card overflow-hidden">
-        <div className="overflow-x-auto">
+
+        {/* Desktop table */}
+        <div className="hidden sm:block overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/30 hover:bg-muted/30">
@@ -246,18 +248,15 @@ export function CustomerTable({ customers, canManage = false }: CustomerTablePro
               ) : (
                 filteredCustomers.map((c) => {
                   const initial = c.name.trim().charAt(0).toUpperCase();
-
                   return (
                     <TableRow key={c.id} className="hover:bg-slate-50/60 transition-colors">
-                      {canManage && <TableCell className="py-3">
+                      <TableCell className="py-3">
                         <div className="flex items-center gap-3">
                           <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold text-sm shadow-sm shrink-0">
                             {initial}
                           </div>
                           <div>
-                            <p className="text-sm font-semibold text-foreground group-hover:text-blue-600 transition-colors">
-                              {c.name}
-                            </p>
+                            <p className="text-sm font-semibold text-foreground">{c.name}</p>
                             {c.email && (
                               <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
                                 <Mail className="w-3 h-3 text-slate-400" />
@@ -266,7 +265,7 @@ export function CustomerTable({ customers, canManage = false }: CustomerTablePro
                             )}
                           </div>
                         </div>
-                      </TableCell>}
+                      </TableCell>
                       <TableCell className="py-3">
                         <div className="space-y-1">
                           <p className="text-sm font-medium text-slate-800">{c.contactName}</p>
@@ -276,13 +275,8 @@ export function CustomerTable({ customers, canManage = false }: CustomerTablePro
                               {c.phone}
                             </span>
                             {c.phone && (
-                              <a
-                                href={getWaLink(c.phone, c.contactName)}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 text-[10px] font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 px-1.5 py-0.5 rounded-md border border-emerald-200 transition-colors cursor-pointer"
-                                title="Chat WhatsApp PIC"
-                              >
+                              <a href={getWaLink(c.phone, c.contactName)} target="_blank" rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 text-[10px] font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 px-1.5 py-0.5 rounded-md border border-emerald-200 transition-colors cursor-pointer">
                                 <MessageSquare className="w-2.5 h-2.5" /> WA
                               </a>
                             )}
@@ -304,66 +298,132 @@ export function CustomerTable({ customers, canManage = false }: CustomerTablePro
                       <TableCell className="py-3">
                         {c.status === "ACTIVE" ? (
                           <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 font-medium text-xs gap-1">
-                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                            Aktif
+                            <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Aktif
                           </Badge>
                         ) : (
                           <Badge variant="secondary" className="bg-slate-100 text-slate-600 font-medium text-xs gap-1">
-                            <XCircle className="w-3 h-3 text-slate-400" />
-                            Nonaktif
+                            <XCircle className="w-3 h-3 text-slate-400" /> Nonaktif
                           </Badge>
                         )}
                       </TableCell>
-                      <TableCell className="py-3">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger
-                            className="inline-flex items-center justify-center h-8 w-8 rounded-xl hover:bg-slate-100 text-slate-500 hover:text-slate-900 transition-colors cursor-pointer border border-transparent hover:border-slate-200"
-                            aria-label="Aksi restoran"
-                          >
-                            {loadingId === c.id ? (
-                              <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-                            ) : (
-                              <MoreHorizontal className="w-4 h-4" />
-                            )}
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-48 shadow-lg rounded-xl">
-                            <DropdownMenuItem
-                              className="cursor-pointer font-medium text-xs"
-                              onClick={() => setEditingCustomer(c)}
-                            >
-                              <Edit className="w-3.5 h-3.5 mr-2 text-blue-600" />
-                              Edit Data Restoran
-                            </DropdownMenuItem>
-                            <DropdownMenuItem className="cursor-pointer font-medium text-xs">
-                              <Link href="/pricing/selling" className="flex items-center w-full">
-                                <Tag className="w-3.5 h-3.5 mr-2 text-indigo-600" />
-                                Atur Harga Khusus
-                              </Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              className="cursor-pointer font-medium text-xs"
-                              onClick={() => handleToggleStatus(c)}
-                            >
-                              <Power className="w-3.5 h-3.5 mr-2 text-amber-600" />
-                              {c.status === "ACTIVE" ? "Nonaktifkan Restoran" : "Aktifkan Restoran"}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              className="cursor-pointer font-medium text-xs text-red-600 focus:text-red-600"
-                              onClick={() => setDeletingCustomer(c)}
-                            >
-                              <Trash2 className="w-3.5 h-3.5 mr-2 text-red-600" />
-                              Hapus Restoran
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
+                      {canManage && (
+                        <TableCell className="py-3">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger className="inline-flex items-center justify-center h-8 w-8 rounded-xl hover:bg-slate-100 text-slate-500 hover:text-slate-900 transition-colors cursor-pointer" aria-label="Aksi restoran">
+                              {loadingId === c.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <MoreHorizontal className="w-4 h-4" />}
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-48 shadow-lg rounded-xl">
+                              <DropdownMenuItem className="cursor-pointer text-sm" onClick={() => setEditingCustomer(c)}>
+                                <Edit className="w-4 h-4 mr-2 text-blue-600" /> Edit Data Restoran
+                              </DropdownMenuItem>
+                              <DropdownMenuItem className="cursor-pointer text-sm">
+                                <Link href="/pricing/selling" className="flex items-center w-full">
+                                  <Tag className="w-4 h-4 mr-2 text-indigo-600" /> Atur Harga Khusus
+                                </Link>
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem className="cursor-pointer text-sm" onClick={() => handleToggleStatus(c)}>
+                                <Power className="w-4 h-4 mr-2 text-amber-600" />
+                                {c.status === "ACTIVE" ? "Nonaktifkan Restoran" : "Aktifkan Restoran"}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem className="cursor-pointer text-sm text-red-600 focus:text-red-600" onClick={() => setDeletingCustomer(c)}>
+                                <Trash2 className="w-4 h-4 mr-2 text-red-600" /> Hapus Restoran
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      )}
                     </TableRow>
                   );
                 })
               )}
             </TableBody>
           </Table>
+        </div>
+
+        {/* Mobile card list */}
+        <div className="sm:hidden">
+          {filteredCustomers.length === 0 ? (
+            <EmptyState
+              icon={Building2}
+              title="Tidak ada restoran"
+              description={search ? "Tidak ada restoran yang cocok dengan pencarian." : "Belum ada data restoran yang terdaftar."}
+            />
+          ) : (
+            <div className="divide-y divide-border">
+              {filteredCustomers.map((c) => {
+                const initial = c.name.trim().charAt(0).toUpperCase();
+                return (
+                  <div key={c.id} className="p-4 flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-3 flex-1 min-w-0">
+                      <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold text-sm shadow-sm shrink-0">
+                        {initial}
+                      </div>
+                      <div className="flex-1 min-w-0 space-y-1.5">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="text-sm font-semibold text-foreground">{c.name}</p>
+                          {c.status === "ACTIVE" ? (
+                            <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 text-xs gap-1">
+                              <CheckCircle2 className="w-3 h-3" /> Aktif
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary" className="bg-slate-100 text-slate-600 text-xs gap-1">
+                              <XCircle className="w-3 h-3" /> Nonaktif
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1 text-sm text-slate-700">
+                          <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                          <span>{c.contactName} · {c.phone}</span>
+                          {c.phone && (
+                            <a href={getWaLink(c.phone, c.contactName)} target="_blank" rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-[10px] font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 px-1.5 py-0.5 rounded-md border border-emerald-200 ml-1">
+                              <MessageSquare className="w-2.5 h-2.5" /> WA
+                            </a>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" /> {c.paymentTermDays} Hari
+                          </span>
+                          {c.billingAddress && (
+                            <span className="flex items-center gap-1 truncate max-w-[200px]">
+                              <MapPin className="w-3 h-3 shrink-0" /> {c.billingAddress}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    {canManage && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger className="inline-flex items-center justify-center h-9 w-9 rounded-xl hover:bg-slate-100 text-slate-500 shrink-0 cursor-pointer" aria-label="Aksi restoran">
+                          {loadingId === c.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <MoreHorizontal className="w-5 h-5" />}
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48">
+                          <DropdownMenuItem className="cursor-pointer text-sm" onClick={() => setEditingCustomer(c)}>
+                            <Edit className="w-4 h-4 mr-2 text-blue-600" /> Edit Data Restoran
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className="cursor-pointer text-sm">
+                            <Link href="/pricing/selling" className="flex items-center w-full">
+                              <Tag className="w-4 h-4 mr-2 text-indigo-600" /> Atur Harga Khusus
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem className="cursor-pointer text-sm" onClick={() => handleToggleStatus(c)}>
+                            <Power className="w-4 h-4 mr-2 text-amber-600" />
+                            {c.status === "ACTIVE" ? "Nonaktifkan Restoran" : "Aktifkan Restoran"}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className="cursor-pointer text-sm text-red-600 focus:text-red-600" onClick={() => setDeletingCustomer(c)}>
+                            <Trash2 className="w-4 h-4 mr-2 text-red-600" /> Hapus Restoran
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         <div className="px-5 py-3 border-t border-border bg-slate-50/50 flex items-center justify-between text-xs text-muted-foreground">

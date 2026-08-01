@@ -77,7 +77,7 @@ export function EditCustomerDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Edit Restoran Pelanggan</DialogTitle>
           <DialogDescription>
@@ -85,98 +85,58 @@ export function EditCustomerDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-3.5 py-2">
+        <form onSubmit={handleSubmit} className="space-y-4 py-2">
           <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1">
+            <label className="block text-sm font-medium text-muted-foreground mb-1.5">
               Nama Restoran <span className="text-red-500">*</span>
             </label>
-            <Input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="h-8 text-xs"
-              required
-            />
+            <Input value={name} onChange={(e) => setName(e.target.value)} required />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">
+              <label className="block text-sm font-medium text-muted-foreground mb-1.5">
                 Nama Kontak PIC <span className="text-red-500">*</span>
               </label>
-              <Input
-                value={contactName}
-                onChange={(e) => setContactName(e.target.value)}
-                className="h-8 text-xs"
-                required
-              />
+              <Input value={contactName} onChange={(e) => setContactName(e.target.value)} required />
             </div>
             <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">
+              <label className="block text-sm font-medium text-muted-foreground mb-1.5">
                 No HP / WhatsApp <span className="text-red-500">*</span>
               </label>
-              <Input
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className="h-8 text-xs"
-                required
-              />
+              <Input value={phone} onChange={(e) => setPhone(e.target.value)} required />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1">
+            <label className="block text-sm font-medium text-muted-foreground mb-1.5">
               Email (Opsional)
             </label>
-            <Input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="h-8 text-xs"
-            />
+            <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1">
+            <label className="block text-sm font-medium text-muted-foreground mb-1.5">
               Alamat Tagihan <span className="text-red-500">*</span>
             </label>
-            <Input
-              value={billingAddress}
-              onChange={(e) => setBillingAddress(e.target.value)}
-              className="h-8 text-xs"
-              required
-            />
+            <Input value={billingAddress} onChange={(e) => setBillingAddress(e.target.value)} required />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1">
+            <label className="block text-sm font-medium text-muted-foreground mb-1.5">
               Termin Pembayaran (Hari Jatuh Tempo)
             </label>
-            <Input
-              type="number"
-              min="1"
-              value={paymentTermDays}
-              onChange={(e) => setPaymentTermDays(e.target.value)}
-              className="h-8 text-xs"
-            />
+            <Input type="number" min="1" value={paymentTermDays} onChange={(e) => setPaymentTermDays(e.target.value)} />
           </div>
 
           {error && (
-            <p className="text-xs text-red-500 bg-red-50 border border-red-200 rounded p-2">
-              {error}
-            </p>
+            <p className="text-sm text-red-500 bg-red-50 border border-red-200 rounded p-2.5">{error}</p>
           )}
 
-          <DialogFooter className="mt-4">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => onOpenChange(false)}
-            >
-              Batal
-            </Button>
-            <Button type="submit" size="sm" disabled={loading}>
-              {loading && <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />}
+          <DialogFooter className="mt-2">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Batal</Button>
+            <Button type="submit" disabled={loading}>
+              {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Simpan Perubahan
             </Button>
           </DialogFooter>

@@ -74,16 +74,12 @@ export function AddCustomerDialog() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <Button
-        size="sm"
-        onClick={() => setOpen(true)}
-        className="h-8 px-3 text-xs cursor-pointer"
-      >
-        <Plus className="w-3.5 h-3.5 mr-1" />
+      <Button onClick={() => setOpen(true)} className="cursor-pointer">
+        <Plus className="w-4 h-4 mr-1.5" />
         Tambah Restoran
       </Button>
 
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Tambah Restoran Pelanggan</DialogTitle>
           <DialogDescription>
@@ -91,49 +87,46 @@ export function AddCustomerDialog() {
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-3.5 py-2">
+        <form onSubmit={handleSubmit} className="space-y-4 py-2">
           <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1">
+            <label className="block text-sm font-medium text-muted-foreground mb-1.5">
               Nama Restoran <span className="text-red-500">*</span>
             </label>
             <Input
               placeholder="Restoran Ocean Seafood Jakarta"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="h-8 text-xs"
               required
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">
+              <label className="block text-sm font-medium text-muted-foreground mb-1.5">
                 Nama Kontak PIC <span className="text-red-500">*</span>
               </label>
               <Input
                 placeholder="Chef Budi"
                 value={contactName}
                 onChange={(e) => setContactName(e.target.value)}
-                className="h-8 text-xs"
                 required
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">
+              <label className="block text-sm font-medium text-muted-foreground mb-1.5">
                 No HP / WhatsApp <span className="text-red-500">*</span>
               </label>
               <Input
                 placeholder="081234567890"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                className="h-8 text-xs"
                 required
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1">
+            <label className="block text-sm font-medium text-muted-foreground mb-1.5">
               Email (Opsional)
             </label>
             <Input
@@ -141,25 +134,23 @@ export function AddCustomerDialog() {
               placeholder="finance@oceanseafood.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="h-8 text-xs"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1">
+            <label className="block text-sm font-medium text-muted-foreground mb-1.5">
               Alamat Tagihan <span className="text-red-500">*</span>
             </label>
             <Input
               placeholder="Jl. Pantai Indah Kapuk No. 8, Jakarta Utara"
               value={billingAddress}
               onChange={(e) => setBillingAddress(e.target.value)}
-              className="h-8 text-xs"
               required
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1">
+            <label className="block text-sm font-medium text-muted-foreground mb-1.5">
               Termin Pembayaran (Hari Jatuh Tempo)
             </label>
             <Input
@@ -168,27 +159,21 @@ export function AddCustomerDialog() {
               placeholder="7"
               value={paymentTermDays}
               onChange={(e) => setPaymentTermDays(e.target.value)}
-              className="h-8 text-xs"
             />
           </div>
 
           {error && (
-            <p className="text-xs text-red-500 bg-red-50 border border-red-200 rounded p-2">
+            <p className="text-sm text-red-500 bg-red-50 border border-red-200 rounded p-2.5">
               {error}
             </p>
           )}
 
-          <DialogFooter className="mt-4">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setOpen(false)}
-            >
+          <DialogFooter className="mt-2">
+            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               Batal
             </Button>
-            <Button type="submit" size="sm" disabled={loading}>
-              {loading && <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />}
+            <Button type="submit" disabled={loading}>
+              {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Simpan Restoran
             </Button>
           </DialogFooter>
