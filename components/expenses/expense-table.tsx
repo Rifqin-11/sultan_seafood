@@ -59,9 +59,34 @@ export function ExpenseTable({ expenses, totalExpenses }: ExpenseTableProps) {
     }
   };
 
+  const renderActions = (expense: Expense) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-stone-100 hover:text-foreground"
+        aria-label={`Aksi untuk pengeluaran ${expense.description}`}
+      >
+        {loadingId === expense.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <MoreHorizontal className="h-4 w-4" />}
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-44">
+        <DropdownMenuItem className="cursor-pointer" onClick={() => setEditingExpense(expense)}>
+          <Edit className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
+          Edit Data
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          className="cursor-pointer text-red-600 focus:text-red-600"
+          onClick={() => setDeletingExpense(expense)}
+        >
+          <Trash2 className="mr-2 h-3.5 w-3.5 text-red-600" />
+          Hapus Data
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
   return (
     <>
-      <div className="overflow-x-auto">
+      <div className="hidden sm:block">
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/30 hover:bg-muted/30">
@@ -104,42 +129,46 @@ export function ExpenseTable({ expenses, totalExpenses }: ExpenseTableProps) {
                   <TableCell className="text-right text-sm font-semibold tabular-nums text-red-600">
                     -{formatCurrency(e.amount)}
                   </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger
-                        className="inline-flex items-center justify-center h-7 w-7 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                        aria-label="Aksi pengeluaran"
-                      >
-                        {loadingId === e.id ? (
-                          <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-                        ) : (
-                          <MoreHorizontal className="w-4 h-4" />
-                        )}
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-44">
-                        <DropdownMenuItem
-                          className="cursor-pointer"
-                          onClick={() => setEditingExpense(e)}
-                        >
-                          <Edit className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
-                          Edit Data
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          className="cursor-pointer text-red-600 focus:text-red-600"
-                          onClick={() => setDeletingExpense(e)}
-                        >
-                          <Trash2 className="w-3.5 h-3.5 mr-2 text-red-600" />
-                          Hapus Data
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
+                  <TableCell>{renderActions(e)}</TableCell>
                 </TableRow>
               ))
             )}
           </TableBody>
         </Table>
+      </div>
+      <div className="divide-y divide-stone-200 sm:hidden">
+        {expensesList.length === 0 ? (
+          <div className="py-12">
+            <EmptyState icon={Receipt} title="Tidak ada pengeluaran" description="Belum ada data pengeluaran yang terdaftar." />
+          </div>
+        ) : (
+          expensesList.map((expense) => (
+            <article key={expense.id} className="space-y-3 p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <span className="inline-flex rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-medium text-amber-800">
+                    {expense.category}
+                  </span>
+                  <p className="mt-2 line-clamp-2 text-sm font-medium leading-relaxed text-stone-900">{expense.description}</p>
+                </div>
+                <div className="flex shrink-0 items-center gap-1">
+                  <p className="text-sm font-bold tabular-nums text-red-600">-{formatCurrency(expense.amount)}</p>
+                  {renderActions(expense)}
+                </div>
+              </div>
+              <div className="flex items-center justify-between rounded-xl bg-stone-50 px-3 py-2.5 text-xs">
+                <div>
+                  <p className="text-stone-500">Tanggal</p>
+                  <p className="mt-0.5 font-medium text-stone-800">{formatDate(expense.expenseDate)}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-stone-500">Dicatat oleh</p>
+                  <p className="mt-0.5 font-medium text-stone-800">{expense.userName || "—"}</p>
+                </div>
+              </div>
+            </article>
+          ))
+        )}
       </div>
       <div className="flex items-center justify-between px-4 py-3 border-t border-border">
         <p className="text-xs text-muted-foreground">

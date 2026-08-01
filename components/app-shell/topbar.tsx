@@ -28,6 +28,7 @@ const pathLabels: Record<string, string> = {
   "/reports/sales": "Laporan Penjualan",
   "/reports/profit": "Laporan Laba",
   "/reports/receivables": "Piutang",
+  "/reports/supplier-payables": "Hutang Supplier",
   "/reports/internal-costs": "Biaya Internal",
   "/settings/company": "Profil Bisnis",
   "/settings/users": "Profil & Pengguna",
@@ -67,7 +68,7 @@ export function Topbar({ onMobileMenuToggle, user, notificationCount = 0 }: Topb
       : "Dashboard");
 
   return (
-    <header className="h-16 border-b border-border bg-background/80 backdrop-blur-sm flex items-center px-4 md:px-6 gap-4 sticky top-0 z-30">
+    <header className="fixed inset-x-0 top-0 z-30 flex h-16 shrink-0 items-center gap-4 border-b border-border bg-background/95 px-4 shadow-[0_1px_0_rgba(28,25,23,0.05)] backdrop-blur-sm md:px-6 lg:static lg:shadow-none">
       {/* Mobile menu button */}
       <Button
         variant="ghost"

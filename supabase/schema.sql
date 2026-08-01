@@ -31,6 +31,10 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN null; END $$;
 
 DO $$ BEGIN
+  CREATE TYPE supplier_bill_status AS ENUM ('OPEN', 'PARTIALLY_PAID', 'PAID', 'VOID');
+EXCEPTION WHEN duplicate_object THEN null; END $$;
+
+DO $$ BEGIN
   CREATE TYPE direct_cost_category AS ENUM (
     'PACKAGING', 'ICE', 'SHIPPING', 'FUEL', 'TOLL', 'PARKING', 'COURIER', 'PRODUCT_LOSS', 'OTHER'
   );
@@ -149,7 +153,9 @@ CREATE TABLE IF NOT EXISTS public.invoices (
 CREATE TABLE IF NOT EXISTS public.invoice_items (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   invoice_id UUID NOT NULL REFERENCES public.invoices(id) ON DELETE CASCADE,
-  product_id UUID NOT NULL REFERENCES public.products(id) ON DELETE RESTRICT,
+  -- Invoice history is a snapshot. A deleted master product must not delete
+  -- or invalidate its invoice items, so the optional reference is nulled.
+  product_id UUID REFERENCES public.products(id) ON DELETE SET NULL,
   description_snapshot TEXT NOT NULL,
   quantity NUMERIC(10, 2) NOT NULL,
   unit TEXT NOT NULL,
@@ -186,6 +192,39 @@ CREATE TABLE IF NOT EXISTS public.payments (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- 10A. SUPPLIER BILLS & PAYMENTS (Accounts payable)
+CREATE TABLE IF NOT EXISTS public.supplier_bills (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  bill_number TEXT NOT NULL UNIQUE,
+  supplier_id UUID NOT NULL REFERENCES public.suppliers(id) ON DELETE RESTRICT,
+  supplier_reference TEXT,
+  bill_date DATE NOT NULL DEFAULT CURRENT_DATE,
+  due_date DATE,
+  status supplier_bill_status NOT NULL DEFAULT 'OPEN',
+  total NUMERIC(12, 2) NOT NULL CHECK (total > 0),
+  total_paid NUMERIC(12, 2) NOT NULL DEFAULT 0 CHECK (total_paid >= 0),
+  remaining_balance NUMERIC(12, 2) NOT NULL CHECK (remaining_balance >= 0),
+  notes TEXT,
+  created_by UUID REFERENCES auth.users(id),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CHECK (due_date IS NULL OR due_date >= bill_date),
+  CHECK (total_paid <= total),
+  CHECK (remaining_balance = total - total_paid)
+);
+
+CREATE TABLE IF NOT EXISTS public.supplier_payments (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  supplier_bill_id UUID NOT NULL REFERENCES public.supplier_bills(id) ON DELETE RESTRICT,
+  amount NUMERIC(12, 2) NOT NULL CHECK (amount > 0),
+  payment_date DATE NOT NULL DEFAULT CURRENT_DATE,
+  method payment_method NOT NULL DEFAULT 'TRANSFER',
+  reference_number TEXT,
+  notes TEXT,
+  recorded_by UUID REFERENCES auth.users(id),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 -- 11. EXPENSES
 CREATE TABLE IF NOT EXISTS public.expenses (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -216,6 +255,9 @@ CREATE INDEX IF NOT EXISTS idx_invoices_status ON public.invoices(status);
 CREATE INDEX IF NOT EXISTS idx_invoice_items_invoice ON public.invoice_items(invoice_id);
 CREATE INDEX IF NOT EXISTS idx_invoice_costs_invoice ON public.invoice_direct_costs(invoice_id);
 CREATE INDEX IF NOT EXISTS idx_payments_invoice ON public.payments(invoice_id);
+CREATE INDEX IF NOT EXISTS idx_supplier_bills_supplier ON public.supplier_bills(supplier_id);
+CREATE INDEX IF NOT EXISTS idx_supplier_bills_status_due_date ON public.supplier_bills(status, due_date);
+CREATE INDEX IF NOT EXISTS idx_supplier_payments_bill ON public.supplier_payments(supplier_bill_id);
 CREATE INDEX IF NOT EXISTS idx_product_costs_product ON public.product_costs(product_id);
 
 -- TRIGGER FUNCTION FOR INVOICE NUMBERING
@@ -261,6 +303,8 @@ ALTER TABLE public.invoices ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.invoice_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.invoice_direct_costs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.payments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.supplier_bills ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.supplier_payments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.expenses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
 
@@ -287,6 +331,10 @@ CREATE POLICY finance_direct_costs_read ON public.invoice_direct_costs FOR SELEC
 CREATE POLICY finance_payments_read ON public.payments FOR SELECT TO authenticated USING (public.current_user_role() IN ('OWNER','FINANCE'));
 CREATE POLICY finance_customers_write ON public.customers FOR ALL TO authenticated USING (public.current_user_role() IN ('OWNER','FINANCE')) WITH CHECK (public.current_user_role() IN ('OWNER','FINANCE'));
 CREATE POLICY finance_suppliers_write ON public.suppliers FOR ALL TO authenticated USING (public.current_user_role() IN ('OWNER','FINANCE')) WITH CHECK (public.current_user_role() IN ('OWNER','FINANCE'));
+CREATE POLICY approved_supplier_bills_read ON public.supplier_bills FOR SELECT TO authenticated USING (public.is_approved_user());
+CREATE POLICY finance_supplier_bills_write ON public.supplier_bills FOR ALL TO authenticated USING (public.current_user_role() IN ('OWNER','FINANCE')) WITH CHECK (public.current_user_role() IN ('OWNER','FINANCE'));
+CREATE POLICY approved_supplier_payments_read ON public.supplier_payments FOR SELECT TO authenticated USING (public.is_approved_user());
+CREATE POLICY finance_supplier_payments_write ON public.supplier_payments FOR ALL TO authenticated USING (public.current_user_role() IN ('OWNER','FINANCE')) WITH CHECK (public.current_user_role() IN ('OWNER','FINANCE'));
 CREATE POLICY finance_products_write ON public.products FOR ALL TO authenticated USING (public.current_user_role() IN ('OWNER','FINANCE')) WITH CHECK (public.current_user_role() IN ('OWNER','FINANCE'));
 CREATE POLICY finance_costs_write ON public.product_costs FOR ALL TO authenticated USING (public.current_user_role() IN ('OWNER','FINANCE')) WITH CHECK (public.current_user_role() IN ('OWNER','FINANCE'));
 CREATE POLICY finance_customer_prices_write ON public.customer_prices FOR ALL TO authenticated USING (public.current_user_role() IN ('OWNER','FINANCE')) WITH CHECK (public.current_user_role() IN ('OWNER','FINANCE'));

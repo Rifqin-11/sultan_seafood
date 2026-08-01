@@ -111,6 +111,38 @@ export function PurchasePriceTable({ costs, products }: PurchasePriceTableProps)
     }
   };
 
+  const getCostDisplay = (cost: PurchaseCostItem) => {
+    const product = products.find((item) => item.id === cost.productId);
+    const isTechnicalId = !cost.productName || cost.productName.startsWith("prod_") || cost.productName.startsWith("cost_");
+    return {
+      name: !isTechnicalId ? cost.productName! : product?.name || "Produk tidak tersedia",
+      unit: cost.unit || product?.defaultUnit || "kg",
+      isActive: !cost.endedAt,
+    };
+  };
+
+  const renderActions = (cost: PurchaseCostItem) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-amber-100 hover:text-foreground"
+        aria-label={`Aksi untuk harga beli ${getCostDisplay(cost).name}`}
+      >
+        {loadingId === cost.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <MoreHorizontal className="h-4 w-4" />}
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-44">
+        <DropdownMenuItem className="cursor-pointer" onClick={() => handleOpenEdit(cost)}>
+          <Edit className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
+          Edit Harga
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem className="cursor-pointer text-red-600 focus:text-red-600" onClick={() => setDeletingCost(cost)}>
+          <Trash2 className="mr-2 h-3.5 w-3.5 text-red-600" />
+          Hapus Riwayat
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
   return (
     <>
       <div className="bg-white rounded-2xl border border-amber-200 shadow-card overflow-hidden">
@@ -123,7 +155,7 @@ export function PurchasePriceTable({ costs, products }: PurchasePriceTableProps)
           </p>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="hidden sm:block">
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/30 hover:bg-muted/30">
@@ -151,12 +183,7 @@ export function PurchasePriceTable({ costs, products }: PurchasePriceTableProps)
                 </TableRow>
               ) : (
                 costsList.map((cost) => {
-                  const product = products.find((p) => p.id === cost.productId);
-                const rawName = cost.productName;
-                const isTechnicalId = !rawName || rawName.startsWith("prod_") || rawName.startsWith("cost_");
-                const name = !isTechnicalId ? rawName : (product?.name || "Ikan Kakap Merah");
-                const unit = cost.unit || product?.defaultUnit || "kg";
-                const isActive = !cost.endedAt;
+                const { name, unit, isActive } = getCostDisplay(cost);
 
                 return (
                   <TableRow key={cost.id} className="hover:bg-muted/20">
@@ -183,42 +210,49 @@ export function PurchasePriceTable({ costs, products }: PurchasePriceTableProps)
                         {isActive ? "Aktif" : "Berakhir"}
                       </Badge>
                     </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger
-                          className="inline-flex items-center justify-center h-7 w-7 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                          aria-label="Aksi harga beli"
-                        >
-                          {loadingId === cost.id ? (
-                            <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-                          ) : (
-                            <MoreHorizontal className="w-4 h-4" />
-                          )}
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-44">
-                          <DropdownMenuItem
-                            className="cursor-pointer"
-                            onClick={() => handleOpenEdit(cost)}
-                          >
-                            <Edit className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
-                            Edit Harga
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            className="cursor-pointer text-red-600 focus:text-red-600"
-                            onClick={() => setDeletingCost(cost)}
-                          >
-                            <Trash2 className="w-3.5 h-3.5 mr-2 text-red-600" />
-                            Hapus Riwayat
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
+                    <TableCell>{renderActions(cost)}</TableCell>
                   </TableRow>
                 );
               }))}
             </TableBody>
           </Table>
+        </div>
+        <div className="divide-y divide-amber-100 sm:hidden">
+          {costsList.length === 0 ? (
+            <div className="py-12">
+              <EmptyState icon={DollarSign} title="Belum ada harga beli" description="Tambahkan harga beli khusus untuk mencatat harga dari supplier." />
+            </div>
+          ) : (
+            costsList.map((cost) => {
+              const { name, unit, isActive } = getCostDisplay(cost);
+              return (
+                <article key={cost.id} className="space-y-3 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <h3 className="truncate text-sm font-semibold text-stone-900">{name}</h3>
+                      <p className="mt-1 text-xs text-muted-foreground">{cost.supplierName || "Supplier tidak tersedia"}</p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-1">
+                      <Badge variant={isActive ? "default" : "secondary"} className="text-[11px]">
+                        {isActive ? "Aktif" : "Berakhir"}
+                      </Badge>
+                      {renderActions(cost)}
+                    </div>
+                  </div>
+                  <div className="flex items-end justify-between rounded-xl bg-amber-50/70 p-3">
+                    <div>
+                      <p className="text-[11px] text-amber-700">Harga beli per {unit}</p>
+                      <p className="mt-1 text-base font-bold tabular-nums text-stone-900">{formatCurrency(cost.unitCost)}</p>
+                    </div>
+                    <div className="text-right text-xs">
+                      <p className="text-stone-500">Berlaku sejak</p>
+                      <p className="mt-1 font-medium text-stone-800">{formatDateShort(cost.effectiveAt)}</p>
+                    </div>
+                  </div>
+                </article>
+              );
+            })
+          )}
         </div>
       </div>
 

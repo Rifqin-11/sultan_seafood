@@ -17,15 +17,15 @@ export function DashboardShell({ children, user, company, notificationCount }: {
   const role = user.role as Role;
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#f5f5f4]">
+    <div className="flex h-[100dvh] overflow-hidden bg-[radial-gradient(circle_at_78%_-10%,rgba(214,211,209,0.72),transparent_30rem),#f5f5f4]">
       <div className="relative hidden lg:flex flex-shrink-0">
         <Sidebar collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed((value) => !value)} user={user} role={role} company={company} />
       </div>
       <MobileSidebar open={mobileOpen} onClose={() => setMobileOpen(false)} user={user} role={role} company={company} />
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         <Topbar onMobileMenuToggle={() => setMobileOpen(true)} user={user} notificationCount={notificationCount} />
-        <main className="flex-1 overflow-y-auto">
-          <div className="max-w-[1600px] mx-auto p-4 md:p-6 lg:p-8">{children}</div>
+        <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain pt-16 lg:pt-0">
+          <div className="mx-auto w-full max-w-[1600px] p-3 sm:p-5 lg:p-8">{children}</div>
         </main>
       </div>
     </div>

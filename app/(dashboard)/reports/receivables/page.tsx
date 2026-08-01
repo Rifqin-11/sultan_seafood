@@ -60,7 +60,7 @@ export default async function ReceivablesPage() {
       </div>
 
       <div className="bg-white rounded-2xl border border-border shadow-card overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="hidden sm:block">
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/30 hover:bg-muted/30">
@@ -125,6 +125,43 @@ export default async function ReceivablesPage() {
               )}
             </TableBody>
           </Table>
+        </div>
+        <div className="divide-y divide-stone-200 sm:hidden">
+          {unpaid.length === 0 ? (
+            <p className="px-5 py-12 text-center text-sm leading-6 text-muted-foreground">
+              Tidak ada piutang outstanding. Semua invoice telah lunas!
+            </p>
+          ) : (
+            unpaid.map((invoice) => (
+              <article key={invoice.id} className="space-y-3 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate font-mono text-sm font-semibold text-stone-900">{invoice.invoiceNumber ?? "DRAFT"}</p>
+                    <p className="mt-1 truncate text-xs text-muted-foreground">{invoice.customerName}</p>
+                  </div>
+                  <InvoiceStatusBadge status={invoice.status} />
+                </div>
+                <div className="flex items-end justify-between rounded-xl bg-stone-50 p-3">
+                  <div>
+                    <p className="text-[11px] text-stone-500">Sisa tagihan</p>
+                    <p className={`mt-1 text-base font-bold tabular-nums ${invoice.status === "OVERDUE" ? "text-red-600" : "text-stone-900"}`}>
+                      {formatCurrency(invoice.remainingBalance)}
+                    </p>
+                  </div>
+                  <div className="text-right text-xs">
+                    <p className="text-stone-500">Jatuh tempo</p>
+                    <p className={`mt-1 font-medium ${invoice.status === "OVERDUE" ? "text-red-600" : "text-stone-800"}`}>
+                      {invoice.dueDate ? formatDateShort(invoice.dueDate) : "—"}
+                    </p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div><p className="text-stone-500">Total invoice</p><p className="mt-1 font-medium tabular-nums text-stone-800">{formatCurrency(invoice.total)}</p></div>
+                  <div className="border-l border-stone-200 pl-3"><p className="text-stone-500">Sudah dibayar</p><p className="mt-1 font-medium tabular-nums text-emerald-600">{formatCurrency(invoice.totalPaid)}</p></div>
+                </div>
+              </article>
+            ))
+          )}
         </div>
         <div className="flex items-center justify-between px-4 py-3 border-t border-border">
           <p className="text-xs text-muted-foreground">

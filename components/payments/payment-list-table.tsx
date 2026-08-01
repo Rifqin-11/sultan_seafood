@@ -42,14 +42,27 @@ export function PaymentListTable({ payments, invoices }: PaymentListTableProps) 
     OTHER: "Lainnya",
   };
 
+  const openProof = (payment: Payment, invoiceNumber: string) => {
+    if (!payment.proofUrl) return;
+    setSelectedProof({
+      url: payment.proofUrl,
+      invoiceNumber,
+      amount: payment.amount,
+      isPdf: payment.proofPath?.toLowerCase().endsWith(".pdf") ?? false,
+    });
+  };
+
   return (
     <>
       <div className="bg-white rounded-2xl border border-border shadow-card overflow-hidden">
-        <div className="px-5 py-4 border-b border-border flex items-center justify-between">
-          <h3 className="text-sm font-semibold">Riwayat Pembayaran</h3>
+        <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-4 sm:px-5">
+          <div>
+            <h3 className="text-sm font-semibold">Riwayat Pembayaran</h3>
+            <p className="mt-0.5 text-xs text-muted-foreground sm:hidden">Catat dan lihat setiap penerimaan pembayaran.</p>
+          </div>
           <RecordPaymentDialog invoices={invoices} />
         </div>
-        <div className="overflow-x-auto">
+        <div className="hidden sm:block">
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/30 hover:bg-muted/30">
@@ -98,14 +111,7 @@ export function PaymentListTable({ payments, invoices }: PaymentListTableProps) 
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() =>
-                              setSelectedProof({
-                                url: p.proofUrl!,
-                                invoiceNumber: invNum,
-                                amount: p.amount,
-                                isPdf: p.proofPath?.toLowerCase().endsWith(".pdf") ?? false,
-                              })
-                            }
+                            onClick={() => openProof(p, invNum)}
                             className="h-7 text-xs px-2.5 bg-blue-50/50 hover:bg-blue-100 text-blue-700 border-blue-200"
                           >
                             <Eye className="w-3.5 h-3.5 mr-1 text-blue-600" />
@@ -124,6 +130,54 @@ export function PaymentListTable({ payments, invoices }: PaymentListTableProps) 
               )}
             </TableBody>
           </Table>
+        </div>
+        <div className="divide-y divide-stone-200 sm:hidden">
+          {payments.length === 0 ? (
+            <div className="py-12">
+              <EmptyState
+                icon={CreditCard}
+                title="Tidak ada riwayat pembayaran"
+                description="Belum ada transaksi pembayaran yang tercatat untuk saat ini."
+              />
+            </div>
+          ) : (
+            payments.map((payment) => {
+              const invoice = invoices.find((item) => item.id === payment.invoiceId);
+              const invoiceNumber = invoice?.invoiceNumber || payment.invoiceId;
+              return (
+                <article key={payment.id} className="space-y-3 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate font-mono text-sm font-semibold text-stone-900">{invoiceNumber}</p>
+                      <p className="mt-1 truncate text-xs text-muted-foreground">{invoice?.customerName || "Pelanggan tidak tersedia"}</p>
+                    </div>
+                    <p className="shrink-0 text-sm font-bold tabular-nums text-emerald-600">+{formatCurrency(payment.amount)}</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 rounded-xl bg-stone-50 p-3 text-xs">
+                    <div>
+                      <p className="text-stone-500">Tanggal bayar</p>
+                      <p className="mt-1 font-medium text-stone-800">{formatDateShort(payment.paymentDate)}</p>
+                    </div>
+                    <div className="border-l border-stone-200 pl-3">
+                      <p className="text-stone-500">Metode</p>
+                      <p className="mt-1 font-medium text-stone-800">{methodLabel[payment.method] ?? payment.method}</p>
+                    </div>
+                  </div>
+                  {payment.proofUrl && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => openProof(payment, invoiceNumber)}
+                      className="h-9 w-full rounded-xl border-blue-200 bg-blue-50/60 text-blue-700 hover:bg-blue-100"
+                    >
+                      <Eye className="mr-1.5 h-3.5 w-3.5" />
+                      Lihat Bukti Pembayaran
+                    </Button>
+                  )}
+                </article>
+              );
+            })
+          )}
         </div>
         <div className="px-4 py-3 border-t border-border">
           <p className="text-xs text-muted-foreground">

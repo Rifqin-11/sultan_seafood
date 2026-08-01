@@ -126,11 +126,14 @@ export function SellingPriceTable({
   return (
     <>
       <div className="bg-white rounded-2xl border border-border shadow-card overflow-hidden">
+        <div className="border-b border-stone-200 bg-stone-50 px-4 py-3 text-xs leading-relaxed text-stone-600 sm:hidden">
+          Geser tabel ke samping untuk melihat dan mengatur harga khusus tiap restoran. Kolom produk tetap terlihat saat digeser.
+        </div>
         <div className="overflow-x-auto">
-          <Table>
+          <Table className="min-w-max">
             <TableHeader>
               <TableRow className="bg-muted/30 hover:bg-muted/30">
-                <TableHead className="text-xs font-semibold sticky left-0 bg-muted/30 z-10">
+                <TableHead className="sticky left-0 z-10 bg-muted/30 text-xs font-semibold shadow-[4px_0_12px_-8px_rgba(28,25,23,0.35)]">
                   Produk
                 </TableHead>
                 <TableHead className="text-xs font-semibold text-right">
@@ -160,7 +163,7 @@ export function SellingPriceTable({
               ) : (
                 products.map((p) => (
                   <TableRow key={p.id} className="hover:bg-muted/20">
-                  <TableCell className="text-sm font-medium sticky left-0 bg-white z-10">
+                  <TableCell className="sticky left-0 z-10 bg-white text-sm font-medium shadow-[4px_0_12px_-8px_rgba(28,25,23,0.35)]">
                     <div>
                       <p className="font-semibold text-foreground">
                         {p.name} {p.size ? <span className="text-xs font-normal text-blue-600">[{p.size}]</span> : null}

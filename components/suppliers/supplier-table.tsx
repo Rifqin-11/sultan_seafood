@@ -77,10 +77,53 @@ export function SupplierTable({ suppliers, canManage = false }: SupplierTablePro
     }
   };
 
+  const renderActions = (supplier: Supplier) => {
+    if (!canManage) return null;
+
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-stone-100 hover:text-foreground"
+          aria-label={`Aksi untuk ${supplier.name}`}
+        >
+          {loadingId === supplier.id ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <MoreHorizontal className="h-4 w-4" />
+          )}
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-48">
+          <DropdownMenuItem className="cursor-pointer" onClick={() => setEditingSupplier(supplier)}>
+            <Edit className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
+            Edit Supplier
+          </DropdownMenuItem>
+          <DropdownMenuItem className="cursor-pointer">
+            <Link href="/pricing/purchase" className="flex w-full items-center">
+              <DollarSign className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
+              Riwayat Harga
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem className="cursor-pointer" onClick={() => handleToggleStatus(supplier)}>
+            <Power className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
+            {supplier.status === "ACTIVE" ? "Nonaktifkan" : "Aktifkan"}
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            className="cursor-pointer text-red-600 focus:text-red-600"
+            onClick={() => setDeletingSupplier(supplier)}
+          >
+            <Trash2 className="mr-2 h-3.5 w-3.5 text-red-600" />
+            Hapus Supplier
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  };
+
   return (
     <>
       <div className="bg-white rounded-2xl border border-border shadow-card overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="hidden sm:block">
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/30 hover:bg-muted/30">
@@ -114,63 +157,58 @@ export function SupplierTable({ suppliers, canManage = false }: SupplierTablePro
                     <TableCell className="text-sm text-muted-foreground truncate max-w-[200px]">
                       {s.address}
                     </TableCell>
-                    {canManage && <TableCell>
+                    <TableCell>
                       <Badge
                         variant={s.status === "ACTIVE" ? "default" : "secondary"}
                         className="text-[11px]"
                       >
                         {s.status === "ACTIVE" ? "Aktif" : "Nonaktif"}
                       </Badge>
-                    </TableCell>}
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger
-                          className="inline-flex items-center justify-center h-7 w-7 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                          aria-label="Aksi supplier"
-                        >
-                          {loadingId === s.id ? (
-                            <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-                          ) : (
-                            <MoreHorizontal className="w-4 h-4" />
-                          )}
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-44">
-                          <DropdownMenuItem
-                            className="cursor-pointer"
-                            onClick={() => setEditingSupplier(s)}
-                          >
-                            <Edit className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
-                            Edit Supplier
-                          </DropdownMenuItem>
-                          <DropdownMenuItem className="cursor-pointer">
-                            <Link href="/pricing/purchase" className="flex items-center w-full">
-                              <DollarSign className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
-                              Riwayat Harga
-                            </Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            className="cursor-pointer"
-                            onClick={() => handleToggleStatus(s)}
-                          >
-                            <Power className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
-                            {s.status === "ACTIVE" ? "Nonaktifkan" : "Aktifkan"}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            className="cursor-pointer text-red-600 focus:text-red-600"
-                            onClick={() => setDeletingSupplier(s)}
-                          >
-                            <Trash2 className="w-3.5 h-3.5 mr-2 text-red-600" />
-                            Hapus Supplier
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
                     </TableCell>
+                    {canManage && <TableCell>{renderActions(s)}</TableCell>}
                   </TableRow>
                 ))
               )}
             </TableBody>
           </Table>
+        </div>
+        <div className="divide-y divide-stone-200 sm:hidden">
+          {suppliersList.length === 0 ? (
+            <div className="py-12">
+              <EmptyState
+                icon={Users}
+                title="Tidak ada supplier"
+                description="Belum ada data supplier yang terdaftar."
+              />
+            </div>
+          ) : (
+            suppliersList.map((supplier) => (
+              <article key={supplier.id} className="space-y-4 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h3 className="truncate text-sm font-semibold text-stone-900">{supplier.name}</h3>
+                    <p className="mt-1 text-xs text-muted-foreground">{supplier.contactName || "Kontak belum diisi"}</p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-1">
+                    <Badge variant={supplier.status === "ACTIVE" ? "default" : "secondary"} className="text-[11px]">
+                      {supplier.status === "ACTIVE" ? "Aktif" : "Nonaktif"}
+                    </Badge>
+                    {renderActions(supplier)}
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2 rounded-xl bg-stone-50 p-3 text-xs">
+                  <div>
+                    <p className="text-stone-500">Telepon</p>
+                    <p className="mt-1 font-medium text-stone-800">{supplier.phone || "—"}</p>
+                  </div>
+                  <div className="border-l border-stone-200 pl-3">
+                    <p className="text-stone-500">Alamat</p>
+                    <p className="mt-1 line-clamp-2 font-medium leading-relaxed text-stone-800">{supplier.address || "—"}</p>
+                  </div>
+                </div>
+              </article>
+            ))
+          )}
         </div>
         <div className="px-4 py-3 border-t border-border">
           <p className="text-xs text-muted-foreground">

@@ -89,7 +89,8 @@ export function UserManagementTable({ users, currentUserRole }: UserManagementTa
             <p className="text-slate-500">Semua pendaftaran akun baru telah diproses.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <>
+          <div className="hidden sm:block">
             <Table>
               <TableHeader>
                 <TableRow className="bg-amber-50/20 hover:bg-amber-50/20">
@@ -153,6 +154,37 @@ export function UserManagementTable({ users, currentUserRole }: UserManagementTa
               </TableBody>
             </Table>
           </div>
+          <div className="divide-y divide-amber-100 sm:hidden">
+            {pendingUsers.map((user) => (
+              <article key={user.id} className="space-y-3 p-4">
+                <div>
+                  <p className="text-sm font-semibold text-slate-900">{user.name}</p>
+                  <p className="mt-1 break-all text-xs text-slate-600">{user.email}</p>
+                </div>
+                <div className="flex items-center justify-between gap-3 rounded-xl bg-amber-50/70 p-3 text-xs">
+                  <div>
+                    <p className="text-amber-700">Peran diajukan</p>
+                    <p className="mt-1 font-medium text-amber-950">{roleLabel[user.role] || user.role}</p>
+                  </div>
+                  <p className="text-right text-amber-800">{user.createdAt}</p>
+                </div>
+                {isOwner ? (
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button size="sm" onClick={() => handleApprove(user, "STAFF")} disabled={loadingId === user.id} className="h-10 rounded-xl bg-emerald-600 text-xs hover:bg-emerald-700">
+                      <Check className="mr-1 h-3.5 w-3.5" /> ACC Staff
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => handleApprove(user, "FINANCE")} disabled={loadingId === user.id} className="h-10 rounded-xl text-xs">ACC Finance</Button>
+                    <Button size="sm" variant="outline" onClick={() => handleReject(user)} disabled={loadingId === user.id} className="col-span-2 h-10 rounded-xl border-red-200 text-xs text-red-600 hover:bg-red-50 hover:text-red-700">
+                      <X className="mr-1 h-3.5 w-3.5" /> Tolak Pendaftaran
+                    </Button>
+                  </div>
+                ) : (
+                  <p className="flex items-center gap-1.5 text-xs text-amber-800"><ShieldAlert className="h-3.5 w-3.5" /> Hanya Owner yang dapat menyetujui akun.</p>
+                )}
+              </article>
+            ))}
+          </div>
+          </>
         )}
       </div>
 
@@ -175,7 +207,7 @@ export function UserManagementTable({ users, currentUserRole }: UserManagementTa
           </div>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="hidden sm:block">
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/30 hover:bg-muted/30">
@@ -245,6 +277,28 @@ export function UserManagementTable({ users, currentUserRole }: UserManagementTa
               ))}
             </TableBody>
           </Table>
+        </div>
+        <div className="divide-y divide-stone-200 sm:hidden">
+          {[...activeUsers, ...rejectedUsers].map((user) => {
+            const isRejected = user.status === "REJECTED";
+            return (
+              <article key={user.id} className={`space-y-3 p-4 ${isRejected ? "bg-red-50/30" : ""}`}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className={`truncate text-sm font-semibold ${isRejected ? "text-slate-600 line-through" : "text-slate-900"}`}>{user.name}</p>
+                    <p className="mt-1 break-all text-xs text-slate-600">{user.email}</p>
+                  </div>
+                  <span className={`shrink-0 rounded-full border px-2 py-1 text-[11px] font-medium ${isRejected ? "border-red-200 bg-red-50 text-red-700" : "border-emerald-200 bg-emerald-50 text-emerald-700"}`}>
+                    {isRejected ? "Ditolak" : "Aktif"}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between rounded-xl bg-stone-50 p-3 text-xs">
+                  <div><p className="text-stone-500">Role akses</p><p className="mt-1 font-medium text-stone-800">{roleLabel[user.role] || user.role}</p></div>
+                  <div className="text-right"><p className="text-stone-500">Terdaftar</p><p className="mt-1 font-medium text-stone-800">{user.createdAt}</p></div>
+                </div>
+              </article>
+            );
+          })}
         </div>
       </div>
     </div>

@@ -16,6 +16,7 @@ import { updateProductAction } from "@/lib/actions/products";
 import type { Product } from "@/types";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { choiceFor, CUSTOM_PRODUCT_OPTION, PRODUCT_CATEGORIES, PRODUCT_UNITS } from "./product-form-options";
 
 interface EditProductDialogProps {
   product: Product;
@@ -33,9 +34,11 @@ export function EditProductDialog({
   const [error, setError] = useState("");
 
   const [name, setName] = useState(product.name);
-  const [category, setCategory] = useState(product.category);
+  const [categoryChoice, setCategoryChoice] = useState(() => choiceFor(product.category, PRODUCT_CATEGORIES));
+  const [customCategory, setCustomCategory] = useState(() => PRODUCT_CATEGORIES.includes(product.category as typeof PRODUCT_CATEGORIES[number]) ? "" : product.category);
   const [size, setSize] = useState(product.size || "");
-  const [defaultUnit, setDefaultUnit] = useState(product.defaultUnit || "kg");
+  const [unitChoice, setUnitChoice] = useState(() => choiceFor(product.defaultUnit || "kg", PRODUCT_UNITS));
+  const [customUnit, setCustomUnit] = useState(() => PRODUCT_UNITS.includes((product.defaultUnit || "kg") as typeof PRODUCT_UNITS[number]) ? "" : product.defaultUnit || "");
   const [defaultSellingPrice, setDefaultSellingPrice] = useState(
     String(product.defaultSellingPrice || "")
   );
@@ -46,6 +49,9 @@ export function EditProductDialog({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+
+    const category = categoryChoice === CUSTOM_PRODUCT_OPTION ? customCategory.trim() : categoryChoice;
+    const defaultUnit = unitChoice === CUSTOM_PRODUCT_OPTION ? customUnit.trim() : unitChoice;
 
     if (!name || !category || !defaultUnit) {
       setError("Nama produk, kategori, dan satuan wajib diisi.");
@@ -107,17 +113,15 @@ export function EditProductDialog({
                 Kategori <span className="text-red-500">*</span>
               </label>
               <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="w-full h-10 text-sm border border-input rounded-md px-3 bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+                value={categoryChoice}
+                onChange={(event) => setCategoryChoice(event.target.value)}
+                className="h-10 w-full rounded-xl border border-stone-200 bg-white px-3 text-sm text-stone-900 outline-none focus:border-stone-500 focus:ring-3 focus:ring-stone-200/70"
                 required
               >
-                <option value="Ikan Laut">Ikan Laut</option>
-                <option value="Udang">Udang</option>
-                <option value="Kepiting">Kepiting</option>
-                <option value="Cumi & Gurita">Cumi & Gurita</option>
-                <option value="Kerang & Lainnya">Kerang & Lainnya</option>
+                {PRODUCT_CATEGORIES.map((option) => <option key={option} value={option}>{option}</option>)}
+                <option value={CUSTOM_PRODUCT_OPTION}>+ Buat kategori sendiri</option>
               </select>
+              {categoryChoice === CUSTOM_PRODUCT_OPTION && <Input className="mt-2 h-10 rounded-xl border-stone-200" placeholder="Tulis kategori baru" value={customCategory} onChange={(event) => setCustomCategory(event.target.value)} autoFocus />}
             </div>
             <div>
               <label className="block text-sm font-medium text-muted-foreground mb-1.5">
@@ -136,16 +140,15 @@ export function EditProductDialog({
               Satuan Default <span className="text-red-500">*</span>
             </label>
             <select
-              value={defaultUnit}
-              onChange={(e) => setDefaultUnit(e.target.value)}
-              className="w-full h-10 text-sm border border-input rounded-md px-3 bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+              value={unitChoice}
+              onChange={(event) => setUnitChoice(event.target.value)}
+              className="h-10 w-full rounded-xl border border-stone-200 bg-white px-3 text-sm text-stone-900 outline-none focus:border-stone-500 focus:ring-3 focus:ring-stone-200/70"
               required
             >
-              <option value="kg">Kilogram (kg)</option>
-              <option value="ekor">Ekor</option>
-              <option value="box">Box / Dus</option>
-              <option value="pack">Pack / Kantong</option>
+              {PRODUCT_UNITS.map((option) => <option key={option} value={option}>{option}</option>)}
+              <option value={CUSTOM_PRODUCT_OPTION}>+ Buat satuan sendiri</option>
             </select>
+            {unitChoice === CUSTOM_PRODUCT_OPTION && <Input className="mt-2 h-10 rounded-xl border-stone-200" placeholder="Contoh: keranjang" value={customUnit} onChange={(event) => setCustomUnit(event.target.value)} autoFocus />}
           </div>
 
           <div className="grid grid-cols-2 gap-3">

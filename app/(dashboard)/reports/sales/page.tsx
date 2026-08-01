@@ -57,7 +57,7 @@ export default async function SalesReportPage() {
         <div className="px-5 py-4 border-b border-border">
           <h3 className="text-sm font-semibold">Daftar Invoice Penjualan</h3>
         </div>
-        <div className="overflow-x-auto">
+        <div className="hidden sm:block">
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/30 hover:bg-muted/30">
@@ -102,6 +102,29 @@ export default async function SalesReportPage() {
               ))}
             </TableBody>
           </Table>
+        </div>
+        <div className="divide-y divide-stone-200 sm:hidden">
+          {issuedInvoices.length === 0 ? (
+            <p className="px-5 py-12 text-center text-sm text-muted-foreground">Belum ada invoice penjualan pada periode ini.</p>
+          ) : (
+            issuedInvoices.map((invoice) => (
+              <article key={invoice.id} className="space-y-3 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate font-mono text-sm font-semibold text-stone-900">{invoice.invoiceNumber ?? "DRAFT"}</p>
+                    <p className="mt-1 truncate text-xs text-muted-foreground">{invoice.customerName} · {formatDateShort(invoice.issueDate)}</p>
+                  </div>
+                  <div className="shrink-0 text-right"><p className="text-[11px] text-stone-500">Pendapatan</p><p className="mt-1 text-sm font-bold tabular-nums text-stone-900">{formatCurrency(invoice.total)}</p></div>
+                </div>
+                <div className="grid grid-cols-3 gap-2 rounded-xl bg-stone-50 p-3 text-xs">
+                  <div><p className="text-stone-500">HPP</p><p className="mt-1 font-medium tabular-nums text-stone-800">{formatCurrency(invoice.totalProductCost)}</p></div>
+                  <div className="border-x border-stone-200 px-2"><p className="text-stone-500">Biaya</p><p className="mt-1 font-medium tabular-nums text-stone-800">{formatCurrency(invoice.totalDirectCost)}</p></div>
+                  <div className="text-right"><p className="text-stone-500">Laba</p><p className="mt-1 font-bold tabular-nums text-emerald-600">{formatCurrency(invoice.transactionProfit)}</p></div>
+                </div>
+                <p className="text-right text-xs text-stone-500">Margin <span className="font-semibold text-stone-800">{formatPercent(invoice.transactionMargin)}</span></p>
+              </article>
+            ))
+          )}
         </div>
       </div>
     </div>

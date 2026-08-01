@@ -1,13 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { AlertTriangle, Loader2 } from "lucide-react";
+import { AlertTriangle, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -19,6 +18,7 @@ interface ConfirmDialogProps {
   description: string;
   confirmLabel?: string;
   variant?: "destructive" | "default";
+  note?: string;
   onConfirm: () => Promise<void> | void;
 }
 
@@ -29,6 +29,7 @@ export function ConfirmDialog({
   description,
   confirmLabel = "Ya, Hapus",
   variant = "destructive",
+  note,
   onConfirm,
 }: ConfirmDialogProps) {
   const [loading, setLoading] = useState(false);
@@ -45,24 +46,43 @@ export function ConfirmDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm">
-        <DialogHeader className="flex flex-col items-center text-center pt-2">
-          <div className="w-14 h-14 rounded-full bg-red-100 border border-red-200 flex items-center justify-center text-red-600 mb-4">
-            <AlertTriangle className="w-7 h-7" />
+      <DialogContent
+        showCloseButton={false}
+        className="max-w-[calc(100%-1.5rem)] gap-0 overflow-hidden rounded-[1.75rem] border border-stone-200 bg-white p-0 shadow-[0_24px_80px_-28px_rgba(28,25,23,0.45)] sm:max-w-lg"
+      >
+        <DialogHeader className="relative items-center px-6 pb-7 pt-9 text-center sm:px-10 sm:pb-9 sm:pt-11">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="absolute right-3 top-3 rounded-full text-stone-500 hover:bg-stone-100 hover:text-stone-900"
+            onClick={() => onOpenChange(false)}
+            disabled={loading}
+            aria-label="Tutup dialog"
+          >
+            <X className="size-4" />
+          </Button>
+          <div className="mb-5 flex size-16 items-center justify-center rounded-3xl border border-red-200 bg-red-50 text-red-600 shadow-sm sm:size-20">
+            <AlertTriangle className="size-8 sm:size-9" />
           </div>
-          <DialogTitle className="text-lg font-semibold text-foreground">
+          <DialogTitle className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">
             {title}
           </DialogTitle>
-          <DialogDescription className="text-sm text-muted-foreground mt-1.5 leading-relaxed">
+          <DialogDescription className="mt-3 max-w-sm text-pretty text-sm leading-6 text-muted-foreground sm:text-[15px]">
             {description}
           </DialogDescription>
+          {note && (
+            <p className="mt-5 max-w-sm rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 text-left text-xs leading-5 text-stone-600">
+              {note}
+            </p>
+          )}
         </DialogHeader>
 
-        <DialogFooter className="mt-5 flex items-center gap-3 sm:justify-center">
+        <div className="flex flex-col-reverse gap-3 border-t border-stone-200 bg-stone-50/80 px-5 py-5 sm:flex-row sm:justify-end sm:px-7">
           <Button
             type="button"
             variant="outline"
-            className="flex-1 h-11 text-sm"
+            className="h-11 w-full rounded-xl bg-white px-5 sm:w-auto"
             onClick={() => onOpenChange(false)}
             disabled={loading}
           >
@@ -71,14 +91,14 @@ export function ConfirmDialog({
           <Button
             type="button"
             variant={variant === "destructive" ? "destructive" : "default"}
-            className="flex-1 h-11 text-sm"
+            className="h-11 w-full rounded-xl px-5 sm:w-auto"
             onClick={handleConfirm}
             disabled={loading}
           >
             {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
             {confirmLabel}
           </Button>
-        </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );

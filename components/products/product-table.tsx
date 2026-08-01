@@ -301,6 +301,7 @@ export function ProductTable({ initialProducts = [], canManage = false }: Produc
           }}
           title="Hapus Produk?"
           description={`Apakah Anda yakin ingin menghapus produk "${deletingProduct.name}"? Tindakan ini tidak dapat dibatalkan.`}
+          note="Riwayat invoice yang sudah menggunakan produk ini tetap tersimpan sebagai snapshot dan tidak akan berubah."
           confirmLabel="Hapus Produk"
           onConfirm={handleConfirmDelete}
         />

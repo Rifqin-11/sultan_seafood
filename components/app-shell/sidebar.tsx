@@ -12,6 +12,7 @@ import {
   Truck,
   Receipt,
   BarChart3,
+  Landmark,
   Settings,
   ChevronRight,
   Fish,
@@ -42,6 +43,7 @@ const navItems = [
   { label: "Lap. Penjualan", href: "/reports/sales", icon: BarChart3 },
   { label: "Lap. Laba", href: "/reports/profit", icon: BarChart3 },
   { label: "Piutang", href: "/reports/receivables", icon: BarChart3 },
+  { label: "Hutang Supplier", href: "/reports/supplier-payables", icon: Landmark },
   { label: "Biaya Internal", href: "/reports/internal-costs", icon: BarChart3 },
 ];
 
@@ -81,6 +83,7 @@ const navGrouped = [
       { label: "Penjualan", href: "/reports/sales", icon: BarChart3 },
       { label: "Laba", href: "/reports/profit", icon: BarChart3 },
       { label: "Piutang", href: "/reports/receivables", icon: BarChart3 },
+      { label: "Hutang Supplier", href: "/reports/supplier-payables", icon: Landmark },
       { label: "Biaya Internal", href: "/reports/internal-costs", icon: BarChart3 },
     ],
   },

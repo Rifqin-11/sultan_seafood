@@ -50,11 +50,14 @@ export async function toggleProductStatusAction(id: string, currentStatus: Produ
 export async function deleteProductAction(id: string) {
   try {
     await requireRole(["OWNER", "FINANCE"]); const supabase = await createClient();
-    const { error: nullifyError } = await supabase.from("invoice_items").update({ product_id: null }).eq("product_id", id); if (nullifyError) throw nullifyError;
-    const { error: priceError } = await supabase.from("customer_prices").delete().eq("product_id", id); if (priceError) throw priceError;
-    const { error: costError } = await supabase.from("product_costs").delete().eq("product_id", id); if (costError) throw costError;
-    const { error } = await supabase.from("products").delete().eq("id", id); if (error) throw error;
-    revalidatePath("/products"); return { success: true, isWarning: false, message: "Produk berhasil dihapus." };
+    // The database foreign key preserves every historical invoice item and
+    // only clears its optional product_id reference when this master product
+    // is deleted. Snapshot fields on invoice_items remain unchanged.
+    const { data, error } = await supabase.from("products").delete().eq("id", id).select("id").maybeSingle();
+    if (error) throw error;
+    if (!data) return { error: "Produk tidak ditemukan atau tidak dapat dihapus." };
+    revalidatePath("/products"); revalidatePath("/pricing/purchase"); revalidatePath("/pricing/selling");
+    return { success: true, isWarning: false, message: "Produk berhasil dihapus. Riwayat invoice tetap tersimpan." };
   } catch (error) { return { error: normalizeActionError(error, "Gagal menghapus produk.") }; }
 }
 

@@ -23,13 +23,13 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h2 className="text-xl font-semibold text-foreground">Dashboard</h2>
-        <p className="text-sm text-muted-foreground">
+      <header className="rounded-2xl border border-stone-200/80 bg-white/85 px-5 py-5 shadow-[0_18px_48px_-32px_rgba(28,25,23,0.38)] backdrop-blur sm:px-6 sm:py-6">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-stone-500">Ringkasan bisnis</p>
+        <h2 className="mt-1 text-2xl font-bold tracking-[-0.035em] text-foreground sm:text-[1.75rem]">Dashboard</h2>
+        <p className="mt-1.5 max-w-2xl text-sm leading-6 text-muted-foreground">
           Ringkasan performa bisnis Sultan Seafood
         </p>
-      </div>
+      </header>
 
       {/* Row 1 — Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">

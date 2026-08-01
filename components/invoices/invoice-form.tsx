@@ -98,6 +98,7 @@ export function InvoiceForm({ customers = [], products = [], customerPrices = []
   const [discount, setDiscount] = useState(0);
 
   const [items, setItems] = useState<InvoiceItemRow[]>([]);
+  const [quantityDrafts, setQuantityDrafts] = useState<Record<string, string>>({});
   const [costs, setCosts] = useState<DirectCostRow[]>([]);
 
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);
@@ -131,6 +132,11 @@ export function InvoiceForm({ customers = [], products = [], customerPrices = []
 
   const removeItem = (id: string) => {
     setItems((prev) => prev.filter((i) => i.id !== id));
+    setQuantityDrafts((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
   };
 
   const updateItem = (
@@ -157,6 +163,34 @@ export function InvoiceForm({ customers = [], products = [], customerPrices = []
         return { ...item, [field]: value };
       })
     );
+  };
+
+  const updateQuantity = (id: string, rawValue: string) => {
+    setQuantityDrafts((prev) => ({ ...prev, [id]: rawValue }));
+    const normalized = rawValue.replace(",", ".");
+    if (normalized === "" || normalized === ".") {
+      updateItem(id, "quantity", 0);
+      return;
+    }
+
+    const quantity = Number(normalized);
+    if (Number.isFinite(quantity) && quantity >= 0) {
+      updateItem(id, "quantity", quantity);
+    }
+  };
+
+  const commitQuantity = (item: InvoiceItemRow) => {
+    const rawValue = quantityDrafts[item.id];
+    if (rawValue === undefined) return;
+
+    const quantity = Number(rawValue.replace(",", "."));
+    const nextQuantity = Number.isFinite(quantity) && quantity >= 0 ? quantity : 0;
+    updateItem(item.id, "quantity", nextQuantity);
+    setQuantityDrafts((prev) => {
+      const next = { ...prev };
+      delete next[item.id];
+      return next;
+    });
   };
 
   // Add cost
@@ -421,7 +455,7 @@ export function InvoiceForm({ customers = [], products = [], customerPrices = []
                     <th className="w-24 px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-stone-500">
                       Size
                     </th>
-                    <th className="w-20 px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-stone-500">
+                    <th className="w-28 px-3 py-3 text-center text-[10px] font-semibold uppercase tracking-wider text-stone-500">
                       Qty
                     </th>
                     <th className="w-20 px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-stone-500">
@@ -483,19 +517,15 @@ export function InvoiceForm({ customers = [], products = [], customerPrices = []
                         })()}
                       </td>
                       <td className="px-3 py-3">
-                        <Input
-                          type="number"
-                          min={0}
-                          step="0.1"
-                          value={item.quantity}
-                          onChange={(e) =>
-                            updateItem(
-                              item.id,
-                              "quantity",
-                              parseFloat(e.target.value) || 0
-                            )
-                          }
-                          className="h-9 w-full rounded-xl border-stone-200 text-right text-xs tabular-nums"
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          value={quantityDrafts[item.id] ?? String(item.quantity)}
+                          onChange={(event) => updateQuantity(item.id, event.target.value)}
+                          onBlur={() => commitQuantity(item)}
+                          onFocus={(event) => event.currentTarget.select()}
+                          aria-label={`Jumlah ${item.description || "produk"}`}
+                          className="h-10 min-w-[5.5rem] w-full rounded-xl border border-stone-200 bg-white px-3 text-center text-sm font-semibold tabular-nums text-stone-900 outline-none transition-colors placeholder:text-stone-400 focus:border-stone-500 focus:ring-3 focus:ring-stone-200/70"
                         />
                       </td>
                       <td className="px-3 py-3">
@@ -579,13 +609,15 @@ export function InvoiceForm({ customers = [], products = [], customerPrices = []
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className="mb-2 block text-xs font-semibold text-stone-600">Jumlah</label>
-                        <Input
-                          type="number"
-                          min={0}
-                          step="0.1"
-                          value={item.quantity}
-                          onChange={(event) => updateItem(item.id, "quantity", parseFloat(event.target.value) || 0)}
-                          className="h-10 rounded-xl border-stone-200 text-right text-sm tabular-nums"
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          value={quantityDrafts[item.id] ?? String(item.quantity)}
+                          onChange={(event) => updateQuantity(item.id, event.target.value)}
+                          onBlur={() => commitQuantity(item)}
+                          onFocus={(event) => event.currentTarget.select()}
+                          aria-label={`Jumlah ${item.description || "produk"}`}
+                          className="h-10 w-full rounded-xl border border-stone-200 bg-white px-3 text-center text-sm font-semibold tabular-nums text-stone-900 outline-none transition-colors placeholder:text-stone-400 focus:border-stone-500 focus:ring-3 focus:ring-stone-200/70"
                         />
                       </div>
                       <div>
