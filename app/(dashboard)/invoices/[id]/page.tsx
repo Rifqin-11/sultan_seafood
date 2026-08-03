@@ -158,8 +158,8 @@ export default async function InvoiceDetailPage(props: PageProps<"/invoices/[id]
               </span>
             </div>
 
-            <div className="hidden overflow-x-auto md:block">
-              <table className="w-full text-sm">
+            <div className="erp-table-wrap hidden md:block">
+              <table className="erp-table min-w-[720px] w-full text-sm">
                 <thead>
                   <tr className="border-b border-stone-200 bg-stone-50/80">
                     <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-stone-500">

@@ -80,7 +80,7 @@ export function AddPurchasePriceDialog({
       <Button
         size="sm"
         onClick={() => setOpen(true)}
-        className="h-8 px-3 text-xs cursor-pointer"
+        className="h-10 px-4 text-xs cursor-pointer"
       >
         <Plus className="w-3.5 h-3.5 mr-1" />
         Tambah Harga Beli
@@ -102,7 +102,7 @@ export function AddPurchasePriceDialog({
             <select
               value={productId}
               onChange={(e) => setProductId(e.target.value)}
-              className="w-full h-8 text-xs border border-input rounded-md px-2 bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+              className="w-full h-10 text-xs border border-input rounded-xl px-3 bg-background focus:outline-none focus:ring-2 focus:ring-ring/30"
               required
             >
               <option value="" disabled>Pilih Produk</option>
@@ -121,7 +121,7 @@ export function AddPurchasePriceDialog({
             <select
               value={supplierId}
               onChange={(e) => setSupplierId(e.target.value)}
-              className="w-full h-8 text-xs border border-input rounded-md px-2 bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+              className="w-full h-10 text-xs border border-input rounded-xl px-3 bg-background focus:outline-none focus:ring-2 focus:ring-ring/30"
             >
               <option value="">Tanpa Supplier / Langsung Nelayan</option>
               {suppliers.map((s) => (
@@ -141,7 +141,7 @@ export function AddPurchasePriceDialog({
               placeholder="68000"
               value={unitCost}
               onChange={(e) => setUnitCost(e.target.value)}
-              className="h-8 text-xs"
+              className="h-10 text-sm"
               required
             />
           </div>
@@ -154,7 +154,7 @@ export function AddPurchasePriceDialog({
               placeholder="Contoh: Tangkapan segar Muara Angke"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="h-8 text-xs"
+              className="h-10 text-sm"
             />
           </div>
 

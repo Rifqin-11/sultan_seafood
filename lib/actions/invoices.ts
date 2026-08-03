@@ -45,6 +45,7 @@ export async function createInvoiceAction(payload: CreateInvoicePayload) {
     const result = data as { invoiceId: string; invoiceNumber?: string; publicToken: string };
     revalidatePath("/dashboard");
     revalidatePath("/invoices");
+    if (payload.status === "ISSUED") revalidatePath("/stock");
     return { success: true, ...result, message: payload.status === "ISSUED" ? "Invoice berhasil diterbitkan." : "Draft invoice berhasil disimpan." };
   } catch (error) {
     return { error: normalizeActionError(error, "Gagal menyimpan invoice.") };
@@ -99,6 +100,7 @@ export async function voidInvoiceAction(id: string, reason?: string) {
     if (error) throw error;
     revalidatePath("/dashboard");
     revalidatePath("/invoices");
+    revalidatePath("/stock");
     return { success: true, message: "Invoice berhasil dibatalkan tanpa menghapus riwayat." };
   } catch (error) {
     return { error: normalizeActionError(error, "Gagal membatalkan invoice.") };
@@ -111,7 +113,7 @@ export async function issueInvoiceAction(id: string) {
     const supabase = await createClient();
     const { data, error } = await supabase.rpc("issue_invoice", { p_invoice_id: id });
     if (error) throw error;
-    revalidatePath("/dashboard"); revalidatePath("/invoices"); revalidatePath(`/invoices/${id}`);
+    revalidatePath("/dashboard"); revalidatePath("/invoices"); revalidatePath(`/invoices/${id}`); revalidatePath("/stock");
     return { success: true, invoiceNumber: data as string, message: "Draft berhasil diterbitkan." };
   } catch (error) { return { error: normalizeActionError(error, "Gagal menerbitkan draft.") }; }
 }

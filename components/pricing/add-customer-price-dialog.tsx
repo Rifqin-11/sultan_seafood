@@ -16,6 +16,7 @@ import { createCustomerPriceAction } from "@/lib/actions/pricing";
 import type { Customer, Product } from "@/types";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { formatCurrency } from "@/lib/utils";
 
 interface AddCustomerPriceDialogProps {
   customers: Customer[];
@@ -76,7 +77,7 @@ export function AddCustomerPriceDialog({
       <Button
         size="sm"
         onClick={() => setOpen(true)}
-        className="h-8 px-3 text-xs cursor-pointer"
+        className="h-10 px-4 text-xs cursor-pointer"
       >
         <Plus className="w-3.5 h-3.5 mr-1" />
         Tambah Harga Khusus
@@ -98,7 +99,7 @@ export function AddCustomerPriceDialog({
             <select
               value={customerId}
               onChange={(e) => setCustomerId(e.target.value)}
-              className="w-full h-8 text-xs border border-input rounded-md px-2 bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+              className="w-full h-10 text-xs border border-input rounded-xl px-3 bg-background focus:outline-none focus:ring-2 focus:ring-ring/30"
               required
             >
               <option value="" disabled>Pilih Restoran</option>
@@ -117,13 +118,13 @@ export function AddCustomerPriceDialog({
             <select
               value={productId}
               onChange={(e) => setProductId(e.target.value)}
-              className="w-full h-8 text-xs border border-input rounded-md px-2 bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+              className="w-full h-10 text-xs border border-input rounded-xl px-3 bg-background focus:outline-none focus:ring-2 focus:ring-ring/30"
               required
             >
               <option value="" disabled>Pilih Produk</option>
               {products.map((p) => (
                 <option key={p.id} value={p.id}>
-                  {p.name} {p.size ? `[${p.size}]` : ""} ({p.defaultUnit}) - Default: Rp {p.defaultSellingPrice?.toLocaleString("id-ID") ?? "0"}
+                  {p.name} {p.size ? `[${p.size}]` : ""} ({p.defaultUnit}) - Default: {formatCurrency(p.defaultSellingPrice ?? 0)}
                 </option>
               ))}
             </select>
@@ -138,7 +139,7 @@ export function AddCustomerPriceDialog({
               placeholder="90000"
               value={sellingPrice}
               onChange={(e) => setSellingPrice(e.target.value)}
-              className="h-8 text-xs"
+              className="h-10 text-sm"
               required
             />
           </div>

@@ -131,6 +131,45 @@ export function InvoiceListTable({ initialInvoices = [], role, company }: Invoic
   const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
   const pageRows = filtered.slice((page - 1) * pageSize, page * pageSize);
 
+  const renderInvoiceActions = (inv: Invoice) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        aria-label={`Aksi invoice ${inv.invoiceNumber || "draft"}`}
+      >
+        <MoreHorizontal className="h-4 w-4" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-48">
+        <DropdownMenuItem>
+          <Link href={`/invoices/${inv.id}`} className="flex w-full items-center">
+            <Eye className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
+            Lihat Detail
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => handleDownload(inv)} disabled={downloadingId === inv.id} className="cursor-pointer">
+          {downloadingId === inv.id ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <Download className="mr-2 h-3.5 w-3.5 text-muted-foreground" />}
+          {downloadingId === inv.id ? "Menyiapkan PDF..." : "Download PDF"}
+        </DropdownMenuItem>
+        {role !== "STAFF" && (inv.status === "ISSUED" || inv.status === "PARTIALLY_PAID" || inv.status === "OVERDUE") && (
+          <DropdownMenuItem className="cursor-pointer" onClick={() => setSelectedPaymentInvoiceId(inv.id)}>
+            <CreditCard className="mr-2 h-3.5 w-3.5" /> Catat Pembayaran
+          </DropdownMenuItem>
+        )}
+        <DropdownMenuSeparator />
+        {role === "OWNER" && inv.status !== "VOID" && inv.status !== "DRAFT" && inv.totalPaid === 0 && (
+          <DropdownMenuItem className="cursor-pointer text-amber-600 focus:text-amber-600" onClick={() => setVoidingInvoice(inv)}>
+            <Ban className="mr-2 h-3.5 w-3.5 text-amber-600" /> Batalkan Invoice
+          </DropdownMenuItem>
+        )}
+        {inv.status === "DRAFT" && (
+          <DropdownMenuItem className="cursor-pointer font-medium text-red-600 focus:text-red-600" onClick={() => setDeletingInvoice(inv)}>
+            <Trash2 className="mr-2 h-3.5 w-3.5 text-red-600" /> Hapus Draft
+          </DropdownMenuItem>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
   return (
     <div className="bg-white rounded-2xl border border-border shadow-card overflow-hidden">
       {/* Toolbar */}
@@ -153,7 +192,7 @@ export function InvoiceListTable({ initialInvoices = [], role, company }: Invoic
             <button
               key={f.value}
               onClick={() => { setStatusFilter(f.value); setPage(1); }}
-              className={`px-3 py-1.5 text-xs rounded-lg font-medium whitespace-nowrap transition-colors flex-shrink-0 ${
+              className={`min-h-9 px-3.5 py-2 text-xs rounded-xl font-semibold whitespace-nowrap transition-colors flex-shrink-0 ${
                 statusFilter === f.value
                   ? "bg-foreground text-background"
                   : "text-muted-foreground hover:bg-muted"
@@ -178,7 +217,8 @@ export function InvoiceListTable({ initialInvoices = [], role, company }: Invoic
           description="Coba ubah filter atau kata kunci pencarian."
         />
       ) : (
-        <div className="overflow-x-auto">
+        <>
+        <div className="hidden overflow-x-auto sm:block">
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/30 hover:bg-muted/30">
@@ -253,72 +293,36 @@ export function InvoiceListTable({ initialInvoices = [], role, company }: Invoic
                   <TableCell>
                     <InvoiceStatusBadge status={inv.status} />
                   </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger
-                        className="inline-flex items-center justify-center h-7 w-7 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                        aria-label="Aksi invoice"
-                      >
-                        <MoreHorizontal className="w-4 h-4" />
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-44">
-                        <DropdownMenuItem>
-                          <Link
-                            href={`/invoices/${inv.id}`}
-                            className="flex items-center w-full"
-                          >
-                            <Eye className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
-                            Lihat Detail
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => handleDownload(inv)}
-                          disabled={downloadingId === inv.id}
-                          className="cursor-pointer"
-                        >
-                          {downloadingId === inv.id ? (
-                            <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />
-                          ) : (
-                            <Download className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
-                          )}
-                          {downloadingId === inv.id ? "Menyiapkan PDF..." : "Download PDF"}
-                        </DropdownMenuItem>
-                        {role !== "STAFF" && (inv.status === "ISSUED" ||
-                          inv.status === "PARTIALLY_PAID" ||
-                          inv.status === "OVERDUE") && (
-                          <DropdownMenuItem
-                            className="cursor-pointer"
-                            onClick={() => setSelectedPaymentInvoiceId(inv.id)}
-                          >
-                            <CreditCard className="w-3.5 h-3.5 mr-2" />
-                            Catat Pembayaran
-                          </DropdownMenuItem>
-                        )}
-                        <DropdownMenuSeparator />
-                        {role === "OWNER" && inv.status !== "VOID" && inv.status !== "DRAFT" && inv.totalPaid === 0 && (
-                          <DropdownMenuItem
-                            className="cursor-pointer text-amber-600 focus:text-amber-600"
-                            onClick={() => setVoidingInvoice(inv)}
-                          >
-                            <Ban className="w-3.5 h-3.5 mr-2 text-amber-600" />
-                            Batalkan Invoice
-                          </DropdownMenuItem>
-                        )}
-                        {inv.status === "DRAFT" && <DropdownMenuItem
-                          className="cursor-pointer text-red-600 focus:text-red-600 font-medium"
-                          onClick={() => setDeletingInvoice(inv)}
-                        >
-                          <Trash2 className="w-3.5 h-3.5 mr-2 text-red-600" />
-                          Hapus Draft
-                        </DropdownMenuItem>}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
+                  <TableCell>{renderInvoiceActions(inv)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         </div>
+        <div className="divide-y divide-stone-200 sm:hidden">
+          {pageRows.map((inv) => (
+            <article key={inv.id} className="space-y-3 p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <Link href={`/invoices/${inv.id}`} className="truncate font-mono text-sm font-semibold text-stone-900 hover:underline">
+                    {inv.invoiceNumber || "Draft"}
+                  </Link>
+                  <p className="mt-1 truncate text-xs text-muted-foreground">{inv.customerName}</p>
+                </div>
+                <div className="flex shrink-0 items-center gap-2">
+                  <InvoiceStatusBadge status={inv.status} />
+                  {renderInvoiceActions(inv)}
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2 rounded-xl bg-stone-50 p-3 text-xs">
+                <div><p className="text-stone-500">Total invoice</p><p className="mt-1 font-bold tabular-nums text-stone-900">{formatCurrency(inv.total)}</p></div>
+                <div className="border-l border-stone-200 pl-3"><p className="text-stone-500">Sisa tagihan</p><p className={`mt-1 font-bold tabular-nums ${inv.status === "OVERDUE" ? "text-red-600" : "text-stone-900"}`}>{inv.status === "VOID" ? "—" : inv.remainingBalance > 0 ? formatCurrency(inv.remainingBalance) : "Lunas"}</p></div>
+              </div>
+              <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground"><span>Terbit {formatDateShort(inv.issueDate)}</span><span>{inv.dueDate ? `Jatuh tempo ${formatDateShort(inv.dueDate)}` : "Tanpa jatuh tempo"}</span></div>
+            </article>
+          ))}
+        </div>
+        </>
       )}
 
       {/* Footer */}

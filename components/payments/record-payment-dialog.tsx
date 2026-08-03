@@ -23,6 +23,7 @@ import { createPaymentAction } from "@/lib/actions/payments";
 import type { Invoice, PaymentMethod } from "@/types";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { formatCurrency } from "@/lib/utils";
 
 interface RecordPaymentDialogProps {
   defaultInvoiceId?: string;
@@ -156,7 +157,7 @@ export function RecordPaymentDialog({
           <Button
             size="sm"
             onClick={() => setOpen(true)}
-            className="h-8 px-3 text-xs"
+            className="h-10 px-4 text-xs"
           >
             <CreditCard className="w-3.5 h-3.5 mr-1" />
             Catat Pembayaran
@@ -178,7 +179,7 @@ export function RecordPaymentDialog({
                 Invoice Target <span className="text-red-500">*</span>
               </label>
               <Select value={activeInvoiceId} onValueChange={(v) => setInvoiceId(v || "")}>
-                <SelectTrigger className="h-8 text-xs">
+                <SelectTrigger className="h-10 text-xs">
                   <SelectValue placeholder="Pilih Invoice...">
                     {selectedInvoice ? `${selectedInvoice.invoiceNumber ?? "DRAFT"} — ${selectedInvoice.customerName}` : undefined}
                   </SelectValue>
@@ -200,13 +201,13 @@ export function RecordPaymentDialog({
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Total Invoice:</span>
                   <span className="font-semibold">
-                    Rp {selectedInvoice.total.toLocaleString("id-ID")}
+                    {formatCurrency(selectedInvoice.total)}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Sisa Tagihan:</span>
                   <span className="font-bold text-amber-600">
-                    Rp {selectedInvoice.remainingBalance.toLocaleString("id-ID")}
+                    {formatCurrency(selectedInvoice.remainingBalance)}
                   </span>
                 </div>
               </div>
@@ -222,7 +223,7 @@ export function RecordPaymentDialog({
                   placeholder="5000000"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  className="h-8 text-xs"
+                  className="h-10 text-sm"
                   required
                 />
               </div>
@@ -234,7 +235,7 @@ export function RecordPaymentDialog({
                   type="date"
                   value={paymentDate}
                   onChange={(e) => setPaymentDate(e.target.value)}
-                  className="h-8 text-xs"
+                  className="h-10 text-sm"
                 />
               </div>
             </div>
@@ -247,7 +248,7 @@ export function RecordPaymentDialog({
                 value={method}
                 onValueChange={(v) => setMethod((v as PaymentMethod) || "TRANSFER")}
               >
-                <SelectTrigger className="h-8 text-xs">
+                <SelectTrigger className="h-10 text-xs">
                   <SelectValue>
                     {method === "TRANSFER"
                       ? "Transfer Bank"
@@ -310,7 +311,7 @@ export function RecordPaymentDialog({
                 placeholder="Pelunasan tahap 1..."
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                className="h-8 text-xs"
+                className="h-10 text-sm"
               />
             </div>
 

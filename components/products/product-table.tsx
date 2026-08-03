@@ -101,7 +101,7 @@ export function ProductTable({ initialProducts = [], canManage = false }: Produc
               <button
                 key={s}
                 onClick={() => setStatusFilter(s)}
-                className={`px-3 py-1.5 text-xs rounded-lg font-medium transition-colors shrink-0 ${
+                className={`min-h-9 px-3.5 py-2 text-xs rounded-xl font-semibold transition-colors shrink-0 ${
                   statusFilter === s
                     ? "bg-foreground text-background"
                     : "text-muted-foreground hover:bg-muted"
@@ -178,7 +178,7 @@ export function ProductTable({ initialProducts = [], canManage = false }: Produc
                       <TableCell>
                         <DropdownMenu>
                           <DropdownMenuTrigger
-                            className="inline-flex items-center justify-center h-7 w-7 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                            className="inline-flex items-center justify-center h-9 w-9 rounded-xl hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                             aria-label="Aksi produk"
                           >
                             {loadingId === product.id ? (

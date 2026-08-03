@@ -16,7 +16,7 @@ export function formatCurrency(amount: number): string {
     currency: "IDR",
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(amount);
+  }).format(amount).replace(/\u00a0/g, " ");
 }
 
 export function formatCurrencyCompact(amount: number): string {

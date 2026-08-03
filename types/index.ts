@@ -15,6 +15,14 @@ export interface User {
   createdAt: string;
 }
 
+export interface PersonalNote {
+  id: string;
+  title: string;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // ─── Product ───
 
 export type ProductStatus = "ACTIVE" | "INACTIVE";
@@ -31,8 +39,46 @@ export interface Product {
   description?: string;
   activeCost?: number;
   estimatedMargin?: number;
+  stockQuantity?: number;
+  minimumStock?: number;
   createdAt: string;
   updatedAt: string;
+}
+
+// ─── Stock ───
+
+export type StockMovementType =
+  | "PURCHASE_IN"
+  | "SALE_OUT"
+  | "INVOICE_VOID_RETURN"
+  | "ADJUSTMENT_IN"
+  | "ADJUSTMENT_OUT";
+
+export interface StockBalance {
+  productId: string;
+  productName: string;
+  sku?: string;
+  size?: string;
+  unit: string;
+  quantity: number;
+  minimumQuantity: number;
+  updatedAt: string;
+}
+
+export interface StockMovement {
+  id: string;
+  productId: string;
+  productName: string;
+  unit: string;
+  movementType: StockMovementType;
+  quantityDelta: number;
+  balanceAfter: number;
+  supplierName?: string;
+  customerName?: string;
+  invoiceNumber?: string;
+  receiptNumber?: string;
+  notes?: string;
+  occurredAt: string;
 }
 
 export interface ProductCost {

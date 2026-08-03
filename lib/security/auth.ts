@@ -2,6 +2,9 @@ import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
 import { ROLE_PERMISSIONS, type Permission, type ProfileStatus, type Role } from "@/types";
+import { AuthorizationError } from "@/lib/security/errors";
+
+export { AuthorizationError, normalizeActionError } from "@/lib/security/errors";
 
 export interface ApprovedUser {
   id: string;
@@ -9,13 +12,6 @@ export interface ApprovedUser {
   name: string;
   role: Role;
   status: "APPROVED";
-}
-
-export class AuthorizationError extends Error {
-  constructor(message: string, public readonly code: "UNAUTHENTICATED" | "FORBIDDEN" = "FORBIDDEN") {
-    super(message);
-    this.name = "AuthorizationError";
-  }
 }
 
 function isRole(value: unknown): value is Role {
@@ -73,12 +69,6 @@ export async function requirePermission(permission: Permission): Promise<Approve
 
 export function hasPermission(role: Role, permission: Permission) {
   return ROLE_PERMISSIONS[role].includes(permission);
-}
-
-export function normalizeActionError(error: unknown, fallback: string) {
-  if (error instanceof AuthorizationError) return error.message;
-  if (error instanceof Error && error.message) return error.message;
-  return fallback;
 }
 
 export function isApprovedStatus(status: ProfileStatus): status is "APPROVED" {

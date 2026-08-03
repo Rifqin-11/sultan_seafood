@@ -125,18 +125,18 @@ export function UserManagementTable({ users, currentUserRole }: UserManagementTa
                             size="sm"
                             onClick={() => handleApprove(u, "STAFF")}
                             disabled={loadingId === u.id}
-                            className="h-8 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3"
+                            className="h-10 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3.5"
                           >
                             <Check className="w-3.5 h-3.5 mr-1" />
                             ACC Staff
                           </Button>
-                          <Button size="sm" variant="outline" onClick={() => handleApprove(u, "FINANCE")} disabled={loadingId === u.id} className="h-8 text-xs px-3">ACC Finance</Button>
+                          <Button size="sm" variant="outline" onClick={() => handleApprove(u, "FINANCE")} disabled={loadingId === u.id} className="h-10 text-xs px-3.5">ACC Finance</Button>
                           <Button
                             size="sm"
                             variant="outline"
                             onClick={() => handleReject(u)}
                             disabled={loadingId === u.id}
-                            className="h-8 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 px-3"
+                            className="h-10 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 px-3.5"
                           >
                             <X className="w-3.5 h-3.5 mr-1" />
                             Tolak

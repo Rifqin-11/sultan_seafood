@@ -49,7 +49,7 @@ export function UserProfileCard({
               variant="outline"
               size="sm"
               onClick={() => setOpenPasswordDialog(true)}
-              className="ml-auto sm:ml-2 h-8 text-xs font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 border-amber-200 gap-1.5 transition-colors cursor-pointer"
+              className="ml-auto sm:ml-2 h-10 text-xs font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 border-amber-200 gap-1.5 transition-colors cursor-pointer"
             >
               <KeyRound className="w-3.5 h-3.5 text-amber-600" />
               Ubah Password

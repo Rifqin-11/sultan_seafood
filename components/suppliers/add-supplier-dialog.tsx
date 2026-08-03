@@ -71,7 +71,7 @@ export function AddSupplierDialog() {
       <Button
         size="sm"
         onClick={() => setOpen(true)}
-        className="h-8 px-3 text-xs cursor-pointer"
+        className="h-10 px-4 text-xs cursor-pointer"
       >
         <Plus className="w-3.5 h-3.5 mr-1" />
         Tambah Supplier
@@ -94,7 +94,7 @@ export function AddSupplierDialog() {
               placeholder="PT Bahari Nelayan Utama"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="h-8 text-xs"
+              className="h-10 text-sm"
               required
             />
           </div>
@@ -108,7 +108,7 @@ export function AddSupplierDialog() {
                 placeholder="Pak Hendra"
                 value={contactName}
                 onChange={(e) => setContactName(e.target.value)}
-                className="h-8 text-xs"
+                className="h-10 text-sm"
                 required
               />
             </div>
@@ -120,7 +120,7 @@ export function AddSupplierDialog() {
                 placeholder="081987654321"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                className="h-8 text-xs"
+                className="h-10 text-sm"
                 required
               />
             </div>
@@ -134,7 +134,7 @@ export function AddSupplierDialog() {
               placeholder="Pelabuhan Muara Baru Blok B, Jakarta Utara"
               value={address}
               onChange={(e) => setAddress(e.target.value)}
-              className="h-8 text-xs"
+              className="h-10 text-sm"
               required
             />
           </div>

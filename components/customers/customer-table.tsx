@@ -185,7 +185,7 @@ export function CustomerTable({ customers, canManage = false }: CustomerTablePro
           <button
             type="button"
             onClick={() => setStatusFilter("ALL")}
-            className={`px-3 py-1.5 text-xs rounded-xl font-medium cursor-pointer transition-all ${
+            className={`min-h-9 px-3.5 py-2 text-xs rounded-xl font-semibold cursor-pointer transition-all ${
               statusFilter === "ALL"
                 ? "bg-slate-900 text-white shadow-sm"
                 : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -196,7 +196,7 @@ export function CustomerTable({ customers, canManage = false }: CustomerTablePro
           <button
             type="button"
             onClick={() => setStatusFilter("ACTIVE")}
-            className={`px-3 py-1.5 text-xs rounded-xl font-medium cursor-pointer transition-all ${
+            className={`min-h-9 px-3.5 py-2 text-xs rounded-xl font-semibold cursor-pointer transition-all ${
               statusFilter === "ACTIVE"
                 ? "bg-emerald-600 text-white shadow-sm"
                 : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -207,7 +207,7 @@ export function CustomerTable({ customers, canManage = false }: CustomerTablePro
           <button
             type="button"
             onClick={() => setStatusFilter("INACTIVE")}
-            className={`px-3 py-1.5 text-xs rounded-xl font-medium cursor-pointer transition-all ${
+            className={`min-h-9 px-3.5 py-2 text-xs rounded-xl font-semibold cursor-pointer transition-all ${
               statusFilter === "INACTIVE"
                 ? "bg-slate-600 text-white shadow-sm"
                 : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -309,7 +309,7 @@ export function CustomerTable({ customers, canManage = false }: CustomerTablePro
                       {canManage && (
                         <TableCell className="py-3">
                           <DropdownMenu>
-                            <DropdownMenuTrigger className="inline-flex items-center justify-center h-8 w-8 rounded-xl hover:bg-slate-100 text-slate-500 hover:text-slate-900 transition-colors cursor-pointer" aria-label="Aksi restoran">
+                            <DropdownMenuTrigger className="inline-flex items-center justify-center h-9 w-9 rounded-xl hover:bg-slate-100 text-slate-500 hover:text-slate-900 transition-colors cursor-pointer" aria-label="Aksi restoran">
                               {loadingId === c.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <MoreHorizontal className="w-4 h-4" />}
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-48 shadow-lg rounded-xl">

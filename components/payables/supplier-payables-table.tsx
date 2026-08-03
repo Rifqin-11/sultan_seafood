@@ -61,8 +61,8 @@ export function SupplierPayablesTable({ bills }: SupplierPayablesTableProps) {
   return (
     <>
       <div className="overflow-hidden rounded-2xl border border-border bg-white shadow-card">
-        <div className="hidden sm:block">
-          <table className="w-full text-sm">
+        <div className="erp-table-wrap hidden sm:block">
+          <table className="erp-table min-w-[780px] w-full text-sm">
             <thead><tr className="border-b border-stone-200 bg-stone-50/80"><th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-stone-500">Tagihan</th><th className="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-stone-500">Supplier</th><th className="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-stone-500">Jatuh Tempo</th><th className="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-stone-500">Total</th><th className="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-stone-500">Sisa</th><th className="px-3 py-3 text-center text-[10px] font-semibold uppercase tracking-wider text-stone-500">Status</th><th className="px-5 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-stone-500">Aksi</th></tr></thead>
             <tbody className="divide-y divide-stone-100">
               {bills.length === 0 ? <tr><td colSpan={7} className="h-52"><EmptyState icon={Landmark} title="Belum ada hutang supplier" description="Catat tagihan pembelian dari supplier untuk memantau kewajiban pembayaran." /></td></tr> : bills.map((bill) => (

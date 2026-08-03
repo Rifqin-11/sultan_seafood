@@ -1,9 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { calculateInvoice } from "../lib/utils.ts";
+import { calculateInvoice, formatCurrency } from "../lib/utils.ts";
 import { createCsv } from "../lib/csv.ts";
 import { getEffectiveInvoiceStatus, isPublicInvoice, sanitizeInvoiceForRole } from "../lib/domain/invoices.ts";
 import { ROLE_PERMISSIONS, type Invoice } from "../types/index.ts";
+import { getStockMovementLabel, validateStockAdjustment, validateStockReceiptPayload } from "../lib/domain/inventory.ts";
+import { normalizeActionError } from "../lib/security/errors.ts";
 
 const invoice: Invoice = {
   id: "11111111-1111-1111-1111-111111111111", publicToken: "22222222-2222-2222-2222-222222222222",
@@ -46,4 +48,37 @@ test("public invoice validator requires a public-safe contract", () => {
 test("CSV generator escapes formulas, commas, and quotes as text cells", () => {
   const csv = createCsv(["Name", "Value", "Formula"], [["A, B", 'He said "ok"', "=2+2"]]);
   assert.equal(csv, '"Name","Value","Formula"\r\n"A, B","He said ""ok""","\'=2+2"');
+});
+
+test("currency formatting keeps Indonesian thousand separators readable", () => {
+  assert.equal(formatCurrency(1250000), "Rp 1.250.000");
+});
+
+test("stock receipt validation rejects duplicate products and invalid quantities", () => {
+  const base = { supplierId: "supplier", receivedDate: "2026-08-03", items: [{ productId: "p1", quantity: 2, unitCost: 50_000 }] };
+  assert.equal(validateStockReceiptPayload(base), null);
+  assert.match(validateStockReceiptPayload({ ...base, items: [...base.items, { productId: "p1", quantity: 1, unitCost: 40_000 }] }) ?? "", /satu kali/);
+  assert.match(validateStockReceiptPayload({ ...base, items: [{ ...base.items[0], quantity: 0 }] }) ?? "", /valid/);
+});
+
+test("stock adjustment requires a reason and movement labels stay readable", () => {
+  assert.match(validateStockAdjustment("p1", 1, "") ?? "", /Alasan/);
+  assert.equal(validateStockAdjustment("p1", -2, "Stok opname"), null);
+  assert.equal(getStockMovementLabel("SALE_OUT"), "Keluar untuk invoice");
+});
+
+test("action errors expose structured database details", () => {
+  const error = normalizeActionError(
+    {
+      message: "function create_stock_receipt_transaction(jsonb) does not exist",
+      code: "42883",
+      details: "Could not find the function in the schema cache",
+      hint: "Verify the function name and arguments",
+    },
+    "fallback",
+  );
+  assert.match(error, /Fungsi database belum tersedia/);
+  assert.match(error, /Kode: 42883/);
+  assert.match(error, /Detail:/);
+  assert.match(error, /Petunjuk:/);
 });

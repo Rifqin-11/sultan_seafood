@@ -87,7 +87,7 @@ export function EditSupplierDialog({
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="h-8 text-xs"
+              className="h-10 text-sm"
               required
             />
           </div>
@@ -100,7 +100,7 @@ export function EditSupplierDialog({
               <Input
                 value={contactName}
                 onChange={(e) => setContactName(e.target.value)}
-                className="h-8 text-xs"
+                className="h-10 text-sm"
                 required
               />
             </div>
@@ -111,7 +111,7 @@ export function EditSupplierDialog({
               <Input
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                className="h-8 text-xs"
+                className="h-10 text-sm"
                 required
               />
             </div>
@@ -124,7 +124,7 @@ export function EditSupplierDialog({
             <Input
               value={address}
               onChange={(e) => setAddress(e.target.value)}
-              className="h-8 text-xs"
+              className="h-10 text-sm"
               required
             />
           </div>

@@ -112,7 +112,7 @@ export function PaymentListTable({ payments, invoices }: PaymentListTableProps) 
                             variant="outline"
                             size="sm"
                             onClick={() => openProof(p, invNum)}
-                            className="h-7 text-xs px-2.5 bg-blue-50/50 hover:bg-blue-100 text-blue-700 border-blue-200"
+                            className="h-9 text-xs px-3 bg-blue-50/50 hover:bg-blue-100 text-blue-700 border-blue-200"
                           >
                             <Eye className="w-3.5 h-3.5 mr-1 text-blue-600" />
                             Lihat Bukti

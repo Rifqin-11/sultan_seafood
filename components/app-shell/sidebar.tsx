@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Package,
+  Boxes,
   Tag,
   FileText,
   CreditCard,
@@ -18,6 +19,7 @@ import {
   Fish,
   LogOut,
   ChevronLeft,
+  StickyNote,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { signOutAction } from "@/lib/actions/auth";
@@ -32,7 +34,9 @@ import type { Role } from "@/types";
 
 const navItems = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { label: "Catatan Pribadi", href: "/notes", icon: StickyNote },
   { label: "Produk", href: "/products", icon: Package },
+  { label: "Stok", href: "/stock", icon: Boxes },
   { label: "Harga Beli", href: "/pricing/purchase", icon: Tag },
   { label: "Harga Jual", href: "/pricing/selling", icon: Tag },
   { label: "Invoice", href: "/invoices", icon: FileText },
@@ -52,7 +56,9 @@ const navGrouped = [
     label: null,
     items: [
       { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+      { label: "Catatan Pribadi", href: "/notes", icon: StickyNote },
       { label: "Produk", href: "/products", icon: Package },
+      { label: "Stok", href: "/stock", icon: Boxes },
     ],
   },
   {
@@ -158,7 +164,7 @@ interface SidebarProps {
 function canAccess(href: string, role: Role) {
   if (role === "OWNER") return true;
   if (role === "FINANCE") return !href.startsWith("/settings/");
-  return ["/dashboard", "/products", "/invoices", "/customers", "/suppliers"].includes(href);
+  return ["/dashboard", "/notes", "/products", "/invoices", "/customers", "/suppliers"].includes(href);
 }
 
 export function Sidebar({ collapsed, onToggle, user, role, company }: SidebarProps) {

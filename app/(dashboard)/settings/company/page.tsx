@@ -141,7 +141,7 @@ export default function CompanySettingsPage() {
                     variant="outline"
                     size="sm"
                     onClick={handleRemoveLogo}
-                    className="h-8 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                    className="h-10 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
                   >
                     <X className="w-3.5 h-3.5 mr-1" />
                     Hapus Logo

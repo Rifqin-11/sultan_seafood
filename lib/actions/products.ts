@@ -50,6 +50,14 @@ export async function toggleProductStatusAction(id: string, currentStatus: Produ
 export async function deleteProductAction(id: string) {
   try {
     await requireRole(["OWNER", "FINANCE"]); const supabase = await createClient();
+    const { count: movementCount, error: movementError } = await supabase.from("stock_movements").select("id", { count: "exact", head: true }).eq("product_id", id);
+    if (movementError && !movementError.message.toLowerCase().includes("does not exist")) throw movementError;
+    if ((movementCount ?? 0) > 0) {
+      const { error } = await supabase.from("products").update({ status: "INACTIVE" }).eq("id", id);
+      if (error) throw error;
+      revalidatePath("/products"); revalidatePath("/stock");
+      return { success: true, isWarning: true, message: "Produk memiliki histori stok dan dinonaktifkan agar riwayat tetap aman." };
+    }
     // The database foreign key preserves every historical invoice item and
     // only clears its optional product_id reference when this master product
     // is deleted. Snapshot fields on invoice_items remain unchanged.
@@ -63,12 +71,14 @@ export async function deleteProductAction(id: string) {
 
 export async function getProductsAction(): Promise<Product[]> {
   const user = await requireApprovedUser(); const supabase = await createClient();
-  const { data, error } = await supabase.from("products").select("id,sku,name,category,size,default_unit,default_selling_price,status,created_at,updated_at,product_costs(unit_cost,effective_at,ended_at)").order("created_at", { ascending: false }); if (error) throw new Error(error.message);
+  const { data, error } = await supabase.from("products").select("id,sku,name,category,size,default_unit,default_selling_price,status,created_at,updated_at,product_costs(unit_cost,effective_at,ended_at),stock_balances(quantity,minimum_quantity)").order("created_at", { ascending: false }); if (error) throw new Error(error.message);
   return (data ?? []).map((row) => {
     const product = row as Record<string, unknown>;
     const costs = Array.isArray(product.product_costs) ? product.product_costs as Array<Record<string, unknown>> : [];
+    const stockRows = Array.isArray(product.stock_balances) ? product.stock_balances as Array<Record<string, unknown>> : [];
+    const stock = stockRows[0];
     const active = costs.filter((cost) => !cost.ended_at).sort((a, b) => new Date(String(b.effective_at)).getTime() - new Date(String(a.effective_at)).getTime())[0];
     const selling = Number(product.default_selling_price ?? 0); const activeCost = Number(active?.unit_cost ?? 0);
-    return { id: String(product.id), sku: product.sku ? String(product.sku) : undefined, name: String(product.name), category: String(product.category), size: product.size ? String(product.size) : undefined, defaultUnit: String(product.default_unit), defaultSellingPrice: selling, activeCost: user.role === "STAFF" ? undefined : activeCost, estimatedMargin: user.role !== "STAFF" && selling > 0 && activeCost > 0 ? Number((((selling - activeCost) / selling) * 100).toFixed(1)) : undefined, status: product.status as ProductStatus, createdAt: String(product.created_at), updatedAt: String(product.updated_at) };
+    return { id: String(product.id), sku: product.sku ? String(product.sku) : undefined, name: String(product.name), category: String(product.category), size: product.size ? String(product.size) : undefined, defaultUnit: String(product.default_unit), defaultSellingPrice: selling, activeCost: user.role === "STAFF" ? undefined : activeCost, estimatedMargin: user.role !== "STAFF" && selling > 0 && activeCost > 0 ? Number((((selling - activeCost) / selling) * 100).toFixed(1)) : undefined, stockQuantity: Number(stock?.quantity ?? 0), minimumStock: Number(stock?.minimum_quantity ?? 0), status: product.status as ProductStatus, createdAt: String(product.created_at), updatedAt: String(product.updated_at) };
   });
 }

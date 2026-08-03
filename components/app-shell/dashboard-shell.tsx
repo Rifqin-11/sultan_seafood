@@ -25,7 +25,7 @@ export function DashboardShell({ children, user, company, notificationCount }: {
       <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         <Topbar onMobileMenuToggle={() => setMobileOpen(true)} user={user} notificationCount={notificationCount} />
         <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain pt-16 lg:pt-0">
-          <div className="mx-auto w-full max-w-[1600px] p-3 sm:p-5 lg:p-8">{children}</div>
+          <div className="mx-auto w-full max-w-[1600px] p-4 sm:p-6 lg:p-8">{children}</div>
         </main>
       </div>
     </div>

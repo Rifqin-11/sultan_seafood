@@ -10,6 +10,7 @@ import {
   Loader2,
   Lock,
   PackageOpen,
+  PencilLine,
   Plus,
   ReceiptText,
   Save,
@@ -424,10 +425,10 @@ export function InvoiceForm({ customers = [], products = [], customerPrices = []
                     </span>
                   )}
                 </div>
-                <p className="mt-0.5 truncate text-xs text-muted-foreground">Produk dan harga mengikuti data aktif.</p>
+                <p className="mt-0.5 truncate text-xs text-muted-foreground">Harga beli dapat disesuaikan untuk invoice ini tanpa mengubah HPP master produk.</p>
               </div>
             </div>
-            <Button onClick={addItem} size="sm" variant="outline" className="h-8 rounded-xl bg-white px-3 shadow-sm">
+            <Button onClick={addItem} size="sm" variant="outline" className="h-10 rounded-xl bg-white px-4 shadow-sm">
               <Plus className="w-3.5 h-3.5" />
               Tambah Item
             </Button>
@@ -440,13 +441,13 @@ export function InvoiceForm({ customers = [], products = [], customerPrices = []
               </div>
               <p className="text-sm font-medium text-stone-700">Belum ada produk</p>
               <p className="mt-1 max-w-xs text-xs leading-relaxed text-muted-foreground">Tambahkan produk yang dipesan restoran untuk mulai menghitung invoice.</p>
-              <Button onClick={addItem} size="sm" variant="outline" className="mt-4 h-8 rounded-xl">
+              <Button onClick={addItem} size="sm" variant="outline" className="mt-4 h-10 rounded-xl">
                 <Plus className="size-3.5" /> Tambah produk pertama
               </Button>
             </div>
           ) : (
-            <div className="hidden overflow-x-auto md:block">
-              <table className="w-full text-sm">
+            <div className="erp-table-wrap hidden md:block">
+              <table className="erp-table min-w-[760px] w-full text-sm">
                 <thead>
                   <tr className="border-b border-stone-200 bg-stone-50/80">
                     <th className="min-w-[180px] px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-stone-500">
@@ -463,7 +464,7 @@ export function InvoiceForm({ customers = [], products = [], customerPrices = []
                     </th>
                     {canViewInternal && <th className="w-32 bg-amber-50/70 px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-amber-700">
                       <span className="inline-flex items-center justify-end gap-1">
-                        <Lock className="w-3 h-3 text-amber-600" /> Harga Beli
+                        <PencilLine className="w-3 h-3 text-amber-600" /> Harga Beli Invoice
                       </span>
                     </th>}
                     <th className="w-32 px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-stone-500">
@@ -498,7 +499,7 @@ export function InvoiceForm({ customers = [], products = [], customerPrices = []
                               .filter((p) => p.status === "ACTIVE")
                               .map((p) => (
                                 <SelectItem key={p.id} value={p.id}>
-                                  {p.name} {p.size ? `[${p.size}]` : ""}
+                                  {p.name} {p.size ? `[${p.size}]` : ""} · stok {p.stockQuantity ?? 0} {p.defaultUnit}
                                 </SelectItem>
                               ))}
                           </SelectContent>
@@ -540,8 +541,10 @@ export function InvoiceForm({ customers = [], products = [], customerPrices = []
                           type="number"
                           min={0}
                           value={item.purchasePrice}
-                          readOnly
-                          className="h-9 w-full rounded-xl border-amber-200 bg-amber-50/70 text-right text-xs font-semibold tabular-nums text-amber-900"
+                          onChange={(event) => updateItem(item.id, "purchasePrice", Number(event.target.value) || 0)}
+                          onFocus={(event) => event.currentTarget.select()}
+                          aria-label={`Harga beli invoice ${item.description || "produk"}`}
+                          className="h-10 min-w-[8rem] w-full rounded-xl border-amber-300 bg-white px-3 text-right text-sm font-semibold tabular-nums text-amber-900 shadow-sm"
                           placeholder="0"
                         />
                       </td>}
@@ -551,7 +554,7 @@ export function InvoiceForm({ customers = [], products = [], customerPrices = []
                           min={0}
                           value={item.sellingPrice}
                           readOnly
-                          className="h-9 w-full rounded-xl border-stone-200 bg-stone-50 text-right text-xs font-semibold tabular-nums"
+                          className="h-10 min-w-[8rem] w-full rounded-xl border-stone-200 bg-stone-50 px-3 text-right text-sm font-semibold tabular-nums"
                         />
                       </td>
                       <td className="px-3 py-3 text-right text-xs font-bold tabular-nums text-stone-800">
@@ -585,7 +588,7 @@ export function InvoiceForm({ customers = [], products = [], customerPrices = []
                       <button
                         type="button"
                         onClick={() => removeItem(item.id)}
-                        className="flex h-8 items-center gap-1.5 rounded-lg px-2 text-xs font-medium text-stone-400 transition-colors hover:bg-red-50 hover:text-red-600"
+                        className="flex h-9 items-center gap-1.5 rounded-xl px-2.5 text-xs font-medium text-stone-400 transition-colors hover:bg-red-50 hover:text-red-600"
                         aria-label={`Hapus item ${index + 1}`}
                       >
                         <Trash2 className="size-3.5" /> Hapus
@@ -600,7 +603,7 @@ export function InvoiceForm({ customers = [], products = [], customerPrices = []
                         <SelectContent>
                           {productsList.filter((product) => product.status === "ACTIVE").map((product) => (
                             <SelectItem key={product.id} value={product.id}>
-                              {product.name} {product.size ? `[${product.size}]` : ""}
+                              {product.name} {product.size ? `[${product.size}]` : ""} · stok {product.stockQuantity ?? 0} {product.defaultUnit}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -628,8 +631,17 @@ export function InvoiceForm({ customers = [], products = [], customerPrices = []
                     <div className={canViewInternal ? "grid grid-cols-2 gap-3" : "grid grid-cols-1"}>
                       {canViewInternal && (
                         <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-3">
-                          <label className="mb-2 flex items-center gap-1 text-xs font-semibold text-amber-700"><Lock className="size-3" /> Harga Beli</label>
-                          <p className="text-sm font-bold tabular-nums text-amber-900">{formatCurrency(item.purchasePrice)}</p>
+                          <label className="mb-2 flex items-center gap-1 text-xs font-semibold text-amber-700"><PencilLine className="size-3" /> Harga Beli Invoice</label>
+                          <Input
+                            type="number"
+                            min={0}
+                            value={item.purchasePrice}
+                            onChange={(event) => updateItem(item.id, "purchasePrice", Number(event.target.value) || 0)}
+                            onFocus={(event) => event.currentTarget.select()}
+                            aria-label={`Harga beli invoice ${item.description || "produk"}`}
+                            className="h-10 border-amber-300 bg-white text-right text-sm font-bold tabular-nums text-amber-900 shadow-sm"
+                          />
+                          <p className="mt-1.5 text-[10px] leading-relaxed text-amber-700/80">Khusus invoice ini. HPP master tetap.</p>
                         </div>
                       )}
                       <div className="rounded-xl border border-stone-200 bg-stone-50/70 p-3">
@@ -701,7 +713,7 @@ export function InvoiceForm({ customers = [], products = [], customerPrices = []
               onClick={addCost}
               size="sm"
               variant="outline"
-              className="h-8 rounded-xl border-amber-300 bg-white/70 px-3 text-xs text-amber-800 shadow-sm hover:bg-white"
+              className="h-10 rounded-xl border-amber-300 bg-white/70 px-3.5 text-xs text-amber-800 shadow-sm hover:bg-white"
             >
               <Plus className="size-3.5" />
               Tambah Biaya

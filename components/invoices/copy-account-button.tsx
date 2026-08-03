@@ -30,7 +30,7 @@ export function CopyAccountButton({ accountNumber }: CopyAccountButtonProps) {
       variant="outline"
       size="sm"
       onClick={handleCopy}
-      className="h-7 px-2.5 text-xs font-medium gap-1.5 border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 hover:text-blue-800 transition-all shrink-0"
+      className="h-9 px-3 text-xs font-semibold gap-1.5 border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 hover:text-blue-800 transition-all shrink-0"
     >
       {copied ? (
         <>
