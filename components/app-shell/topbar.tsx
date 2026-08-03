@@ -1,6 +1,6 @@
 "use client";
 
-import { Menu, Bell, ChevronDown } from "lucide-react";
+import { Menu, Bell, ChevronDown, StickyNote } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -16,6 +16,7 @@ import { signOutAction } from "@/lib/actions/auth";
 
 const pathLabels: Record<string, string> = {
   "/dashboard": "Dashboard",
+  "/notes": "Catatan Pribadi",
   "/products": "Produk",
   "/pricing/purchase": "Harga Beli",
   "/pricing/selling": "Harga Jual Restoran",
@@ -92,6 +93,18 @@ export function Topbar({ onMobileMenuToggle, user, notificationCount = 0 }: Topb
 
       {/* Right actions */}
       <div className="flex items-center gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-1.5"
+          aria-label="Buka catatan pribadi"
+          onClick={() => router.push("/notes")}
+          title="Catatan Pribadi"
+        >
+          <StickyNote className="size-3.5" />
+          <span className="hidden lg:inline">Catatan</span>
+        </Button>
+
         {/* Notifications */}
         <Button
           variant="ghost"
