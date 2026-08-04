@@ -15,6 +15,8 @@ import {
   Eye,
   CreditCard,
   Loader2,
+  Pencil,
+  XCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -75,6 +77,7 @@ export function InvoiceListTable({ initialInvoices = [], role, company }: Invoic
   const [deletingInvoice, setDeletingInvoice] = useState<Invoice | null>(null);
   const [voidingInvoice, setVoidingInvoice] = useState<Invoice | null>(null);
   const [selectedPaymentInvoiceId, setSelectedPaymentInvoiceId] = useState<string | null>(null);
+  const [batalanInvoiceId, setBatalanInvoiceId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const pageSize = 10;
 
@@ -146,6 +149,22 @@ export function InvoiceListTable({ initialInvoices = [], role, company }: Invoic
             Lihat Detail
           </Link>
         </DropdownMenuItem>
+        {role !== "STAFF" && inv.status !== "VOID" && inv.status !== "DRAFT" && (
+          <DropdownMenuItem>
+            <Link href={`/invoices/${inv.id}/edit`} className="flex w-full items-center">
+              <Pencil className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
+              Edit Invoice
+            </Link>
+          </DropdownMenuItem>
+        )}
+        {inv.status !== "DRAFT" && (
+          <DropdownMenuItem>
+            <Link href={`/preview/invoices/${inv.id}`} target="_blank" rel="noopener noreferrer" className="flex w-full items-center">
+              <FileText className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
+              Lihat Invoice Digital
+            </Link>
+          </DropdownMenuItem>
+        )}
         <DropdownMenuItem onClick={() => handleDownload(inv)} disabled={downloadingId === inv.id} className="cursor-pointer">
           {downloadingId === inv.id ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <Download className="mr-2 h-3.5 w-3.5 text-muted-foreground" />}
           {downloadingId === inv.id ? "Menyiapkan PDF..." : "Download PDF"}
@@ -155,16 +174,25 @@ export function InvoiceListTable({ initialInvoices = [], role, company }: Invoic
             <CreditCard className="mr-2 h-3.5 w-3.5" /> Catat Pembayaran
           </DropdownMenuItem>
         )}
+        {role !== "STAFF" && inv.status === "PAID" && (
+          <DropdownMenuItem className="cursor-pointer text-red-600 focus:text-red-600" onClick={() => setBatalanInvoiceId(inv.id)}>
+            <XCircle className="mr-2 h-3.5 w-3.5" /> Batalkan Pembayaran
+          </DropdownMenuItem>
+        )}
         <DropdownMenuSeparator />
         {role === "OWNER" && inv.status !== "VOID" && inv.status !== "DRAFT" && inv.totalPaid === 0 && (
           <DropdownMenuItem className="cursor-pointer text-amber-600 focus:text-amber-600" onClick={() => setVoidingInvoice(inv)}>
             <Ban className="mr-2 h-3.5 w-3.5 text-amber-600" /> Batalkan Invoice
           </DropdownMenuItem>
         )}
-        {inv.status === "DRAFT" && (
-          <DropdownMenuItem className="cursor-pointer font-medium text-red-600 focus:text-red-600" onClick={() => setDeletingInvoice(inv)}>
-            <Trash2 className="mr-2 h-3.5 w-3.5 text-red-600" /> Hapus Draft
-          </DropdownMenuItem>
+        {role === "OWNER" && inv.status !== "VOID" && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="cursor-pointer font-medium text-red-600 focus:text-red-600" onClick={() => setDeletingInvoice(inv)}>
+              <Trash2 className="mr-2 h-3.5 w-3.5 text-red-600" />
+              {inv.status === "DRAFT" ? "Hapus Draft" : "Hapus Invoice"}
+            </DropdownMenuItem>
+          </>
         )}
       </DropdownMenuContent>
     </DropdownMenu>

@@ -81,14 +81,18 @@ export async function getPublicInvoiceAction(token: string): Promise<PublicInvoi
 
 export async function deleteInvoiceAction(id: string) {
   try {
-    await requirePermission("create_invoice_draft");
     const supabase = await createClient();
-    const { error } = await supabase.rpc("delete_draft_invoice", { p_invoice_id: id });
+    const user = await requireApprovedUser();
+    if (user.role !== "OWNER") return { error: "Hanya Owner yang dapat menghapus invoice." };
+    const { error } = await supabase.rpc("force_delete_invoice", { p_invoice_id: id });
     if (error) throw error;
+    revalidatePath("/dashboard");
     revalidatePath("/invoices");
-    return { success: true, message: "Draft invoice berhasil dihapus." };
+    revalidatePath("/stock");
+    revalidatePath("/payments");
+    return { success: true, message: "Invoice berhasil dihapus beserta semua data terkait." };
   } catch (error) {
-    return { error: normalizeActionError(error, "Gagal menghapus draft invoice.") };
+    return { error: normalizeActionError(error, "Gagal menghapus invoice.") };
   }
 }
 
@@ -116,4 +120,39 @@ export async function issueInvoiceAction(id: string) {
     revalidatePath("/dashboard"); revalidatePath("/invoices"); revalidatePath(`/invoices/${id}`); revalidatePath("/stock");
     return { success: true, invoiceNumber: data as string, message: "Draft berhasil diterbitkan." };
   } catch (error) { return { error: normalizeActionError(error, "Gagal menerbitkan draft.") }; }
+}
+
+export interface UpdateInvoicePayload {
+  issueDate?: string;
+  dueDate?: string;
+  notes?: string;
+  discount?: number;
+  items: Array<{
+    productId: string;
+    description?: string;
+    quantity: number;
+    unit?: string;
+    sellingPrice?: number;
+    purchasePrice?: number;
+  }>;
+  costs: Array<{ category: DirectCostCategory; name: string; amount: number; notes?: string }>;
+}
+
+export async function updateInvoiceAction(id: string, payload: UpdateInvoicePayload) {
+  try {
+    await requirePermission("issue_invoice"); // reuse OWNER/FINANCE permission
+    const supabase = await createClient();
+    const { data, error } = await supabase.rpc("update_invoice_transaction", {
+      p_invoice_id: id,
+      p_payload: payload,
+    });
+    if (error) throw error;
+    revalidatePath("/dashboard");
+    revalidatePath("/invoices");
+    revalidatePath(`/invoices/${id}`);
+    revalidatePath("/stock");
+    return { success: true, ...(data as object), message: "Invoice berhasil diperbarui." };
+  } catch (error) {
+    return { error: normalizeActionError(error, "Gagal memperbarui invoice.") };
+  }
 }

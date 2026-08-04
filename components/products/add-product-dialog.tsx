@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Plus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import {
   Dialog,
   DialogContent,
@@ -29,8 +30,8 @@ export function AddProductDialog() {
   const [size, setSize] = useState("");
   const [unitChoice, setUnitChoice] = useState("kg");
   const [customUnit, setCustomUnit] = useState("");
-  const [defaultSellingPrice, setDefaultSellingPrice] = useState("");
-  const [activeCost, setActiveCost] = useState("");
+  const [defaultSellingPrice, setDefaultSellingPrice] = useState(0);
+  const [activeCost, setActiveCost] = useState(0);
 
   const resetForm = () => {
     setName("");
@@ -39,8 +40,8 @@ export function AddProductDialog() {
     setSize("");
     setUnitChoice("kg");
     setCustomUnit("");
-    setDefaultSellingPrice("");
-    setActiveCost("");
+    setDefaultSellingPrice(0);
+    setActiveCost(0);
     setError("");
   };
 
@@ -63,8 +64,8 @@ export function AddProductDialog() {
       category,
       size: size || undefined,
       defaultUnit,
-      defaultSellingPrice: defaultSellingPrice ? parseFloat(defaultSellingPrice) : undefined,
-      activeCost: activeCost ? parseFloat(activeCost) : undefined,
+      defaultSellingPrice: defaultSellingPrice > 0 ? defaultSellingPrice : undefined,
+      activeCost: activeCost > 0 ? activeCost : undefined,
     });
 
     setLoading(false);
@@ -173,22 +174,20 @@ export function AddProductDialog() {
               <label className="block text-sm font-medium text-muted-foreground mb-1.5">
                 Harga Jual (Rp)
               </label>
-              <Input
-                type="number"
-                placeholder="110000"
+              <CurrencyInput
                 value={defaultSellingPrice}
-                onChange={(e) => setDefaultSellingPrice(e.target.value)}
+                onChange={setDefaultSellingPrice}
+                placeholder="110000"
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-muted-foreground mb-1.5">
                 HPP Beli (Rp)
               </label>
-              <Input
-                type="number"
-                placeholder="85000"
+              <CurrencyInput
                 value={activeCost}
-                onChange={(e) => setActiveCost(e.target.value)}
+                onChange={setActiveCost}
+                placeholder="85000"
               />
             </div>
           </div>

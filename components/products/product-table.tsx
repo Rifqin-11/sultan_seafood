@@ -28,6 +28,12 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
+function getStockBadge(qty: number, min: number) {
+  if (qty <= 0) return { label: "Out of Stock", className: "bg-red-50 text-red-700 border-red-200" };
+  if (qty <= min) return { label: "Low Stock", className: "bg-orange-50 text-orange-700 border-orange-200" };
+  return { label: "In Stock", className: "bg-emerald-50 text-emerald-700 border-emerald-200" };
+}
+
 interface ProductTableProps {
   initialProducts?: Product[];
   canManage?: boolean;
@@ -135,6 +141,7 @@ export function ProductTable({ initialProducts = [], canManage = false }: Produc
                     <TableHead className="text-xs font-semibold text-right">Harga Beli</TableHead>
                     <TableHead className="text-xs font-semibold text-right">Harga Jual</TableHead>
                     <TableHead className="text-xs font-semibold text-right">Margin</TableHead>
+                    <TableHead className="text-xs font-semibold">Stok</TableHead>
                     <TableHead className="text-xs font-semibold">Status</TableHead>
                     {canManage && <TableHead className="w-10" />}
                   </TableRow>
@@ -167,6 +174,16 @@ export function ProductTable({ initialProducts = [], canManage = false }: Produc
                             {formatPercent(product.estimatedMargin)}
                           </span>
                         ) : "—"}
+                      </TableCell>
+                      <TableCell>
+                        {(() => {
+                          const badge = getStockBadge(product.stockQuantity ?? 0, product.minimumStock ?? 0);
+                          return (
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-md border text-[11px] font-semibold ${badge.className}`}>
+                              {badge.label}
+                            </span>
+                          );
+                        })()}
                       </TableCell>
                       {canManage && (
                         <TableCell>
@@ -224,6 +241,19 @@ export function ProductTable({ initialProducts = [], canManage = false }: Produc
                     <p className="text-xs text-muted-foreground">
                       {product.category}{product.size ? ` · ${product.size}` : ""} · {product.defaultUnit}
                     </p>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {(() => {
+                        const badge = getStockBadge(product.stockQuantity ?? 0, product.minimumStock ?? 0);
+                        return (
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-md border text-[11px] font-semibold ${badge.className}`}>
+                            {badge.label}
+                          </span>
+                        );
+                      })()}
+                      <span className="text-[11px] text-muted-foreground tabular-nums">
+                        {product.stockQuantity ?? 0} {product.defaultUnit}
+                      </span>
+                    </div>
                     <div className="flex items-center gap-3 flex-wrap text-xs">
                       <span className="text-muted-foreground">
                         Jual: <span className="font-medium text-foreground">{product.defaultSellingPrice ? formatCurrency(product.defaultSellingPrice) : "—"}</span>

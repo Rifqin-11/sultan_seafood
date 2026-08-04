@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Plus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import {
   Dialog,
   DialogContent,
@@ -34,12 +35,12 @@ export function AddCustomerPriceDialog({
 
   const [customerId, setCustomerId] = useState(customers[0]?.id || "");
   const [productId, setProductId] = useState(products[0]?.id || "");
-  const [sellingPrice, setSellingPrice] = useState("");
+  const [sellingPrice, setSellingPrice] = useState(0);
 
   const resetForm = () => {
     setCustomerId(customers[0]?.id || "");
     setProductId(products[0]?.id || "");
-    setSellingPrice("");
+    setSellingPrice(0);
     setError("");
   };
 
@@ -57,7 +58,7 @@ export function AddCustomerPriceDialog({
     const res = await createCustomerPriceAction({
       customerId,
       productId,
-      sellingPrice: parseFloat(sellingPrice),
+      sellingPrice: sellingPrice,
     });
 
     setLoading(false);
@@ -134,14 +135,7 @@ export function AddCustomerPriceDialog({
             <label className="block text-xs font-medium text-muted-foreground mb-1">
               Harga Jual Khusus (Rp) <span className="text-red-500">*</span>
             </label>
-            <Input
-              type="number"
-              placeholder="90000"
-              value={sellingPrice}
-              onChange={(e) => setSellingPrice(e.target.value)}
-              className="h-10 text-sm"
-              required
-            />
+            <CurrencyInput value={sellingPrice} onChange={setSellingPrice} placeholder="0" className="h-10 rounded-xl border-stone-200" />
           </div>
 
           {error && (

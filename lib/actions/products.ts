@@ -70,15 +70,55 @@ export async function deleteProductAction(id: string) {
 }
 
 export async function getProductsAction(): Promise<Product[]> {
-  const user = await requireApprovedUser(); const supabase = await createClient();
-  const { data, error } = await supabase.from("products").select("id,sku,name,category,size,default_unit,default_selling_price,status,created_at,updated_at,product_costs(unit_cost,effective_at,ended_at),stock_balances(quantity,minimum_quantity)").order("created_at", { ascending: false }); if (error) throw new Error(error.message);
+  const user = await requireApprovedUser();
+  const supabase = await createClient();
+
+  // Run products and stock_balances as separate queries to avoid Supabase
+  // embedded-join ambiguity that causes stock_balances to return empty arrays.
+  const [{ data, error }, { data: stockData, error: stockError }] = await Promise.all([
+    supabase
+      .from("products")
+      .select("id,sku,name,category,size,default_unit,default_selling_price,status,created_at,updated_at,product_costs(unit_cost,effective_at,ended_at)")
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("stock_balances")
+      .select("product_id,quantity,minimum_quantity"),
+  ]);
+
+  if (error) throw new Error(error.message);
+  if (stockError) throw new Error(stockError.message);
+
+  // Build a lookup map for O(1) access per product
+  const stockMap = new Map<string, { quantity: number; minimum_quantity: number }>();
+  for (const row of stockData ?? []) {
+    stockMap.set(String(row.product_id), {
+      quantity: Number(row.quantity ?? 0),
+      minimum_quantity: Number(row.minimum_quantity ?? 0),
+    });
+  }
+
   return (data ?? []).map((row) => {
     const product = row as Record<string, unknown>;
     const costs = Array.isArray(product.product_costs) ? product.product_costs as Array<Record<string, unknown>> : [];
-    const stockRows = Array.isArray(product.stock_balances) ? product.stock_balances as Array<Record<string, unknown>> : [];
-    const stock = stockRows[0];
+    const stock = stockMap.get(String(product.id));
     const active = costs.filter((cost) => !cost.ended_at).sort((a, b) => new Date(String(b.effective_at)).getTime() - new Date(String(a.effective_at)).getTime())[0];
-    const selling = Number(product.default_selling_price ?? 0); const activeCost = Number(active?.unit_cost ?? 0);
-    return { id: String(product.id), sku: product.sku ? String(product.sku) : undefined, name: String(product.name), category: String(product.category), size: product.size ? String(product.size) : undefined, defaultUnit: String(product.default_unit), defaultSellingPrice: selling, activeCost: user.role === "STAFF" ? undefined : activeCost, estimatedMargin: user.role !== "STAFF" && selling > 0 && activeCost > 0 ? Number((((selling - activeCost) / selling) * 100).toFixed(1)) : undefined, stockQuantity: Number(stock?.quantity ?? 0), minimumStock: Number(stock?.minimum_quantity ?? 0), status: product.status as ProductStatus, createdAt: String(product.created_at), updatedAt: String(product.updated_at) };
+    const selling = Number(product.default_selling_price ?? 0);
+    const activeCost = Number(active?.unit_cost ?? 0);
+    return {
+      id: String(product.id),
+      sku: product.sku ? String(product.sku) : undefined,
+      name: String(product.name),
+      category: String(product.category),
+      size: product.size ? String(product.size) : undefined,
+      defaultUnit: String(product.default_unit),
+      defaultSellingPrice: selling,
+      activeCost: user.role === "STAFF" ? undefined : activeCost,
+      estimatedMargin: user.role !== "STAFF" && selling > 0 && activeCost > 0 ? Number((((selling - activeCost) / selling) * 100).toFixed(1)) : undefined,
+      stockQuantity: stock?.quantity ?? 0,
+      minimumStock: stock?.minimum_quantity ?? 0,
+      status: product.status as ProductStatus,
+      createdAt: String(product.created_at),
+      updatedAt: String(product.updated_at),
+    };
   });
 }

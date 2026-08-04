@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Edit2, Trash2, Loader2, Plus, Tag } from "lucide-react";
 import { deleteCustomerPriceAction, createCustomerPriceAction } from "@/lib/actions/pricing";
@@ -57,7 +58,7 @@ export function SellingPriceTable({
     currentPrice: number;
   } | null>(null);
 
-  const [priceInput, setPriceInput] = useState("");
+  const [priceInput, setPriceInput] = useState(0);
   const [deletingRecord, setDeletingRecord] = useState<{
     id: string;
     customerName: string;
@@ -71,12 +72,12 @@ export function SellingPriceTable({
       product,
       currentPrice: record ? record.sellingPrice : (product.defaultSellingPrice || 0),
     });
-    setPriceInput(record ? record.sellingPrice.toString() : (product.defaultSellingPrice?.toString() || ""));
+    setPriceInput(record ? record.sellingPrice : (product.defaultSellingPrice ?? 0));
   };
 
   const handleSavePrice = async () => {
     if (!activeItem) return;
-    const priceNum = parseFloat(priceInput);
+    const priceNum = priceInput;
     if (isNaN(priceNum) || priceNum <= 0) {
       toast.error("Masukkan harga jual khusus yang valid");
       return;
@@ -264,13 +265,7 @@ export function SellingPriceTable({
               </div>
               <div className="space-y-1.5">
                 <label htmlFor="selling-price-input" className="text-xs text-muted-foreground block font-medium">Harga Jual Khusus (Rp)</label>
-                <Input
-                  id="selling-price-input"
-                  type="number"
-                  value={priceInput}
-                  onChange={(e) => setPriceInput(e.target.value)}
-                  placeholder="85000"
-                />
+                <CurrencyInput id="selling-price-input" value={priceInput} onChange={setPriceInput} className="h-10 rounded-xl border-stone-200" />
               </div>
             </div>
             <DialogFooter>

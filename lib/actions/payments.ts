@@ -68,3 +68,18 @@ export async function getPaymentsAction(): Promise<Payment[]> {
     };
   }));
 }
+
+export async function deletePaymentAction(paymentId: string) {
+  try {
+    await requirePermission("record_payment");
+    const supabase = await createClient();
+    const { error } = await supabase.rpc("void_payment_transaction", { p_payment_id: paymentId });
+    if (error) throw error;
+    revalidatePath("/dashboard");
+    revalidatePath("/payments");
+    revalidatePath("/invoices");
+    return { success: true, message: "Pembayaran berhasil dibatalkan." };
+  } catch (error) {
+    return { error: normalizeActionError(error, "Gagal membatalkan pembayaran.") };
+  }
+}

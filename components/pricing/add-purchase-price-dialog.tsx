@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Plus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import {
   Dialog,
   DialogContent,
@@ -33,13 +34,13 @@ export function AddPurchasePriceDialog({
 
   const [productId, setProductId] = useState(products[0]?.id || "");
   const [supplierId, setSupplierId] = useState(suppliers[0]?.id || "");
-  const [unitCost, setUnitCost] = useState("");
+  const [unitCost, setUnitCost] = useState(0);
   const [notes, setNotes] = useState("");
 
   const resetForm = () => {
     setProductId(products[0]?.id || "");
     setSupplierId(suppliers[0]?.id || "");
-    setUnitCost("");
+    setUnitCost(0);
     setNotes("");
     setError("");
   };
@@ -58,7 +59,7 @@ export function AddPurchasePriceDialog({
     const res = await createPurchasePriceAction({
       productId,
       supplierId: supplierId || undefined,
-      unitCost: parseFloat(unitCost),
+      unitCost: unitCost,
       notes: notes || undefined,
     });
 
@@ -136,14 +137,7 @@ export function AddPurchasePriceDialog({
             <label className="block text-xs font-medium text-muted-foreground mb-1">
               Harga Beli HPP (Rp) <span className="text-red-500">*</span>
             </label>
-            <Input
-              type="number"
-              placeholder="68000"
-              value={unitCost}
-              onChange={(e) => setUnitCost(e.target.value)}
-              className="h-10 text-sm"
-              required
-            />
+            <CurrencyInput value={unitCost} onChange={setUnitCost} placeholder="0" className="h-10 rounded-xl border-stone-200" />
           </div>
 
           <div>

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import {
   Dialog,
   DialogContent,
@@ -39,12 +40,8 @@ export function EditProductDialog({
   const [size, setSize] = useState(product.size || "");
   const [unitChoice, setUnitChoice] = useState(() => choiceFor(product.defaultUnit || "kg", PRODUCT_UNITS));
   const [customUnit, setCustomUnit] = useState(() => PRODUCT_UNITS.includes((product.defaultUnit || "kg") as typeof PRODUCT_UNITS[number]) ? "" : product.defaultUnit || "");
-  const [defaultSellingPrice, setDefaultSellingPrice] = useState(
-    String(product.defaultSellingPrice || "")
-  );
-  const [activeCost, setActiveCost] = useState(
-    String(product.activeCost || "")
-  );
+  const [defaultSellingPrice, setDefaultSellingPrice] = useState<number>(Number(product.defaultSellingPrice) || 0);
+  const [activeCost, setActiveCost] = useState<number>(Number(product.activeCost) || 0);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,10 +63,8 @@ export function EditProductDialog({
       category,
       size: size || undefined,
       defaultUnit,
-      defaultSellingPrice: defaultSellingPrice
-        ? parseFloat(defaultSellingPrice)
-        : undefined,
-      activeCost: activeCost ? parseFloat(activeCost) : undefined,
+      defaultSellingPrice: defaultSellingPrice > 0 ? defaultSellingPrice : undefined,
+      activeCost: activeCost > 0 ? activeCost : undefined,
       status: product.status,
     });
 
@@ -156,20 +151,20 @@ export function EditProductDialog({
               <label className="block text-sm font-medium text-muted-foreground mb-1.5">
                 Harga Jual Default (Rp)
               </label>
-              <Input
-                type="number"
+              <CurrencyInput
                 value={defaultSellingPrice}
-                onChange={(e) => setDefaultSellingPrice(e.target.value)}
+                onChange={setDefaultSellingPrice}
+                placeholder="110000"
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-muted-foreground mb-1.5">
                 Harga Beli HPP (Rp)
               </label>
-              <Input
-                type="number"
+              <CurrencyInput
                 value={activeCost}
-                onChange={(e) => setActiveCost(e.target.value)}
+                onChange={setActiveCost}
+                placeholder="85000"
               />
             </div>
           </div>

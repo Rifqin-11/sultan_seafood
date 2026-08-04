@@ -19,8 +19,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Eye, FileText, Download, CreditCard } from "lucide-react";
+import { Eye, FileText, Download, CreditCard, Trash2 } from "lucide-react";
 import { RecordPaymentDialog } from "@/components/payments/record-payment-dialog";
+import { deletePaymentAction } from "@/lib/actions/payments";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 interface PaymentListTableProps {
   payments: Payment[];
@@ -40,6 +44,24 @@ export function PaymentListTable({ payments, invoices }: PaymentListTableProps) 
     TRANSFER: "Transfer",
     CHECK: "Cek",
     OTHER: "Lainnya",
+  };
+
+  const router = useRouter();
+  const [deletingPayment, setDeletingPayment] = useState<Payment | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDeletePayment = async () => {
+    if (!deletingPayment) return;
+    setDeleting(true);
+    const res = await deletePaymentAction(deletingPayment.id);
+    setDeleting(false);
+    setDeletingPayment(null);
+    if (res.error) {
+      toast.error(`Gagal: ${res.error}`);
+    } else {
+      toast.success("Pembayaran berhasil dibatalkan.");
+      router.refresh();
+    }
   };
 
   const openProof = (payment: Payment, invoiceNumber: string) => {
@@ -124,6 +146,15 @@ export function PaymentListTable({ payments, invoices }: PaymentListTableProps) 
                       <TableCell className="text-right text-sm font-semibold tabular-nums text-emerald-600">
                         +{formatCurrency(p.amount)}
                       </TableCell>
+                      <TableCell>
+                        <button
+                          onClick={() => setDeletingPayment(p)}
+                          aria-label="Batalkan pembayaran"
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-red-50 hover:text-red-600"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </TableCell>
                     </TableRow>
                   );
                 })
@@ -163,6 +194,13 @@ export function PaymentListTable({ payments, invoices }: PaymentListTableProps) 
                       <p className="mt-1 font-medium text-stone-800">{methodLabel[payment.method] ?? payment.method}</p>
                     </div>
                   </div>
+                  <button
+                    onClick={() => setDeletingPayment(payment)}
+                    aria-label="Batalkan pembayaran"
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-600 hover:bg-red-100"
+                  >
+                    <Trash2 className="h-3 w-3" /> Batalkan
+                  </button>
                   {payment.proofUrl && (
                     <Button
                       variant="outline"
@@ -233,6 +271,16 @@ export function PaymentListTable({ payments, invoices }: PaymentListTableProps) 
           )}
         </DialogContent>
       </Dialog>
+      {deletingPayment && (
+        <ConfirmDialog
+          open={!!deletingPayment}
+          onOpenChange={(open) => { if (!open) setDeletingPayment(null); }}
+          title="Batalkan Pembayaran?"
+          description={`Pembayaran sebesar ${formatCurrency(deletingPayment.amount)} akan dihapus dan sisa tagihan invoice akan diperbarui.`}
+          confirmLabel={deleting ? "Membatalkan..." : "Ya, Batalkan"}
+          onConfirm={handleDeletePayment}
+        />
+      )}
     </>
   );
 }

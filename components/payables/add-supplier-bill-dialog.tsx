@@ -4,6 +4,7 @@ import { useState } from "react";
 import { CalendarDays, FilePlus2, Loader2, Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { createSupplierBillAction } from "@/lib/actions/supplier-payables";
 import { createStockReceiptAction } from "@/lib/actions/inventory";
@@ -27,7 +28,7 @@ export function AddSupplierBillDialog({ suppliers, products }: AddSupplierBillDi
   const [supplierReference, setSupplierReference] = useState("");
   const [billDate, setBillDate] = useState(today());
   const [dueDate, setDueDate] = useState("");
-  const [total, setTotal] = useState("");
+  const [total, setTotal] = useState(0);
   const [productId, setProductId] = useState("");
   const [stockQuantity, setStockQuantity] = useState("");
   const [notes, setNotes] = useState("");
@@ -37,7 +38,7 @@ export function AddSupplierBillDialog({ suppliers, products }: AddSupplierBillDi
     setSupplierReference("");
     setBillDate(today());
     setDueDate("");
-    setTotal("");
+    setTotal(0);
     setProductId("");
     setStockQuantity("");
     setNotes("");
@@ -134,7 +135,7 @@ export function AddSupplierBillDialog({ suppliers, products }: AddSupplierBillDi
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <label htmlFor="supplier-payable-total" className="text-xs font-semibold text-stone-700">Total Tagihan (Rp)</label>
-              <Input id="supplier-payable-total" type="number" min="0" step="0.01" value={total} onChange={(event) => setTotal(event.target.value)} required className="h-10 rounded-xl border-stone-200 text-right tabular-nums" placeholder="0" />
+              <CurrencyInput id="supplier-payable-total" value={total} onChange={setTotal} className="h-10 rounded-xl border-stone-200" />
             </div>
             <div className="space-y-1.5">
               <label htmlFor="supplier-payable-reference" className="text-xs font-semibold text-stone-700">No. Tagihan Supplier</label>

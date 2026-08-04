@@ -21,6 +21,7 @@ import {
   CreditCard,
   Lock,
   PackageOpen,
+  Pencil,
   ReceiptText,
   UserRound,
   WalletCards,
@@ -29,6 +30,7 @@ import Link from "next/link";
 import { getCompanyProfileAction } from "@/lib/actions/company";
 import { requireApprovedUser } from "@/lib/security/auth";
 import { IssueInvoiceButton } from "@/components/invoices/issue-invoice-button";
+import { DeleteInvoiceButton } from "@/components/invoices/delete-invoice-button";
 
 export const metadata: Metadata = {
   title: "Detail Invoice",
@@ -40,6 +42,7 @@ export default async function InvoiceDetailPage(props: PageProps<"/invoices/[id]
   if (!invoice) notFound();
 
   const canViewInternal = user.role !== "STAFF";
+  const canDelete = user.role === "OWNER" && invoice.status !== "VOID";
   const isInternal = canViewInternal &&
     invoice.status !== "VOID" && invoice.status !== "DRAFT";
   const paymentProgress = invoice.total > 0
@@ -49,7 +52,7 @@ export default async function InvoiceDetailPage(props: PageProps<"/invoices/[id]
   const isPaid = invoice.remainingBalance <= 0;
 
   return (
-    <div className="max-w-6xl space-y-6">
+    <div className="w-full space-y-6">
       {/* Header */}
       <header className="flex flex-col gap-4 border-b border-black/[0.06] pb-5 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex min-w-0 items-start gap-3">
@@ -81,7 +84,17 @@ export default async function InvoiceDetailPage(props: PageProps<"/invoices/[id]
         </div>
         <div className="flex w-full flex-wrap items-center gap-2 rounded-2xl border border-black/[0.06] bg-white/80 p-2 shadow-sm backdrop-blur lg:w-auto [&_[data-slot=button]]:h-9 [&_[data-slot=button]]:grow [&_[data-slot=button]]:rounded-xl [&_[data-slot=button]]:px-3 lg:[&_[data-slot=button]]:grow-0">
           {canViewInternal && invoice.status === "DRAFT" && <IssueInvoiceButton invoiceId={invoice.id} />}
-          <WhatsAppButton invoice={invoice} customerPhone={invoice.customerPhone} company={company} />
+          {canViewInternal && invoice.status !== "VOID" && invoice.status !== "DRAFT" && (
+          <Link
+            href={`/invoices/${invoice.id}/edit`}
+            className={buttonVariants({ variant: "outline", size: "sm", className: "rounded-xl bg-white shadow-sm" })}
+          >
+            <Pencil className="mr-1.5 h-3.5 w-3.5" />
+            Edit Invoice
+          </Link>
+        )}
+        {canDelete && <DeleteInvoiceButton invoiceId={invoice.id} invoiceNumber={invoice.invoiceNumber} status={invoice.status} customerName={invoice.customerName} />}
+        <WhatsAppButton invoice={invoice} customerPhone={invoice.customerPhone} company={company} />
           <InvoicePdfDownload invoice={invoice} company={company} />
           {canViewInternal && (invoice.status === "ISSUED" ||
             invoice.status === "PARTIALLY_PAID" ||

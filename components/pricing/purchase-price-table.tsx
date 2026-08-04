@@ -20,6 +20,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { EmptyState } from "@/components/ui/empty-state";
 import { MoreHorizontal, Edit, Trash2, Loader2, DollarSign } from "lucide-react";
 import { deletePurchasePriceAction, updatePurchasePriceAction } from "@/lib/actions/pricing";
@@ -62,19 +63,19 @@ export function PurchasePriceTable({ costs, products }: PurchasePriceTableProps)
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
   // Edit form state
-  const [editPrice, setEditPrice] = useState("");
+  const [editPrice, setEditPrice] = useState<number>(0);
   const [editNotes, setEditNotes] = useState("");
 
   const handleOpenEdit = (cost: PurchaseCostItem) => {
     setEditingCost(cost);
-    setEditPrice(cost.unitCost.toString());
+    setEditPrice(cost.unitCost);
     setEditNotes(cost.notes || "");
   };
 
   const handleSaveEdit = async () => {
     if (!editingCost) return;
-    const priceNum = parseFloat(editPrice);
-    if (isNaN(priceNum) || priceNum <= 0) {
+    const priceNum = editPrice;
+    if (!priceNum || priceNum <= 0) {
       toast.error("Masukkan harga beli yang valid");
       return;
     }
@@ -269,13 +270,7 @@ export function PurchasePriceTable({ costs, products }: PurchasePriceTableProps)
               </div>
               <div className="space-y-1.5">
                 <label htmlFor="edit-unit-cost" className="text-xs text-muted-foreground block font-medium">Harga Beli (Rp / {editingCost.unit})</label>
-                <Input
-                  id="edit-unit-cost"
-                  type="number"
-                  value={editPrice}
-                  onChange={(e) => setEditPrice(e.target.value)}
-                  placeholder="75000"
-                />
+                <CurrencyInput value={editPrice} onChange={setEditPrice} placeholder="0" className="h-10 rounded-xl border-stone-200" />
               </div>
               <div className="space-y-1.5">
                 <label htmlFor="edit-cost-notes" className="text-xs text-muted-foreground block font-medium">Catatan (opsional)</label>

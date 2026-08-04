@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import {
   Select,
   SelectContent,
@@ -34,7 +35,7 @@ export function EditExpenseDialog({ expense, open, onOpenChange }: EditExpenseDi
 
   const [category, setCategory] = useState(expense.category);
   const [description, setDescription] = useState(expense.description);
-  const [amount, setAmount] = useState(expense.amount.toString());
+  const [amount, setAmount] = useState<number>(expense.amount ?? 0);
   const [expenseDate, setExpenseDate] = useState(
     expense.expenseDate.slice(0, 10)
   );
@@ -43,7 +44,7 @@ export function EditExpenseDialog({ expense, open, onOpenChange }: EditExpenseDi
     e.preventDefault();
     setError("");
 
-    if (!description || !amount || parseFloat(amount) <= 0) {
+    if (!description || amount <= 0) {
       setError("Deskripsi dan Jumlah biaya wajib diisi.");
       return;
     }
@@ -54,7 +55,7 @@ export function EditExpenseDialog({ expense, open, onOpenChange }: EditExpenseDi
       id: expense.id,
       category,
       description,
-      amount: parseFloat(amount),
+      amount: amount,
       expenseDate,
     });
 
@@ -121,7 +122,7 @@ export function EditExpenseDialog({ expense, open, onOpenChange }: EditExpenseDi
             <label className="block text-sm font-medium text-muted-foreground mb-1.5">
               Jumlah (Rp) <span className="text-red-500">*</span>
             </label>
-            <Input type="number" placeholder="350000" value={amount} onChange={(e) => setAmount(e.target.value)} required />
+            <CurrencyInput value={amount} onChange={setAmount} placeholder="350000" />
           </div>
 
           {error && (

@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { toast } from "sonner";
 import {
   Select,
@@ -44,7 +45,7 @@ import {
   getDirectCostLabel,
 } from "@/lib/utils";
 import type { CustomerPrice, DirectCostCategory } from "@/types";
-import { createInvoiceAction } from "@/lib/actions/invoices";
+import { createInvoiceAction, updateInvoiceAction } from "@/lib/actions/invoices";
 import { useRouter } from "next/navigation";
 
 import type { Customer, Product } from "@/types";
@@ -79,28 +80,82 @@ const DIRECT_COST_CATEGORIES: DirectCostCategory[] = [
   "OTHER",
 ];
 
+interface InitialInvoiceData {
+  id: string;
+  customerId: string;
+  issueDate: string;
+  dueDate?: string;
+  notes?: string;
+  discount: number;
+  items: Array<{
+    productId: string;
+    description: string;
+    quantity: number;
+    unit: string;
+    sellingPrice: number;
+    purchasePrice: number;
+  }>;
+  costs: Array<{
+    category: string;
+    name: string;
+    amount: number;
+    notes?: string;
+  }>;
+}
+
 interface InvoiceFormProps {
   customers?: Customer[];
   products?: Product[];
   customerPrices?: CustomerPrice[];
   canViewInternal?: boolean;
+  initialData?: InitialInvoiceData;
 }
 
-export function InvoiceForm({ customers = [], products = [], customerPrices = [], canViewInternal = false }: InvoiceFormProps) {
+export function InvoiceForm({ customers = [], products = [], customerPrices = [], canViewInternal = false, initialData }: InvoiceFormProps) {
   const customersList = customers;
   const productsList = products;
 
-  const [customerId, setCustomerId] = useState("");
-  const [issueDate, setIssueDate] = useState(
-    new Date().toISOString().slice(0, 10)
-  );
-  const [dueDate, setDueDate] = useState("");
-  const [notes, setNotes] = useState("");
-  const [discount, setDiscount] = useState(0);
+  const [customerId, setCustomerId] = useState(initialData?.customerId ?? "");
+  const [issueDate, setIssueDate] = useState(initialData?.issueDate ?? new Date().toISOString().slice(0, 10));
+  const [dueDate, setDueDate] = useState(initialData?.dueDate ?? "");
+  const [notes, setNotes] = useState(initialData?.notes ?? "");
+  const [discount, setDiscount] = useState(initialData?.discount ?? 0);
 
-  const [items, setItems] = useState<InvoiceItemRow[]>([]);
+  const [items, setItems] = useState<InvoiceItemRow[]>(() => {
+    if (initialData?.items?.length) {
+      return initialData.items.map((item, i) => ({
+        id: `item_${Date.now()}_${i}`,
+        productId: item.productId,
+        description: item.description,
+        quantity: item.quantity,
+        unit: item.unit,
+        sellingPrice: item.sellingPrice,
+        purchasePrice: item.purchasePrice,
+      }));
+    }
+    return [{
+      id: `item_${Date.now()}`,
+      productId: "",
+      description: "",
+      quantity: 1,
+      unit: "",
+      sellingPrice: 0,
+      purchasePrice: 0,
+    }];
+  });
   const [quantityDrafts, setQuantityDrafts] = useState<Record<string, string>>({});
-  const [costs, setCosts] = useState<DirectCostRow[]>([]);
+  const [costs, setCosts] = useState<DirectCostRow[]>(() => {
+    if (initialData?.costs?.length) {
+      return initialData.costs.map((cost, i) => ({
+        id: `cost_${Date.now()}_${i}`,
+        category: cost.category as DirectCostCategory,
+        name: cost.name,
+        amount: cost.amount,
+        notes: cost.notes ?? "",
+      }));
+    }
+    return [];
+  });
 
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);
   const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
@@ -298,6 +353,47 @@ export function InvoiceForm({ customers = [], products = [], customerPrices = []
     return false;
   };
 
+  const updateInvoice = async () => {
+    setFormError("");
+    if (!initialData?.id) return false;
+    if (items.length === 0) {
+      setFormError("Tambahkan minimal 1 item produk ke dalam invoice.");
+      return false;
+    }
+    setSubmitting(true);
+    const toastId = toast.loading("Sedang memperbarui invoice...");
+    const res = await updateInvoiceAction(initialData.id, {
+      dueDate,
+      notes,
+      discount: canViewInternal ? discount : 0,
+      items: items.map((i) => ({
+        productId: i.productId,
+        description: i.description,
+        quantity: i.quantity,
+        unit: i.unit,
+        sellingPrice: i.sellingPrice,
+        purchasePrice: i.purchasePrice,
+      })),
+      costs: canViewInternal ? costs.map((c) => ({
+        category: c.category,
+        name: c.name,
+        amount: c.amount,
+        notes: c.notes,
+      })) : [],
+    });
+    setSubmitting(false);
+    toast.dismiss(toastId);
+    if (res.error) {
+      setFormError(res.error);
+      toast.error(`Gagal: ${res.error}`);
+      return false;
+    }
+    toast.success("Invoice berhasil diperbarui!");
+    router.push(`/invoices/${initialData.id}`);
+    router.refresh();
+    return true;
+  };
+
   const handleSaveDraft = async () => {
     setSaveState("saving");
     const saved = await submitInvoice("DRAFT");
@@ -339,7 +435,7 @@ export function InvoiceForm({ customers = [], products = [], customerPrices = []
               <label className="mb-2 block text-xs font-semibold text-stone-600">
                 Restoran <span className="text-red-500">*</span>
               </label>
-              <Select value={customerId} onValueChange={(value) => {
+              <Select value={customerId} disabled={!!initialData} onValueChange={(value) => {
                 const nextCustomerId = value || "";
                 setCustomerId(nextCustomerId);
                 const customer = customersList.find((item) => item.id === nextCustomerId);
@@ -352,7 +448,7 @@ export function InvoiceForm({ customers = [], products = [], customerPrices = []
                 </SelectTrigger>
                 <SelectContent>
                   {customersList
-                    .filter((c) => c.status === "ACTIVE")
+                    .filter((c) => c.status === "ACTIVE" || (!!initialData && c.id === initialData.customerId))
                     .map((c) => (
                       <SelectItem key={c.id} value={c.id}>
                         {c.name}
@@ -537,24 +633,19 @@ export function InvoiceForm({ customers = [], products = [], customerPrices = []
                         />
                       </td>
                       {canViewInternal && <td className="bg-amber-50/40 px-3 py-3">
-                        <Input
-                          type="number"
-                          min={0}
+                        <CurrencyInput
                           value={item.purchasePrice}
-                          onChange={(event) => updateItem(item.id, "purchasePrice", Number(event.target.value) || 0)}
-                          onFocus={(event) => event.currentTarget.select()}
+                          onChange={(val) => updateItem(item.id, "purchasePrice", val)}
                           aria-label={`Harga beli invoice ${item.description || "produk"}`}
-                          className="h-10 min-w-[8rem] w-full rounded-xl border-amber-300 bg-white px-3 text-right text-sm font-semibold tabular-nums text-amber-900 shadow-sm"
-                          placeholder="0"
+                          className="min-w-[8rem] border-amber-300 text-amber-900"
                         />
                       </td>}
                       <td className="px-3 py-3">
-                        <Input
-                          type="number"
-                          min={0}
+                        <CurrencyInput
                           value={item.sellingPrice}
-                          readOnly
-                          className="h-10 min-w-[8rem] w-full rounded-xl border-stone-200 bg-stone-50 px-3 text-right text-sm font-semibold tabular-nums"
+                          onChange={(val) => updateItem(item.id, "sellingPrice", val)}
+                          aria-label={`Harga jual invoice ${item.description || "produk"}`}
+                          className="min-w-[8rem] border-stone-300"
                         />
                       </td>
                       <td className="px-3 py-3 text-right text-xs font-bold tabular-nums text-stone-800">
@@ -632,21 +723,24 @@ export function InvoiceForm({ customers = [], products = [], customerPrices = []
                       {canViewInternal && (
                         <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-3">
                           <label className="mb-2 flex items-center gap-1 text-xs font-semibold text-amber-700"><PencilLine className="size-3" /> Harga Beli Invoice</label>
-                          <Input
-                            type="number"
-                            min={0}
+                          <CurrencyInput
                             value={item.purchasePrice}
-                            onChange={(event) => updateItem(item.id, "purchasePrice", Number(event.target.value) || 0)}
-                            onFocus={(event) => event.currentTarget.select()}
+                            onChange={(val) => updateItem(item.id, "purchasePrice", val)}
                             aria-label={`Harga beli invoice ${item.description || "produk"}`}
-                            className="h-10 border-amber-300 bg-white text-right text-sm font-bold tabular-nums text-amber-900 shadow-sm"
+                            className="border-amber-300 text-amber-900"
                           />
                           <p className="mt-1.5 text-[10px] leading-relaxed text-amber-700/80">Khusus invoice ini. HPP master tetap.</p>
                         </div>
                       )}
-                      <div className="rounded-xl border border-stone-200 bg-stone-50/70 p-3">
+                      <div className="rounded-xl border border-stone-200 bg-white p-3">
                         <label className="mb-2 block text-xs font-semibold text-stone-500">Harga Jual</label>
-                        <p className="text-sm font-bold tabular-nums text-stone-800">{formatCurrency(item.sellingPrice)}</p>
+                        <CurrencyInput
+                          value={item.sellingPrice}
+                          onChange={(val) => updateItem(item.id, "sellingPrice", val)}
+                          aria-label={`Harga jual invoice ${item.description || "produk"}`}
+                          className="border-stone-300"
+                        />
+                        <p className="mt-1.5 text-[10px] leading-relaxed text-stone-500">Khusus invoice ini. Harga default tetap.</p>
                       </div>
                     </div>
                     <div className="flex items-end justify-between border-t border-dashed border-stone-200 pt-3">
@@ -672,14 +766,10 @@ export function InvoiceForm({ customers = [], products = [], customerPrices = []
                 <label className="whitespace-nowrap text-xs font-semibold text-stone-600">
                   Diskon (Rp)
                 </label>
-                <Input
-                  type="number"
-                  min={0}
+                <CurrencyInput
                   value={discount}
-                  onChange={(e) =>
-                    setDiscount(parseFloat(e.target.value) || 0)
-                  }
-                  className="h-9 w-36 rounded-xl border-stone-200 bg-white text-right text-xs tabular-nums"
+                  onChange={(val) => setDiscount(val)}
+                  className="w-40 h-9 border-stone-200"
                 />
               </div>}
               <div className="flex items-end justify-between gap-6 text-right sm:block">
@@ -802,54 +892,84 @@ export function InvoiceForm({ customers = [], products = [], customerPrices = []
 
         {/* Actions */}
         <div className="flex flex-col-reverse gap-2 rounded-[18px] border border-black/[0.06] bg-white/90 p-3 shadow-[0_8px_30px_rgba(15,23,42,0.06)] backdrop-blur sm:flex-row sm:items-center sm:justify-end">
-          <Button
-            variant="ghost"
-            onClick={handleSaveDraft}
-            disabled={submitting || saveState === "saving"}
-            size="lg"
-            className="w-full rounded-xl text-stone-600 sm:w-auto"
-          >
-            {saveState === "saving" ? (
-              <><Loader2 className="size-4 animate-spin" /> Menyimpan...</>
-            ) : saveState === "saved" ? (
-              <span className="flex items-center gap-1.5">
-                <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
-                Tersimpan
-              </span>
-            ) : (
-              <><Save className="size-4" /> Simpan Draft</>
-            )}
-          </Button>
-          <Button
-            variant="outline"
-            size="lg"
-            className="w-full rounded-xl bg-white sm:w-auto"
-            onClick={() => setPreviewDialogOpen(true)}
-            disabled={submitting || !customerId || items.length === 0}
-          >
-            <Eye className="size-4" /> Preview
-          </Button>
-          {canViewInternal && <Button
-            disabled={submitting || saveState === "saving"}
-            onClick={() => {
-              if (!customerId || items.length === 0) {
-                submitInvoice("ISSUED");
-              } else {
-                setPublishDialogOpen(true);
-              }
-            }}
-            size="lg"
-            className="w-full rounded-xl px-4 shadow-sm sm:w-auto"
-          >
-            {submitting ? (
-              <>
-                <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-                Memproses...
-              </>
-            ) : (
-              <><Send className="size-4" /> Terbitkan Invoice</>
-            )}
-          </Button>}
+          {initialData ? (
+            // ── Edit mode ──────────────────────────────────────────────
+            <>
+              <Button
+                variant="ghost"
+                size="lg"
+                className="w-full rounded-xl text-stone-600 sm:w-auto"
+                onClick={() => router.push(`/invoices/${initialData.id}`)}
+                disabled={submitting}
+              >
+                Batal
+              </Button>
+              <Button
+                size="lg"
+                className="w-full rounded-xl px-6 shadow-sm sm:w-auto"
+                onClick={updateInvoice}
+                disabled={submitting || items.length === 0}
+              >
+                {submitting ? (
+                  <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> Menyimpan...</>
+                ) : (
+                  <><Save className="size-4" /> Simpan Perubahan</>
+                )}
+              </Button>
+            </>
+          ) : (
+            // ── Create mode ─────────────────────────────────────────────
+            <>
+              <Button
+                variant="ghost"
+                onClick={handleSaveDraft}
+                disabled={submitting || saveState === "saving"}
+                size="lg"
+                className="w-full rounded-xl text-stone-600 sm:w-auto"
+              >
+                {saveState === "saving" ? (
+                  <><Loader2 className="size-4 animate-spin" /> Menyimpan...</>
+                ) : saveState === "saved" ? (
+                  <span className="flex items-center gap-1.5">
+                    <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+                    Tersimpan
+                  </span>
+                ) : (
+                  <><Save className="size-4" /> Simpan Draft</>
+                )}
+              </Button>
+              <Button
+                variant="outline"
+                size="lg"
+                className="w-full rounded-xl bg-white sm:w-auto"
+                onClick={() => setPreviewDialogOpen(true)}
+                disabled={submitting || !customerId || items.length === 0}
+              >
+                <Eye className="size-4" /> Preview
+              </Button>
+              {canViewInternal && <Button
+                disabled={submitting || saveState === "saving"}
+                onClick={() => {
+                  if (!customerId || items.length === 0) {
+                    submitInvoice("ISSUED");
+                  } else {
+                    setPublishDialogOpen(true);
+                  }
+                }}
+                size="lg"
+                className="w-full rounded-xl px-4 shadow-sm sm:w-auto"
+              >
+                {submitting ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                    Memproses...
+                  </>
+                ) : (
+                  <><Send className="size-4" /> Terbitkan Invoice</>
+                )}
+              </Button>}
+            </>
+          )}
         </div>
       </div>
 

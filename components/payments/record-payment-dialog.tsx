@@ -4,6 +4,7 @@ import { useState } from "react";
 import { CreditCard, Loader2, Upload, FileText, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import {
   Select,
   SelectContent,
@@ -58,7 +59,7 @@ export function RecordPaymentDialog({
 
   const invoicesList = invoices ?? [];
   const [invoiceId, setInvoiceId] = useState(defaultInvoiceId || "");
-  const [amount, setAmount] = useState("");
+  const [amount, setAmount] = useState(0);
   const [paymentDate, setPaymentDate] = useState(
     new Date().toISOString().slice(0, 10)
   );
@@ -71,7 +72,7 @@ export function RecordPaymentDialog({
   const selectedInvoice = invoicesList.find((i) => i.id === activeInvoiceId);
 
   const resetForm = () => {
-    setAmount("");
+    setAmount(0);
     setProofFile(null);
     setFileName("");
     setNotes("");
@@ -101,7 +102,7 @@ export function RecordPaymentDialog({
 
     const targetId = activeInvoiceId;
 
-    if (!targetId || !amount || parseFloat(amount) <= 0) {
+    if (!targetId || amount <= 0) {
       setError("Pilih invoice dan masukkan jumlah bayar yang valid.");
       return;
     }
@@ -129,7 +130,7 @@ export function RecordPaymentDialog({
 
     const res = await createPaymentAction({
       invoiceId: targetId,
-      amount: parseFloat(amount),
+      amount: amount,
       paymentDate,
       method,
       proofPath,
@@ -218,11 +219,10 @@ export function RecordPaymentDialog({
                 <label className="block text-xs font-medium text-muted-foreground mb-1">
                   Jumlah Bayar (Rp) <span className="text-red-500">*</span>
                 </label>
-                <Input
-                  type="number"
-                  placeholder="5000000"
+                <CurrencyInput
                   value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
+                  onChange={setAmount}
+                  placeholder="5000000"
                   className="h-10 text-sm"
                   required
                 />
