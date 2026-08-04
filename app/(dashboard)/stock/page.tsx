@@ -26,7 +26,7 @@ export default async function StockPage() {
 
   return <div className="space-y-6">
     <PageHeader title="Stok" description="Hubungkan penerimaan dari supplier dengan barang keluar ke restoran melalui invoice."><AddStockReceiptDialog products={products} suppliers={suppliers} /></PageHeader>
-    <div className="grid grid-cols-2 gap-4 lg:grid-cols-4"><MetricCard title="Produk aktif" value={activeBalances.length} suffix="produk" icon={Boxes} /><MetricCard title="Total unit" value={formatNumber(totalUnits)} suffix="unit" icon={PackageCheck} /><MetricCard title="Stok menipis" value={lowStock.length} suffix="produk" icon={AlertTriangle} /><MetricCard title="Stok habis" value={outOfStock.length} suffix="produk" icon={PackageX} /></div>
+    <div className="grid grid-cols-2 gap-4 lg:grid-cols-4"><MetricCard accent="emerald" title="Produk aktif" value={activeBalances.length} suffix="produk" icon={Boxes} /><MetricCard accent="sky" title="Total unit" value={formatNumber(totalUnits)} suffix="unit" icon={PackageCheck} /><MetricCard accent="amber" title="Stok menipis" value={lowStock.length} suffix="produk" icon={AlertTriangle} /><MetricCard accent="red" title="Stok habis" value={outOfStock.length} suffix="produk" icon={PackageX} /></div>
     <StockTable balances={activeBalances} movements={movements} />
   </div>;
 }

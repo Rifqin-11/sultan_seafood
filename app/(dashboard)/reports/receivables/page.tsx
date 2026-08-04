@@ -41,18 +41,18 @@ export default async function ReceivablesPage() {
       <PageHeader title="Piutang" description="Daftar invoice yang belum lunas" />
 
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-        <MetricCard
+        <MetricCard accent="amber"
           title="Total Piutang"
           value={totalReceivables}
           isCurrency
           icon={AlertCircle}
         />
-        <MetricCard
+        <MetricCard accent="blue"
           title="Invoice Overdue"
           value={overdueCount}
           suffix="invoice"
         />
-        <MetricCard
+        <MetricCard accent="blue"
           title="Nilai Overdue"
           value={overdueAmount}
           isCurrency

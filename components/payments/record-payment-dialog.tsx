@@ -144,8 +144,8 @@ export function RecordPaymentDialog({
       setError(res.error);
     } else {
       resetForm();
-      setOpen(false);
       router.refresh();
+      setOpen(false);
     }
   };
 

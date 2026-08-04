@@ -3,6 +3,19 @@ import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
 
+type AccentColor = "blue" | "emerald" | "amber" | "red" | "violet" | "sky" | "orange" | "stone";
+
+const iconMap: Record<AccentColor, { iconBg: string; iconText: string }> = {
+  blue:    { iconBg: "bg-blue-100",    iconText: "text-blue-700" },
+  emerald: { iconBg: "bg-emerald-100", iconText: "text-emerald-700" },
+  amber:   { iconBg: "bg-amber-100",   iconText: "text-amber-700" },
+  red:     { iconBg: "bg-red-100",     iconText: "text-red-700" },
+  violet:  { iconBg: "bg-violet-100",  iconText: "text-violet-700" },
+  sky:     { iconBg: "bg-sky-100",     iconText: "text-sky-700" },
+  orange:  { iconBg: "bg-orange-100",  iconText: "text-orange-700" },
+  stone:   { iconBg: "bg-stone-100",   iconText: "text-stone-500" },
+};
+
 interface MetricCardProps {
   title: string;
   value: string | number;
@@ -14,6 +27,7 @@ interface MetricCardProps {
   suffix?: string;
   className?: string;
   internal?: boolean;
+  accent?: AccentColor;
 }
 
 export function MetricCard({
@@ -27,22 +41,19 @@ export function MetricCard({
   suffix,
   className,
   internal = false,
+  accent = "stone",
 }: MetricCardProps) {
-  const displayValue = isCurrency
-    ? formatCurrency(value as number)
-    : value;
-
+  const displayValue = isCurrency ? formatCurrency(value as number) : value;
   const changePositive = change !== undefined && change > 0;
   const changeNegative = change !== undefined && change < 0;
+  const { iconBg, iconText } = iconMap[accent];
 
   const content = (
-    <div
-      className={cn(
-        "bg-white rounded-2xl border border-border p-4 sm:p-5 shadow-card transition-all overflow-hidden",
-        href && "hover:shadow-md cursor-pointer",
-        className
-      )}
-    >
+    <div className={cn(
+      "bg-white rounded-2xl border border-black/[0.07] p-4 sm:p-5 shadow-[0_1px_2px_rgba(15,23,42,0.03),0_4px_16px_rgba(15,23,42,0.04)] transition-all overflow-hidden",
+      href && "hover:shadow-md cursor-pointer",
+      className
+    )}>
       <div className="flex items-start justify-between gap-2 mb-2 sm:mb-3">
         <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
           <p className="text-[11px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wider truncate">
@@ -55,8 +66,8 @@ export function MetricCard({
           )}
         </div>
         {Icon && (
-          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
-            <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground" />
+          <div className={cn("w-8 h-8 rounded-xl flex items-center justify-center shrink-0", iconBg)}>
+            <Icon className={cn("w-4 h-4", iconText)} />
           </div>
         )}
       </div>
@@ -81,28 +92,20 @@ export function MetricCard({
           ) : (
             <Minus className="w-3 h-3 text-muted-foreground" />
           )}
-          <span
-            className={cn(
-              "text-xs font-medium",
-              changePositive && "text-emerald-600",
-              changeNegative && "text-red-500",
-              !changePositive && !changeNegative && "text-muted-foreground"
-            )}
-          >
-            {change > 0 ? "+" : ""}
-            {formatPercent(change)}
+          <span className={cn(
+            "text-xs font-medium",
+            changePositive && "text-emerald-600",
+            changeNegative && "text-red-500",
+            !changePositive && !changeNegative && "text-muted-foreground"
+          )}>
+            {change > 0 ? "+" : ""}{formatPercent(change)}
           </span>
-          {changeLabel && (
-            <span className="text-xs text-muted-foreground">{changeLabel}</span>
-          )}
+          {changeLabel && <span className="text-xs text-muted-foreground">{changeLabel}</span>}
         </div>
       )}
     </div>
   );
 
-  if (href) {
-    return <Link href={href}>{content}</Link>;
-  }
-
+  if (href) return <Link href={href}>{content}</Link>;
   return content;
 }

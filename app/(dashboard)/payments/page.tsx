@@ -32,6 +32,7 @@ export default async function PaymentsPage() {
       {/* Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <MetricCard
+          accent="amber"
           title="Total Piutang"
           value={receivables}
           isCurrency
@@ -39,12 +40,14 @@ export default async function PaymentsPage() {
           href="/reports/receivables"
         />
         <MetricCard
+          accent="emerald"
           title="Pembayaran Masuk"
           value={totalPaid}
           isCurrency
           icon={CreditCard}
         />
         <MetricCard
+          accent="red"
           title="Invoice Overdue"
           value={overdueCount}
           icon={AlertCircle}

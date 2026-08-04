@@ -30,7 +30,6 @@ import Link from "next/link";
 import { getCompanyProfileAction } from "@/lib/actions/company";
 import { requireApprovedUser } from "@/lib/security/auth";
 import { IssueInvoiceButton } from "@/components/invoices/issue-invoice-button";
-import { DeleteInvoiceButton } from "@/components/invoices/delete-invoice-button";
 
 export const metadata: Metadata = {
   title: "Detail Invoice",
@@ -42,7 +41,6 @@ export default async function InvoiceDetailPage(props: PageProps<"/invoices/[id]
   if (!invoice) notFound();
 
   const canViewInternal = user.role !== "STAFF";
-  const canDelete = user.role === "OWNER" && invoice.status !== "VOID";
   const isInternal = canViewInternal &&
     invoice.status !== "VOID" && invoice.status !== "DRAFT";
   const paymentProgress = invoice.total > 0
@@ -93,12 +91,14 @@ export default async function InvoiceDetailPage(props: PageProps<"/invoices/[id]
             Edit Invoice
           </Link>
         )}
-        {canDelete && <DeleteInvoiceButton invoiceId={invoice.id} invoiceNumber={invoice.invoiceNumber} status={invoice.status} customerName={invoice.customerName} />}
         <WhatsAppButton invoice={invoice} customerPhone={invoice.customerPhone} company={company} />
           <InvoicePdfDownload invoice={invoice} company={company} />
           {canViewInternal && (invoice.status === "ISSUED" ||
             invoice.status === "PARTIALLY_PAID" ||
             invoice.status === "OVERDUE") && (
+            <RecordPaymentDialog defaultInvoiceId={invoice.id} invoices={[invoice]} />
+          )}
+          {canViewInternal && invoice.status === "PAID" && (
             <RecordPaymentDialog defaultInvoiceId={invoice.id} invoices={[invoice]} />
           )}
         </div>

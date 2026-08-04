@@ -69,7 +69,7 @@ export function Topbar({ onMobileMenuToggle, user, notificationCount = 0 }: Topb
       : "Dashboard");
 
   return (
-    <header className="fixed inset-x-0 top-0 z-30 flex h-16 shrink-0 items-center gap-4 border-b border-border bg-background/95 px-4 shadow-[0_1px_0_rgba(28,25,23,0.05)] backdrop-blur-sm md:px-6 lg:static lg:shadow-none">
+    <header className="fixed inset-x-0 top-0 z-30 flex h-16 shrink-0 items-center gap-4 border-b border-border bg-white px-4 shadow-[0_1px_0_rgba(15,23,42,0.06)] md:px-6 lg:static lg:shadow-[0_1px_0_rgba(15,23,42,0.06)]">
       {/* Mobile menu button */}
       <Button
         variant="ghost"
@@ -139,24 +139,50 @@ export function Topbar({ onMobileMenuToggle, user, notificationCount = 0 }: Topb
               <ChevronDown className="w-3 h-3 text-muted-foreground hidden sm:block" />
             </div>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-52">
-            <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
-              Masuk sebagai
-              <div className="font-semibold text-foreground mt-0.5 truncate">{userEmail}</div>
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
+          <DropdownMenuContent align="end" className="w-64 p-1.5 rounded-2xl shadow-[0_8px_32px_rgba(15,23,42,0.12)] border border-stone-200">
+            {/* User info */}
+            <div className="flex items-center gap-3 px-3 py-3 mb-1">
+              <div className="w-10 h-10 rounded-xl bg-[#1e3a8a] flex items-center justify-center text-sm font-bold text-white shrink-0">
+                {userInitial}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-stone-900 truncate">{userName}</p>
+                <p className="text-xs text-stone-400 truncate">{userEmail}</p>
+                <span className="inline-flex items-center mt-0.5 px-1.5 py-0.5 rounded-md bg-blue-50 text-[10px] font-semibold text-blue-700 border border-blue-200">
+                  {user?.role ?? "USER"}
+                </span>
+              </div>
+            </div>
+            <DropdownMenuSeparator className="my-1" />
             {user?.role === "OWNER" && <>
-              <DropdownMenuItem onClick={() => router.push("/settings/users")}>Profil & Pengguna</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => router.push("/settings/company")}>Pengaturan Bisnis</DropdownMenuItem>
-              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => router.push("/settings/users")}
+                className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm text-stone-700 cursor-pointer hover:bg-stone-50 focus:bg-stone-50"
+              >
+                <div className="w-7 h-7 rounded-lg bg-violet-50 flex items-center justify-center shrink-0">
+                  <svg className="w-3.5 h-3.5 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                </div>
+                <span>Profil & Pengguna</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => router.push("/settings/company")}
+                className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm text-stone-700 cursor-pointer hover:bg-stone-50 focus:bg-stone-50"
+              >
+                <div className="w-7 h-7 rounded-lg bg-sky-50 flex items-center justify-center shrink-0">
+                  <svg className="w-3.5 h-3.5 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                </div>
+                <span>Pengaturan Bisnis</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator className="my-1" />
             </>}
             <DropdownMenuItem
-              className="text-red-600 cursor-pointer"
-              onClick={async () => {
-                await signOutAction();
-              }}
+              className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm text-red-600 cursor-pointer hover:bg-red-50 focus:bg-red-50 focus:text-red-600"
+              onClick={async () => { await signOutAction(); }}
             >
-              Keluar
+              <div className="w-7 h-7 rounded-lg bg-red-50 flex items-center justify-center shrink-0">
+                <svg className="w-3.5 h-3.5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+              </div>
+              <span className="font-medium">Keluar</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

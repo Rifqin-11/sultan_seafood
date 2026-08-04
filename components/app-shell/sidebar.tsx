@@ -120,8 +120,8 @@ function NavLink({
             className={cn(
               "flex items-center justify-center w-full h-9 rounded-lg transition-colors",
               active
-                ? "bg-[#303030] text-white"
-                : "text-[#a3a3a3] hover:bg-[#242424] hover:text-white"
+                ? "bg-[#1e3a8a] text-white"
+                : "text-stone-500 hover:bg-[#eff6ff] hover:text-[#1e3a8a]"
             )}
           />
         }>
@@ -140,8 +140,8 @@ function NavLink({
       className={cn(
         "flex items-center gap-3 w-full h-9 px-3 rounded-lg transition-colors text-sm",
         active
-          ? "bg-[#303030] text-white font-medium"
-          : "text-[#a3a3a3] hover:bg-[#242424] hover:text-white"
+          ? "bg-[#1e3a8a] text-white font-medium"
+          : "text-stone-500 hover:bg-[#eff6ff] hover:text-[#1e3a8a]"
       )}
     >
       <Icon className="w-4 h-4 flex-shrink-0" />
@@ -167,8 +167,14 @@ function canAccess(href: string, role: Role) {
 export function Sidebar({ collapsed, onToggle, user, role, company }: SidebarProps) {
   const pathname = usePathname();
 
-  const isActive = (href: string) =>
-    pathname === href || pathname.startsWith(href + "/");
+  const isActive = (href: string) => {
+    if (pathname === href) return true;
+    // Hindari /reports match ke /reports/sales sekaligus /reports/profit dll sebagai satu active
+    // Hanya aktif jika pathname dimulai dengan href + "/" DAN href lebih dari 1 segment
+    const segments = href.split("/").filter(Boolean);
+    if (segments.length >= 2) return pathname.startsWith(href + "/") || pathname === href;
+    return pathname === href;
+  };
 
   const userName = user?.name || "Owner";
   const userEmail = user?.email || "owner@sultansf.id";
@@ -177,14 +183,14 @@ export function Sidebar({ collapsed, onToggle, user, role, company }: SidebarPro
   return (
     <aside
       className={cn(
-        "flex flex-col h-full bg-[#151515] transition-all duration-300 ease-in-out flex-shrink-0 relative",
+        "flex flex-col h-full bg-white transition-all duration-300 ease-in-out flex-shrink-0 relative",
         collapsed ? "w-[64px]" : "w-[240px]"
       )}
     >
       {/* Logo */}
       <div
         className={cn(
-          "flex items-center h-16 border-b border-[#262626] flex-shrink-0",
+          "flex items-center h-16 border-b border-stone-200 flex-shrink-0",
           collapsed ? "justify-center px-0" : "px-4 gap-3"
         )}
       >
@@ -197,15 +203,15 @@ export function Sidebar({ collapsed, onToggle, user, role, company }: SidebarPro
               className="w-full h-full object-contain"
             />
           ) : (
-            <Fish className="w-4 h-4 text-[#151515]" />
+            <Fish className="w-4 h-4 text-[#1e3a8a]" />
           )}
         </div>
         {!collapsed && (
           <div className="flex flex-col min-w-0">
-            <span className="text-white text-sm font-semibold leading-tight truncate">
+            <span className="text-stone-900 text-sm font-semibold leading-tight truncate">
               {company.name || "Sultan Seafood"}
             </span>
-            <span className="text-[#666666] text-xs leading-tight">ERP</span>
+            <span className="text-stone-400 text-xs leading-tight">ERP</span>
           </div>
         )}
       </div>
@@ -229,7 +235,7 @@ export function Sidebar({ collapsed, onToggle, user, role, company }: SidebarPro
           navGrouped.map((group, gi) => (
             <div key={gi} className={gi > 0 ? "mt-3" : ""}>
               {group.label && (
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-[#525252] px-3 mb-1">
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-stone-400 px-3 mb-1">
                   {group.label}
                 </p>
               )}
@@ -248,7 +254,7 @@ export function Sidebar({ collapsed, onToggle, user, role, company }: SidebarPro
         )}
         
         {/* Bottom items */}
-        <div className="pt-3 border-t border-[#262626] mt-3">
+        <div className="pt-3 border-t border-stone-200 mt-3">
           {bottomItems.filter((item) => canAccess(item.href, role)).map((item) => (
             <NavLink
               key={item.href}
@@ -263,16 +269,16 @@ export function Sidebar({ collapsed, onToggle, user, role, company }: SidebarPro
       </nav>
 
       {/* User profile */}
-      <div className="border-t border-[#262626] p-3">
+      <div className="border-t border-stone-200 p-3">
         {collapsed ? (
           <Tooltip>
             <TooltipTrigger render={
               <button
                 onClick={async () => { await signOutAction(); }}
-                className="flex items-center justify-center w-full h-9 rounded-lg text-[#a3a3a3] hover:bg-[#242424] hover:text-white transition-colors"
+                className="flex items-center justify-center w-full h-9 rounded-lg text-stone-500 hover:bg-[#eff6ff] hover:text-[#1e3a8a] transition-colors"
               />
             }>
-              <div className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center text-xs font-medium text-white">
+              <div className="w-7 h-7 rounded-full bg-[#1e3a8a] flex items-center justify-center text-xs font-medium text-white">
                 {userInitial}
               </div>
             </TooltipTrigger>
@@ -282,17 +288,17 @@ export function Sidebar({ collapsed, onToggle, user, role, company }: SidebarPro
           </Tooltip>
         ) : (
           <div className="flex items-center gap-3 px-1">
-            <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-xs font-semibold text-white flex-shrink-0">
+            <div className="w-8 h-8 rounded-full bg-[#1e3a8a] flex items-center justify-center text-xs font-semibold text-white flex-shrink-0">
               {userInitial}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-white text-xs font-medium truncate">{userName}</p>
-              <p className="text-[#666666] text-xs truncate">{userEmail}</p>
+              <p className="text-stone-800 text-xs font-medium truncate">{userName}</p>
+              <p className="text-stone-400 text-xs truncate">{userEmail}</p>
             </div>
             <button
               onClick={async () => { await signOutAction(); }}
               title="Keluar"
-              className="text-[#666666] hover:text-white transition-colors cursor-pointer"
+              className="text-stone-400 hover:text-red-500 transition-colors cursor-pointer"
             >
               <LogOut className="w-4 h-4" />
             </button>
@@ -303,7 +309,7 @@ export function Sidebar({ collapsed, onToggle, user, role, company }: SidebarPro
       {/* Collapse toggle */}
       <button
         onClick={onToggle}
-        className="absolute -right-3 top-20 w-6 h-6 bg-[#262626] border border-[#404040] rounded-full flex items-center justify-center text-[#a3a3a3] hover:text-white transition-colors z-10"
+        className="absolute -right-3 top-20 w-6 h-6 bg-white border border-stone-300 shadow-sm rounded-full flex items-center justify-center text-stone-400 hover:text-[#1e3a8a] hover:border-blue-200 transition-colors z-10"
         aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
       >
         {collapsed ? (
@@ -327,8 +333,14 @@ interface MobileSidebarProps {
 export function MobileSidebar({ open, onClose, user, role, company }: MobileSidebarProps) {
   const pathname = usePathname();
 
-  const isActive = (href: string) =>
-    pathname === href || pathname.startsWith(href + "/");
+  const isActive = (href: string) => {
+    if (pathname === href) return true;
+    // Hindari /reports match ke /reports/sales sekaligus /reports/profit dll sebagai satu active
+    // Hanya aktif jika pathname dimulai dengan href + "/" DAN href lebih dari 1 segment
+    const segments = href.split("/").filter(Boolean);
+    if (segments.length >= 2) return pathname.startsWith(href + "/") || pathname === href;
+    return pathname === href;
+  };
 
   const userName = user?.name || "Owner";
   const userEmail = user?.email || "owner@sultansf.id";
@@ -345,11 +357,11 @@ export function MobileSidebar({ open, onClose, user, role, company }: MobileSide
       />
       <aside
         className={cn(
-          "fixed left-0 top-0 bottom-0 w-[260px] bg-[#151515] z-50 flex flex-col transition-transform duration-300 ease-in-out",
+          "fixed left-0 top-0 bottom-0 w-[260px] bg-white z-50 flex flex-col transition-transform duration-300 ease-in-out",
           open ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        <div className="flex items-center h-16 px-4 gap-3 border-b border-[#262626] flex-shrink-0">
+        <div className="flex items-center h-16 px-4 gap-3 border-b border-stone-200 flex-shrink-0">
           <div className="flex items-center justify-center w-8 h-8 bg-white rounded-lg overflow-hidden p-0.5 shrink-0">
             {company.logoUrl ? (
               /* eslint-disable-next-line @next/next/no-img-element */
@@ -359,12 +371,12 @@ export function MobileSidebar({ open, onClose, user, role, company }: MobileSide
                 className="w-full h-full object-contain"
               />
             ) : (
-              <Fish className="w-4 h-4 text-[#151515]" />
+              <Fish className="w-4 h-4 text-[#1e3a8a]" />
             )}
           </div>
           <div className="flex flex-col min-w-0">
-            <span className="text-white text-sm font-semibold leading-tight truncate">{company.name || "Sultan Seafood"}</span>
-            <span className="text-[#666666] text-xs">ERP</span>
+            <span className="text-stone-900 text-sm font-semibold leading-tight truncate">{company.name || "Sultan Seafood"}</span>
+            <span className="text-stone-400 text-xs">ERP</span>
           </div>
         </div>
 
@@ -372,7 +384,7 @@ export function MobileSidebar({ open, onClose, user, role, company }: MobileSide
           {navGrouped.map((group, gi) => (
             <div key={gi} className={gi > 0 ? "mt-3" : ""}>
               {group.label && (
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-[#525252] px-3 mb-1">
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-stone-400 px-3 mb-1">
                   {group.label}
                 </p>
               )}
@@ -387,8 +399,8 @@ export function MobileSidebar({ open, onClose, user, role, company }: MobileSide
                     className={cn(
                       "flex items-center gap-3 w-full h-9 px-3 rounded-lg transition-colors text-sm",
                       active
-                        ? "bg-[#303030] text-white font-medium"
-                        : "text-[#a3a3a3] hover:bg-[#242424] hover:text-white"
+                        ? "bg-[#1e3a8a] text-white font-medium"
+                        : "text-stone-500 hover:bg-[#eff6ff] hover:text-[#1e3a8a]"
                     )}
                   >
                     <Icon className="w-4 h-4 flex-shrink-0" />
@@ -400,19 +412,19 @@ export function MobileSidebar({ open, onClose, user, role, company }: MobileSide
           ))}
         </nav>
 
-        <div className="border-t border-[#262626] p-3">
+        <div className="border-t border-stone-200 p-3">
           <div className="flex items-center gap-3 px-1">
-            <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-xs font-semibold text-white flex-shrink-0">
+            <div className="w-8 h-8 rounded-full bg-[#1e3a8a] flex items-center justify-center text-xs font-semibold text-white flex-shrink-0">
               {userInitial}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-white text-xs font-medium truncate">{userName}</p>
-              <p className="text-[#666666] text-xs truncate">{userEmail}</p>
+              <p className="text-stone-800 text-xs font-medium truncate">{userName}</p>
+              <p className="text-stone-400 text-xs truncate">{userEmail}</p>
             </div>
             <button
               onClick={async () => { await signOutAction(); }}
               title="Keluar"
-              className="text-[#666666] hover:text-white transition-colors cursor-pointer"
+              className="text-stone-400 hover:text-red-500 transition-colors cursor-pointer"
             >
               <LogOut className="w-4 h-4" />
             </button>

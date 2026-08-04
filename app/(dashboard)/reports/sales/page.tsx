@@ -36,14 +36,14 @@ export default async function SalesReportPage() {
       </PageHeader>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <MetricCard title="Total Pendapatan" value={totalRevenue} isCurrency />
-        <MetricCard title="Total Invoice" value={issuedInvoices.length} suffix="invoice" />
-        <MetricCard
+        <MetricCard accent="emerald" title="Total Pendapatan" value={totalRevenue} isCurrency />
+        <MetricCard accent="sky" title="Total Invoice" value={issuedInvoices.length} suffix="invoice" />
+        <MetricCard accent="blue"
           title="Rata-rata Invoice"
           value={issuedInvoices.length ? totalRevenue / issuedInvoices.length : 0}
           isCurrency
         />
-        <MetricCard
+        <MetricCard accent="blue"
           title="Laba Transaksi"
           value={totalProfit}
           isCurrency

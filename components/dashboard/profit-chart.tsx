@@ -32,14 +32,14 @@ function CustomTooltip({
       <p className="text-muted-foreground text-xs mb-2">{label}</p>
       <div className="space-y-1">
         <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-foreground" />
+          <div className="w-2 h-2 rounded-full bg-emerald-500" />
           <span className="text-xs text-muted-foreground">Laba</span>
           <span className="text-xs font-semibold ml-auto">
             {formatCurrencyCompact(payload[0]?.value ?? 0)}
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-muted-foreground" />
+          <div className="w-2 h-2 rounded-full bg-amber-400" />
           <span className="text-xs text-muted-foreground">Margin</span>
           <span className="text-xs font-semibold ml-auto">
             {formatPercent(payload[1]?.value ?? 0)}
@@ -62,7 +62,7 @@ export function ProfitChart({ data, periodLabel }: ProfitChartProps) {
       <div className="h-48">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="#e8edf5" vertical={false} />
             <XAxis
               dataKey="date"
               tick={{ fontSize: 11, fill: "#999" }}
@@ -80,7 +80,7 @@ export function ProfitChart({ data, periodLabel }: ProfitChartProps) {
             <Line
               type="monotone"
               dataKey="profit"
-              stroke="#171717"
+              stroke="#059669"
               strokeWidth={2}
               dot={false}
               activeDot={{ r: 4, fill: "#171717" }}
@@ -88,7 +88,7 @@ export function ProfitChart({ data, periodLabel }: ProfitChartProps) {
             <Line
               type="monotone"
               dataKey="margin"
-              stroke="#a3a3a3"
+              stroke="#f59e0b"
               strokeWidth={1.5}
               strokeDasharray="4 4"
               dot={false}

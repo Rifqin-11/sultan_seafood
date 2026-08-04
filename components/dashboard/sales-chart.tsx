@@ -52,7 +52,7 @@ export function SalesChart({ data, periodLabel }: SalesChartProps) {
       <div className="h-48">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="#e8edf5" vertical={false} />
             <XAxis
               dataKey="date"
               tick={{ fontSize: 11, fill: "#999" }}
@@ -67,8 +67,8 @@ export function SalesChart({ data, periodLabel }: SalesChartProps) {
               tickLine={false}
             />
             <Tooltip content={<CustomTooltip />} cursor={{ fill: "#f5f5f5" }} />
-            <Bar dataKey="revenue" fill="#171717" radius={[4, 4, 0, 0]} maxBarSize={32} />
-            <Bar dataKey="orders" fill="#e5e5e5" radius={[4, 4, 0, 0]} maxBarSize={32} />
+            <Bar dataKey="revenue" fill="#1e40af" radius={[4, 4, 0, 0]} maxBarSize={32} />
+            <Bar dataKey="orders" fill="#bfdbfe" radius={[4, 4, 0, 0]} maxBarSize={32} />
           </BarChart>
         </ResponsiveContainer>
       </div>

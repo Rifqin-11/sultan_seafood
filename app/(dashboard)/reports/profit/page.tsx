@@ -48,15 +48,15 @@ export default async function ProfitReportPage() {
       />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <MetricCard title="Pendapatan" value={totalRevenue} isCurrency />
-        <MetricCard title="HPP Produk" value={totalHPP} isCurrency internal />
-        <MetricCard
+        <MetricCard accent="sky" title="Pendapatan" value={totalRevenue} isCurrency />
+        <MetricCard accent="amber" title="HPP Produk" value={totalHPP} isCurrency internal />
+        <MetricCard accent="orange"
           title="Biaya Langsung"
           value={totalDirectCost}
           isCurrency
           internal
         />
-        <MetricCard title="Laba Transaksi" value={totalProfit} isCurrency internal />
+        <MetricCard accent="emerald" title="Laba Transaksi" value={totalProfit} isCurrency internal />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">

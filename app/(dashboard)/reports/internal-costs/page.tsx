@@ -42,7 +42,7 @@ export default async function InternalCostsReportPage() {
         description="Rincian biaya langsung per invoice"
       />
 
-      <MetricCard
+      <MetricCard accent="blue"
         title="Total Biaya Internal"
         value={totalDirectCost}
         isCurrency
