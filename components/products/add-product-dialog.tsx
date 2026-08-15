@@ -112,7 +112,7 @@ export function AddProductDialog() {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <label className="block text-sm font-medium text-muted-foreground mb-1.5">
                 Kategori
@@ -147,7 +147,7 @@ export function AddProductDialog() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 min-[430px]:grid-cols-2 sm:grid-cols-3">
             <div>
               <label className="block text-sm font-medium text-muted-foreground mb-1.5">
                 Satuan

@@ -62,6 +62,9 @@ export interface StockBalance {
   unit: string;
   quantity: number;
   minimumQuantity: number;
+  averageUnitCost: number;
+  defaultSellingPrice: number;
+  stockValue: number;
   updatedAt: string;
 }
 
@@ -77,6 +80,7 @@ export interface StockMovement {
   customerName?: string;
   invoiceNumber?: string;
   receiptNumber?: string;
+  purchaseUnitCost?: number;
   notes?: string;
   occurredAt: string;
 }
@@ -298,6 +302,9 @@ export interface DashboardMetrics {
   revenueThisMonthChange: number;
   transactionProfitThisMonth: number;
   transactionMarginThisMonth: number;
+  operatingExpensesThisMonth: number;
+  netProfitThisMonth: number;
+  netMarginThisMonth: number;
   receivables: number;
   overdueCount: number;
   totalDirectCostsThisMonth: number;

@@ -14,17 +14,26 @@ export const metadata: Metadata = {
 
 export default async function ProfitReportPage() {
   await requireRole(["OWNER", "FINANCE"]);
-  const { invoices, profitData, periodLabel } = await getDashboardDataAction();
+  const { invoices, expenses, profitData, periodLabel } = await getDashboardDataAction();
+
+  const currentMonth = new Date().toLocaleDateString("en-CA", {
+    timeZone: "Asia/Jakarta",
+    year: "numeric",
+    month: "2-digit",
+  });
 
   const issuedInvoices = invoices.filter(
-    (inv) => inv.status !== "DRAFT" && inv.status !== "VOID"
+    (inv) => inv.status !== "DRAFT" && inv.status !== "VOID" && inv.issueDate.startsWith(currentMonth)
   );
+  const periodExpenses = expenses.filter((expense) => expense.expenseDate.startsWith(currentMonth));
 
   const totalRevenue = issuedInvoices.reduce((s, i) => s + i.total, 0);
   const totalHPP = issuedInvoices.reduce((s, i) => s + i.totalProductCost, 0);
   const totalDirectCost = issuedInvoices.reduce((s, i) => s + i.totalDirectCost, 0);
   const totalProfit = issuedInvoices.reduce((s, i) => s + i.transactionProfit, 0);
-  const avgMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0;
+  const totalOperatingExpenses = periodExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+  const netProfit = totalProfit - totalOperatingExpenses;
+  const avgMargin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
 
   // Build internal costs breakdown from real invoices
   const costCategoryMap: Record<string, number> = {};
@@ -44,19 +53,16 @@ export default async function ProfitReportPage() {
     <div className="space-y-6">
       <PageHeader
         title="Laporan Laba"
-        description="Analisis laba dan margin per periode"
+        description={`Omzet dikurangi HPP, biaya langsung, dan pengeluaran operasional · ${periodLabel}`}
       />
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <MetricCard accent="sky" title="Pendapatan" value={totalRevenue} isCurrency />
+      <div className="grid grid-cols-1 gap-3 min-[430px]:grid-cols-2 xl:grid-cols-6 xl:gap-4">
+        <MetricCard accent="sky" title="Omzet" value={totalRevenue} isCurrency />
         <MetricCard accent="amber" title="HPP Produk" value={totalHPP} isCurrency internal />
-        <MetricCard accent="orange"
-          title="Biaya Langsung"
-          value={totalDirectCost}
-          isCurrency
-          internal
-        />
-        <MetricCard accent="emerald" title="Laba Transaksi" value={totalProfit} isCurrency internal />
+        <MetricCard accent="emerald" title="Laba Kotor" value={totalRevenue - totalHPP} isCurrency internal />
+        <MetricCard accent="orange" title="Biaya Langsung" value={totalDirectCost} isCurrency internal />
+        <MetricCard accent="red" title="Pengeluaran" value={totalOperatingExpenses} isCurrency internal />
+        <MetricCard accent="violet" title="Laba Bersih" value={netProfit} isCurrency internal />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -70,16 +76,18 @@ export default async function ProfitReportPage() {
       </div>
 
       {/* Summary card */}
-      <div className="bg-white rounded-2xl border border-border shadow-card p-5">
+      <div className="erp-surface p-5">
         <h3 className="text-sm font-semibold mb-4">Ringkasan Laba</h3>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 gap-5 min-[430px]:grid-cols-2 lg:grid-cols-4 lg:gap-6">
           {[
-            { label: "Pendapatan", value: formatCurrency(totalRevenue) },
+            { label: "Omzet", value: formatCurrency(totalRevenue) },
             { label: "HPP Produk", value: formatCurrency(totalHPP), internal: true },
             { label: "Biaya Langsung", value: formatCurrency(totalDirectCost), internal: true },
             { label: "Laba Produk", value: formatCurrency(totalRevenue - totalHPP), internal: true },
-            { label: "Laba Transaksi", value: formatCurrency(totalProfit), internal: true, highlight: true },
-            { label: "Margin Rata-rata", value: formatPercent(avgMargin), internal: true, highlight: true },
+            { label: "Laba Transaksi", value: formatCurrency(totalProfit), internal: true },
+            { label: "Pengeluaran Operasional", value: formatCurrency(totalOperatingExpenses), internal: true },
+            { label: "Laba Bersih", value: formatCurrency(netProfit), internal: true, highlight: true },
+            { label: "Margin Bersih", value: formatPercent(avgMargin), internal: true, highlight: true },
           ].map((row) => (
             <div key={row.label}>
               <p className="text-xs text-muted-foreground flex items-center gap-1 mb-1">

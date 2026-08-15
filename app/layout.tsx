@@ -42,6 +42,7 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full`}
     >
       <body className="min-h-full antialiased bg-background text-foreground">
+        <a href="#main-content" className="skip-link">Lewati ke konten utama</a>
         <TooltipProvider delay={300}>{children}</TooltipProvider>
         <Toaster position="top-right" richColors closeButton />
       </body>

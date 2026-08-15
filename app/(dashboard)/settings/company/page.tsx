@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/app-shell/page-header";
-import { Fish, Upload, X, CheckCircle2, Building2, CreditCard } from "lucide-react";
+import { Fish, Loader2, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -20,6 +20,11 @@ import {
 } from "@/lib/company-store";
 import { getCompanyProfileAction, updateCompanyProfileAction } from "@/lib/actions/company";
 import { createClient } from "@/lib/supabase/client";
+
+const bankOptions = INDONESIAN_BANKS.map((label) => ({
+  label,
+  value: label.replace(/\s*\([^)]*\)$/, ""),
+}));
 
 export default function CompanySettingsPage() {
   const [profile, setProfile] = useState<CompanyProfile>(defaultCompanyProfile);
@@ -53,7 +58,7 @@ export default function CompanySettingsPage() {
     toast.success("Logo dipilih. Simpan perubahan untuk mengunggahnya.");
   };
 
-  const handleRemoveLogo = async () => {
+  const handleRemoveLogo = () => {
     const updated = { ...profile, logoUrl: undefined };
     setProfile(updated);
     setLogoFile(null);
@@ -86,239 +91,168 @@ export default function CompanySettingsPage() {
     } else {
       setProfile(payload);
       setLogoFile(null);
-      toast.success(res.message || "Profil Bisnis berhasil diperbarui!");
+      toast.success(res.message || "Profil bisnis berhasil diperbarui.");
     }
   };
 
   return (
     <div className="w-full space-y-6">
       <PageHeader
-        title="Profil Bisnis"
-        description="Informasi resmi perusahaan yang akan tampil pada invoice resmi dan online preview"
+        title="Profil bisnis"
+        description="Atur identitas dan rekening yang tampil pada invoice, PDF, dan halaman pelanggan."
       />
 
-      <form onSubmit={handleSave} className="space-y-6">
-        {/* Header Logo Card */}
-        <div className="bg-white rounded-2xl border border-border shadow-card p-6">
-          <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
-            <Building2 className="w-4 h-4 text-blue-600" /> Logo Perusahaan
-          </h3>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
-            <div className="relative w-24 h-24 rounded-2xl border border-border bg-slate-50 flex items-center justify-center overflow-hidden shrink-0 shadow-inner">
-              {profile.logoUrl ? (
-                /* eslint-disable-next-line @next/next/no-img-element */
-                <img
-                  src={profile.logoUrl}
-                  alt="Logo Bisnis"
-                  className="w-full h-full object-contain p-2"
-                />
-              ) : (
-                <div className="w-full h-full bg-foreground flex items-center justify-center">
-                  <Fish className="w-10 h-10 text-background" />
+      <form onSubmit={handleSave}>
+        <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] xl:gap-8">
+          <section className="erp-surface overflow-hidden" aria-labelledby="business-identity-title">
+            <div className="border-b border-border px-5 py-5 sm:px-6">
+              <div className="flex items-start gap-4">
+                <span className="mt-0.5 font-mono text-[11px] text-muted-foreground">01</span>
+                <div>
+                  <h2 id="business-identity-title" className="text-base font-semibold tracking-[-0.02em] text-foreground">Identitas bisnis</h2>
+                  <p className="mt-1 max-w-xl text-xs leading-5 text-muted-foreground">Data di bagian ini menjadi identitas resmi pada dokumen penjualan.</p>
                 </div>
-              )}
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <p className="font-bold text-base text-slate-900">{profile.name}</p>
-              <p className="text-xs text-muted-foreground max-w-md">
-                Logo ini akan ditampilkan di bagian atas Invoice Resmi, Preview Pelanggan, dan Berkas PDF Download. Format disarankan: PNG / JPG transparansi.
-              </p>
-              <div className="flex items-center gap-2 pt-1">
-                <label className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 rounded-lg cursor-pointer text-xs font-semibold transition-colors">
-                  <Upload className="w-3.5 h-3.5" />
-                  <span>Unggah Logo Baru</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleLogoUpload}
-                    className="hidden"
+            <div className="space-y-7 p-5 sm:p-6">
+              <div className="grid gap-5 sm:grid-cols-[7rem_minmax(0,1fr)] sm:items-center">
+                <div className="flex size-28 items-center justify-center overflow-hidden rounded-[18px] border border-border bg-muted/45">
+                  {profile.logoUrl ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img src={profile.logoUrl} alt={`Logo ${profile.name || "bisnis"}`} className="size-full object-contain p-3" />
+                  ) : (
+                    <Fish className="size-9 text-foreground" strokeWidth={1.7} />
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-foreground">Logo bisnis</p>
+                  <p className="mt-1 max-w-lg text-xs leading-5 text-muted-foreground">Gunakan JPG, PNG, WebP, atau SVG maksimal 2 MB. Logo akan dipakai pada invoice digital dan PDF.</p>
+                  <div className="mt-3 flex flex-col gap-2 min-[430px]:flex-row">
+                    <label className="inline-flex min-h-10 cursor-pointer items-center justify-center gap-2 rounded-[10px] border border-border-strong bg-white px-3 text-xs font-semibold text-foreground transition-colors hover:bg-muted">
+                      <Upload className="size-3.5" />
+                      <span>{logoFile ? "Ganti pilihan logo" : "Pilih logo"}</span>
+                      <input type="file" accept="image/jpeg,image/png,image/webp,image/svg+xml" onChange={handleLogoUpload} className="sr-only" />
+                    </label>
+                    {profile.logoUrl && (
+                      <Button type="button" variant="ghost" size="sm" onClick={handleRemoveLogo} className="text-red-600 hover:bg-red-50 hover:text-red-700">
+                        <X className="size-3.5" /> Hapus logo
+                      </Button>
+                    )}
+                  </div>
+                  {logoFile && <p className="mt-2 truncate text-[11px] text-muted-foreground">Dipilih: {logoFile.name}</p>}
+                </div>
+              </div>
+
+              <div className="grid gap-4 border-t border-border pt-6">
+                <div>
+                  <label htmlFor="company-name" className="mb-1.5 block text-xs font-medium text-foreground">Nama bisnis <span className="text-red-500">*</span></label>
+                  <Input id="company-name" value={profile.name} onChange={(event) => setProfile({ ...profile, name: event.target.value })} placeholder="Sultan Seafood" className="font-medium" required />
+                </div>
+
+                <div>
+                  <label htmlFor="company-address" className="mb-1.5 block text-xs font-medium text-foreground">Alamat kantor atau gudang</label>
+                  <textarea
+                    id="company-address"
+                    value={profile.address}
+                    onChange={(event) => setProfile({ ...profile, address: event.target.value })}
+                    placeholder="Alamat lengkap bisnis"
+                    className="min-h-24 w-full resize-y rounded-[10px] border border-input bg-white px-3 py-2.5 text-sm leading-6 outline-none transition-[border-color,box-shadow] placeholder:text-muted-foreground/80 hover:border-[#ababa6] focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/15"
                   />
-                </label>
-                {profile.logoUrl && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={handleRemoveLogo}
-                    className="h-10 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
-                  >
-                    <X className="w-3.5 h-3.5 mr-1" />
-                    Hapus Logo
-                  </Button>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
+                </div>
 
-        {/* Main Details & Bank Account (Full Width Grid) */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Company Details */}
-          <div className="bg-white rounded-2xl border border-border shadow-card p-6 space-y-4">
-            <h3 className="text-sm font-semibold text-foreground border-b border-border pb-3 flex items-center gap-2">
-              <Building2 className="w-4 h-4 text-blue-600" /> Informasi Perusahaan
-            </h3>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label htmlFor="company-phone" className="mb-1.5 block text-xs font-medium text-foreground">Telepon atau WhatsApp</label>
+                    <Input id="company-phone" value={profile.phone} onChange={(event) => setProfile({ ...profile, phone: event.target.value })} placeholder="0812XXXXXXXX" />
+                  </div>
+                  <div>
+                    <label htmlFor="company-email" className="mb-1.5 block text-xs font-medium text-foreground">Email bisnis</label>
+                    <Input id="company-email" type="email" value={profile.email} onChange={(event) => setProfile({ ...profile, email: event.target.value })} placeholder="info@sultansf.id" />
+                  </div>
+                </div>
 
-            <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">
-                Nama Bisnis <span className="text-red-500">*</span>
-              </label>
-              <Input
-                value={profile.name}
-                onChange={(e) => setProfile({ ...profile, name: e.target.value })}
-                placeholder="Sultan Seafood"
-                className="h-9 text-sm font-medium"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">
-                Alamat Kantor / Gudang
-              </label>
-              <Input
-                value={profile.address}
-                onChange={(e) => setProfile({ ...profile, address: e.target.value })}
-                placeholder="Jl. Pemasok Seafood No. 1..."
-                className="h-9 text-sm"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-1">
-                  Telepon / WhatsApp
-                </label>
-                <Input
-                  value={profile.phone}
-                  onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
-                  placeholder="0812XXXXXXXX"
-                  className="h-9 text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-1">
-                  Email Bisnis
-                </label>
-                <Input
-                  type="email"
-                  value={profile.email}
-                  onChange={(e) => setProfile({ ...profile, email: e.target.value })}
-                  placeholder="info@sultansf.id"
-                  className="h-9 text-sm"
-                />
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label htmlFor="company-website" className="mb-1.5 block text-xs font-medium text-foreground">Website <span className="text-muted-foreground">(opsional)</span></label>
+                    <Input id="company-website" value={profile.website} onChange={(event) => setProfile({ ...profile, website: event.target.value })} placeholder="www.sultansf.id" />
+                  </div>
+                  <div>
+                    <label htmlFor="company-npwp" className="mb-1.5 block text-xs font-medium text-foreground">NPWP <span className="text-muted-foreground">(opsional)</span></label>
+                    <Input id="company-npwp" value={profile.npwp} onChange={(event) => setProfile({ ...profile, npwp: event.target.value })} placeholder="00.000.000.0-000.000" className="font-mono" />
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-1">
-                  Website (Opsional)
-                </label>
-                <Input
-                  value={profile.website}
-                  onChange={(e) => setProfile({ ...profile, website: e.target.value })}
-                  placeholder="www.sultansf.id"
-                  className="h-9 text-sm"
-                />
+            <div className="border-t border-border px-5 py-5 sm:px-6" aria-labelledby="business-bank-title">
+              <div className="mb-5 flex items-start gap-4">
+                <span className="mt-0.5 font-mono text-[11px] text-muted-foreground">02</span>
+                <div>
+                  <h2 id="business-bank-title" className="text-base font-semibold tracking-[-0.02em] text-foreground">Rekening pembayaran</h2>
+                  <p className="mt-1 max-w-xl text-xs leading-5 text-muted-foreground">Pelanggan akan melihat rekening ini pada petunjuk pembayaran invoice.</p>
+                </div>
               </div>
-              <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-1">
-                  NPWP Perusahaan (Opsional)
-                </label>
-                <Input
-                  value={profile.npwp}
-                  onChange={(e) => setProfile({ ...profile, npwp: e.target.value })}
-                  placeholder="00.000.000.0-000.000"
-                  className="h-9 text-sm"
-                />
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1.5 block text-xs font-medium text-foreground">Nama bank <span className="text-red-500">*</span></label>
+                  <Select value={profile.bankName} onValueChange={(value) => setProfile({ ...profile, bankName: value || "BCA" })}>
+                    <SelectTrigger className="w-full"><SelectValue placeholder="Pilih bank" /></SelectTrigger>
+                    <SelectContent>
+                      {bankOptions.map((bank) => <SelectItem key={bank.value} value={bank.value}>{bank.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label htmlFor="company-bank-account" className="mb-1.5 block text-xs font-medium text-foreground">Nomor rekening <span className="text-red-500">*</span></label>
+                  <Input id="company-bank-account" value={profile.bankAccount} onChange={(event) => setProfile({ ...profile, bankAccount: event.target.value })} placeholder="1234567890" inputMode="numeric" className="font-mono font-medium" required />
+                </div>
+                <div className="sm:col-span-2">
+                  <label htmlFor="company-bank-holder" className="mb-1.5 block text-xs font-medium text-foreground">Nama pemilik rekening <span className="text-red-500">*</span></label>
+                  <Input id="company-bank-holder" value={profile.bankHolder} onChange={(event) => setProfile({ ...profile, bankHolder: event.target.value })} placeholder="Sultan Seafood" className="font-medium" required />
+                </div>
               </div>
             </div>
-          </div>
+          </section>
 
-          {/* Bank Account Details (Separated) */}
-          <div className="bg-white rounded-2xl border border-border shadow-card p-6 space-y-4">
-            <h3 className="text-sm font-semibold text-foreground border-b border-border pb-3 flex items-center gap-2">
-              <CreditCard className="w-4 h-4 text-blue-600" /> Informasi Rekening Bank (Tampil di Invoice)
-            </h3>
+          <aside className="space-y-5 lg:sticky lg:top-6">
+            <section className="overflow-hidden rounded-[20px] bg-[#1b1b1a] p-5 text-white shadow-[0_24px_60px_-32px_rgba(0,0,0,0.75)]" aria-labelledby="invoice-preview-title">
+              <div className="flex items-center justify-between border-b border-white/15 pb-4">
+                <p id="invoice-preview-title" className="text-xs font-medium text-white/65">Pratinjau invoice</p>
+                <span className="font-mono text-[10px] tracking-[0.16em] text-white/45">INVOICE</span>
+              </div>
+              <div className="py-6">
+                <div className="flex items-start gap-3">
+                  <div className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white p-1.5 text-[#1b1b1a]">
+                    {profile.logoUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={profile.logoUrl} alt="Pratinjau logo bisnis" className="size-full object-contain" />
+                    ) : <Fish className="size-5" />}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-base font-semibold tracking-[-0.025em]">{profile.name || "Nama bisnis"}</p>
+                    <p className="mt-1 line-clamp-2 text-[11px] leading-4 text-white/55">{profile.address || "Alamat bisnis akan tampil di sini"}</p>
+                  </div>
+                </div>
+                <p className="mt-4 break-words text-[11px] leading-5 text-white/55">{[profile.phone, profile.email].filter(Boolean).join(" · ") || "Kontak bisnis belum diisi"}</p>
+              </div>
+              <div className="rounded-xl border border-white/10 bg-white/[0.055] p-4">
+                <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-white/40">Pembayaran transfer</p>
+                <p className="mt-3 text-sm font-semibold">{profile.bankName || "Nama bank"}</p>
+                <p className="mt-1 break-all font-mono text-lg tracking-[0.03em]">{profile.bankAccount || "0000000000"}</p>
+                <p className="mt-2 text-[11px] text-white/55">a.n. {profile.bankHolder || "Nama pemilik rekening"}</p>
+              </div>
+            </section>
 
-            <div className="p-3 bg-blue-50/60 rounded-xl border border-blue-200 text-xs text-blue-900 space-y-1">
-              <p className="font-semibold">Rekening Resmi Pembayaran</p>
-              <p className="text-blue-700">
-                Informasi ini otomatis dimasukkan ke petunjuk pembayaran transfer bank pada halaman invoice pelanggan & dokumen cetak PDF.
-              </p>
+            <div className="border-y border-border py-4">
+              <p className="text-sm font-semibold text-foreground">Simpan profil bisnis</p>
+              <p className="mt-1 text-xs leading-5 text-muted-foreground">Perubahan diterapkan ke invoice baru dan pratinjau pelanggan.</p>
+              <Button type="submit" disabled={loading} size="lg" className="mt-4 w-full">
+                {loading ? <><Loader2 className="size-4 animate-spin" /> Menyimpan</> : "Simpan perubahan"}
+              </Button>
             </div>
-
-            <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">
-                Nama Bank <span className="text-red-500">*</span>
-              </label>
-              <Select
-                value={profile.bankName}
-                onValueChange={(val) => setProfile({ ...profile, bankName: val || "BCA" })}
-              >
-                <SelectTrigger className="h-9 text-sm">
-                  <SelectValue placeholder="Pilih Bank..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {INDONESIAN_BANKS.map((b) => (
-                    <SelectItem key={b} value={b.split(" ")[0]}>
-                      {b}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">
-                Nomor Rekening <span className="text-red-500">*</span>
-              </label>
-              <Input
-                value={profile.bankAccount}
-                onChange={(e) => setProfile({ ...profile, bankAccount: e.target.value })}
-                placeholder="1234567890"
-                className="h-9 text-sm font-mono font-medium"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">
-                Nama Pemilik Rekening (Atas Nama) <span className="text-red-500">*</span>
-              </label>
-              <Input
-                value={profile.bankHolder}
-                onChange={(e) => setProfile({ ...profile, bankHolder: e.target.value })}
-                placeholder="Sultan Seafood"
-                className="h-9 text-sm font-medium"
-                required
-              />
-            </div>
-
-            <div className="p-4 bg-muted/40 rounded-xl space-y-1 text-xs mt-4">
-              <p className="text-muted-foreground font-medium">Pratinjau Tampilan di Invoice:</p>
-              <p className="font-bold text-slate-800">
-                Bank {profile.bankName}: <span className="font-mono text-blue-600">{profile.bankAccount}</span>
-              </p>
-              <p className="text-muted-foreground">
-                Atas Nama: <span className="font-semibold text-slate-800">{profile.bankHolder}</span>
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Save bar */}
-        <div className="flex justify-end pt-2">
-          <Button type="submit" disabled={loading} size="lg" className="px-8 font-semibold">
-            {loading ? "Menyimpan..." : (
-              <>
-                <CheckCircle2 className="w-4 h-4 mr-2" />
-                Simpan Perubahan
-              </>
-            )}
-          </Button>
+          </aside>
         </div>
       </form>
     </div>

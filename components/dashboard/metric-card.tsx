@@ -1,19 +1,19 @@
 import { cn, formatCurrency, formatPercent } from "@/lib/utils";
-import { TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { ArrowUpRight, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
 
 type AccentColor = "blue" | "emerald" | "amber" | "red" | "violet" | "sky" | "orange" | "stone";
 
 const iconMap: Record<AccentColor, { iconBg: string; iconText: string }> = {
-  blue:    { iconBg: "bg-blue-100",    iconText: "text-blue-700" },
-  emerald: { iconBg: "bg-emerald-100", iconText: "text-emerald-700" },
-  amber:   { iconBg: "bg-amber-100",   iconText: "text-amber-700" },
-  red:     { iconBg: "bg-red-100",     iconText: "text-red-700" },
-  violet:  { iconBg: "bg-violet-100",  iconText: "text-violet-700" },
-  sky:     { iconBg: "bg-sky-100",     iconText: "text-sky-700" },
-  orange:  { iconBg: "bg-orange-100",  iconText: "text-orange-700" },
-  stone:   { iconBg: "bg-stone-100",   iconText: "text-stone-500" },
+  blue:    { iconBg: "bg-primary/9", iconText: "text-primary" },
+  emerald: { iconBg: "bg-primary/9", iconText: "text-primary" },
+  amber:   { iconBg: "bg-amber-50", iconText: "text-amber-700" },
+  red:     { iconBg: "bg-red-50", iconText: "text-red-700" },
+  violet:  { iconBg: "bg-primary/9", iconText: "text-primary" },
+  sky:     { iconBg: "bg-primary/9", iconText: "text-primary" },
+  orange:  { iconBg: "bg-amber-50", iconText: "text-amber-700" },
+  stone:   { iconBg: "bg-muted", iconText: "text-muted-foreground" },
 };
 
 interface MetricCardProps {
@@ -50,41 +50,41 @@ export function MetricCard({
 
   const content = (
     <div className={cn(
-      "bg-white rounded-2xl border border-black/[0.07] p-4 sm:p-5 shadow-[0_1px_2px_rgba(15,23,42,0.03),0_4px_16px_rgba(15,23,42,0.04)] transition-all overflow-hidden",
-      href && "hover:shadow-md cursor-pointer",
+      "group relative min-h-[154px] overflow-hidden rounded-[18px] border border-border bg-card p-4 shadow-card transition-[border-color,box-shadow,transform] duration-200 sm:p-5",
+      href && "cursor-pointer hover:-translate-y-0.5 hover:border-primary/25 hover:shadow-dropdown",
       className
     )}>
-      <div className="flex items-start justify-between gap-2 mb-2 sm:mb-3">
-        <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
-          <p className="text-[11px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wider truncate">
+      <div className="mb-5 flex items-start justify-between gap-3">
+        <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+          <p className="truncate text-xs font-medium text-muted-foreground">
             {title}
           </p>
           {internal && (
-            <span className="text-[9px] font-medium px-1.5 py-0.5 bg-amber-50 text-amber-700 rounded border border-amber-200 shrink-0">
+            <span className="shrink-0 rounded-md border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[9px] font-semibold text-amber-700">
               Internal
             </span>
           )}
         </div>
         {Icon && (
-          <div className={cn("w-8 h-8 rounded-xl flex items-center justify-center shrink-0", iconBg)}>
-            <Icon className={cn("w-4 h-4", iconText)} />
+          <div className={cn("flex size-9 shrink-0 items-center justify-center rounded-[11px]", iconBg)}>
+            <Icon className={cn("size-4", iconText)} strokeWidth={1.9} />
           </div>
         )}
       </div>
 
-      <div className="mb-1 sm:mb-2 min-w-0">
-        <span className="text-lg sm:text-2xl font-bold text-foreground tracking-tight truncate block">
+      <div className="min-w-0">
+        <span className="block break-words text-[clamp(1.3rem,2vw,1.75rem)] font-bold leading-tight tracking-[-0.035em] text-foreground tabular-nums">
           {displayValue}
         </span>
         {suffix && (
-          <span className="text-xs sm:text-sm font-medium text-muted-foreground ml-1">
+          <span className="ml-1 text-xs font-medium text-muted-foreground sm:text-sm">
             {suffix}
           </span>
         )}
       </div>
 
       {change !== undefined && (
-        <div className="flex items-center gap-1">
+        <div className="mt-3 flex flex-wrap items-center gap-1">
           {changePositive ? (
             <TrendingUp className="w-3 h-3 text-emerald-600" />
           ) : changeNegative ? (
@@ -103,9 +103,10 @@ export function MetricCard({
           {changeLabel && <span className="text-xs text-muted-foreground">{changeLabel}</span>}
         </div>
       )}
+      {href && <ArrowUpRight className="absolute bottom-4 right-4 size-3.5 text-muted-foreground/40 transition-[color,transform] group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-primary" />}
     </div>
   );
 
-  if (href) return <Link href={href}>{content}</Link>;
+  if (href) return <Link href={href} className="block rounded-[18px] focus-visible:outline-none">{content}</Link>;
   return content;
 }

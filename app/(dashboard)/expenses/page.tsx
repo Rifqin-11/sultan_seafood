@@ -72,10 +72,9 @@ export default async function ExpensesPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-2xl border border-border shadow-card overflow-hidden">
-        <div className="px-5 py-4 border-b border-border flex items-center justify-between">
+      <div className="erp-surface overflow-hidden">
+        <div className="border-b border-border px-5 py-4">
           <h3 className="text-sm font-semibold">Riwayat Pengeluaran Operasional</h3>
-          <AddExpenseDialog />
         </div>
         <ExpenseTable expenses={expenses} totalExpenses={totalExpenses} />
       </div>

@@ -30,10 +30,10 @@ export function OutstandingInvoiceCard({
   ).length;
 
   return (
-    <div className="bg-white rounded-2xl border border-border shadow-card">
-      <div className="flex items-start justify-between p-5 border-b border-border">
+    <div className="erp-surface overflow-hidden">
+      <div className="flex items-start justify-between border-b border-border p-5">
         <div>
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-0.5">
+          <p className="mb-0.5 text-xs font-medium text-muted-foreground">
             Invoice Belum Lunas
           </p>
           <p className="text-xl font-bold text-foreground">

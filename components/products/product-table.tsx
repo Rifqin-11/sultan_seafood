@@ -89,7 +89,7 @@ export function ProductTable({ initialProducts = [], canManage = false }: Produc
 
   return (
     <>
-      <div className="bg-white rounded-2xl border border-border shadow-card overflow-hidden">
+      <div className="erp-surface overflow-hidden">
         {/* Toolbar */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-4 border-b border-border">
           <div className="relative flex-1 max-w-full sm:max-w-sm">
@@ -98,7 +98,7 @@ export function ProductTable({ initialProducts = [], canManage = false }: Produc
               placeholder="Cari produk, kategori..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 h-9 w-full"
+              className="h-10 w-full pl-9"
             />
           </div>
 
@@ -109,7 +109,7 @@ export function ProductTable({ initialProducts = [], canManage = false }: Produc
                 onClick={() => setStatusFilter(s)}
                 className={`min-h-9 px-3.5 py-2 text-xs rounded-xl font-semibold transition-colors shrink-0 ${
                   statusFilter === s
-                    ? "bg-foreground text-background"
+                    ? "bg-primary text-primary-foreground shadow-sm"
                     : "text-muted-foreground hover:bg-muted"
                 }`}
               >
@@ -129,7 +129,7 @@ export function ProductTable({ initialProducts = [], canManage = false }: Produc
         ) : (
           <>
             {/* Desktop table */}
-            <div className="hidden sm:block overflow-x-auto">
+            <div className="hidden overflow-x-auto lg:block">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/30 hover:bg-muted/30">
@@ -185,14 +185,12 @@ export function ProductTable({ initialProducts = [], canManage = false }: Produc
                           );
                         })()}
                       </TableCell>
-                      {canManage && (
-                        <TableCell>
-                          <Badge variant={product.status === "ACTIVE" ? "default" : "secondary"} className="text-[11px]">
-                            {product.status === "ACTIVE" ? "Aktif" : "Nonaktif"}
-                          </Badge>
-                        </TableCell>
-                      )}
                       <TableCell>
+                        <Badge variant={product.status === "ACTIVE" ? "default" : "secondary"} className="text-[11px]">
+                          {product.status === "ACTIVE" ? "Aktif" : "Nonaktif"}
+                        </Badge>
+                      </TableCell>
+                      {canManage && <TableCell>
                         <DropdownMenu>
                           <DropdownMenuTrigger
                             className="inline-flex items-center justify-center h-9 w-9 rounded-xl hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
@@ -220,7 +218,7 @@ export function ProductTable({ initialProducts = [], canManage = false }: Produc
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
-                      </TableCell>
+                      </TableCell>}
                     </TableRow>
                   ))}
                 </TableBody>
@@ -228,7 +226,7 @@ export function ProductTable({ initialProducts = [], canManage = false }: Produc
             </div>
 
             {/* Mobile card list */}
-            <div className="sm:hidden divide-y divide-border">
+            <div className="divide-y divide-border lg:hidden">
               {filtered.map((product) => (
                 <div key={product.id} className="p-4 flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0 space-y-1.5">

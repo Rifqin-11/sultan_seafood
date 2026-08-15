@@ -1,12 +1,11 @@
 "use client";
 
-import { Menu, Bell, ChevronDown, StickyNote } from "lucide-react";
+import { Bell, Building2, ChevronDown, LogOut, Menu, StickyNote, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -18,6 +17,7 @@ const pathLabels: Record<string, string> = {
   "/dashboard": "Dashboard",
   "/notes": "Catatan Pribadi",
   "/products": "Produk",
+  "/stock": "Stok, Harga & Modal",
   "/pricing/purchase": "Harga Beli",
   "/pricing/selling": "Harga Jual Restoran",
   "/invoices": "Invoice",
@@ -60,8 +60,13 @@ export function Topbar({ onMobileMenuToggle, user, notificationCount = 0 }: Topb
 
   // Build breadcrumb from pathname
   const segments = pathname.split("/").filter(Boolean);
+  const contextualLabel = pathname.startsWith("/invoices/")
+    ? pathname.endsWith("/edit")
+      ? "Edit Invoice"
+      : "Detail Invoice"
+    : undefined;
   const currentLabel =
-    pathLabels[pathname] ||
+    pathLabels[pathname] || contextualLabel ||
     (segments.length > 0
       ? segments[segments.length - 1]
           .replace(/-/g, " ")
@@ -69,12 +74,12 @@ export function Topbar({ onMobileMenuToggle, user, notificationCount = 0 }: Topb
       : "Dashboard");
 
   return (
-    <header className="fixed inset-x-0 top-0 z-30 flex h-16 shrink-0 items-center gap-4 border-b border-border bg-white px-4 shadow-[0_1px_0_rgba(15,23,42,0.06)] md:px-6 lg:static lg:shadow-[0_1px_0_rgba(15,23,42,0.06)]">
+    <header className="fixed inset-x-0 top-0 z-30 flex h-[68px] shrink-0 items-center gap-3 border-b border-border/90 bg-white/90 px-3 backdrop-blur-xl sm:px-5 lg:static lg:h-[72px] lg:bg-white/75 lg:px-8">
       {/* Mobile menu button */}
       <Button
         variant="ghost"
         size="icon"
-        className="lg:hidden"
+        className="rounded-xl border border-border bg-white lg:hidden"
         onClick={onMobileMenuToggle}
         aria-label="Buka menu"
       >
@@ -82,13 +87,13 @@ export function Topbar({ onMobileMenuToggle, user, notificationCount = 0 }: Topb
       </Button>
 
       {/* Breadcrumb / Title */}
-      <div className="flex-1 min-w-0">
-        <h1 className="text-sm font-semibold text-foreground truncate">
+      <div className="min-w-0 flex-1">
+        <div className="hidden items-center gap-1.5 text-[0.68rem] font-medium text-muted-foreground lg:flex">
+          <span>Sultan Seafood</span><span className="text-border-strong">/</span><span className="text-primary">Workspace</span>
+        </div>
+        <h1 className="truncate text-sm font-semibold tracking-[-0.01em] text-foreground lg:mt-0.5">
           {currentLabel}
         </h1>
-        <p className="text-xs text-muted-foreground hidden sm:block">
-          Sultan Seafood ERP
-        </p>
       </div>
 
       {/* Right actions */}
@@ -96,41 +101,41 @@ export function Topbar({ onMobileMenuToggle, user, notificationCount = 0 }: Topb
         <Button
           variant="outline"
           size="sm"
-          className="gap-1.5"
+          className="gap-1.5 border-transparent bg-transparent shadow-none hover:border-border sm:border-border sm:bg-white"
           aria-label="Buka catatan pribadi"
           onClick={() => router.push("/notes")}
           title="Catatan Pribadi"
         >
           <StickyNote className="size-3.5" />
-          <span className="hidden lg:inline">Catatan</span>
+          <span className="hidden xl:inline">Catatan</span>
         </Button>
 
         {/* Notifications */}
         <Button
           variant="ghost"
           size="icon"
-          className="relative"
+          className="relative rounded-xl"
           aria-label="Notifikasi"
           onClick={() => router.push("/reports/receivables")}
           title={`${notificationCount} notifikasi perlu ditinjau`}
         >
           <Bell className="w-4 h-4" />
-          {notificationCount > 0 && <span className="absolute top-1 right-1 min-w-4 h-4 px-1 rounded-full bg-red-500 text-[9px] text-white flex items-center justify-center">{notificationCount > 9 ? "9+" : notificationCount}</span>}
+          {notificationCount > 0 && <span className="absolute right-0.5 top-0.5 flex min-h-4 min-w-4 items-center justify-center rounded-md border-2 border-white bg-red-600 px-0.5 text-[8px] font-bold text-white">{notificationCount > 9 ? "9+" : notificationCount}</span>}
         </Button>
 
         {/* User menu */}
         <DropdownMenu>
           <DropdownMenuTrigger>
             <div
-              className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-muted transition-colors cursor-pointer"
+              className="flex cursor-pointer items-center gap-2 rounded-xl border border-transparent px-1.5 py-1.5 transition-colors hover:border-border hover:bg-white sm:px-2"
               aria-label="Menu pengguna"
             >
-              <Avatar className="w-7 h-7">
-                <AvatarFallback className="text-xs font-semibold bg-foreground text-background">
+              <Avatar className="size-8 rounded-[10px]">
+                <AvatarFallback className="rounded-[10px] bg-primary text-xs font-semibold text-primary-foreground">
                   {userInitial}
                 </AvatarFallback>
               </Avatar>
-              <div className="text-left hidden sm:block max-w-[150px]">
+              <div className="hidden max-w-[150px] text-left sm:block">
                 <p className="text-xs font-medium leading-tight truncate">{userName}</p>
                 <p className="text-[11px] text-muted-foreground leading-tight truncate">
                   {userEmail}
@@ -139,16 +144,16 @@ export function Topbar({ onMobileMenuToggle, user, notificationCount = 0 }: Topb
               <ChevronDown className="w-3 h-3 text-muted-foreground hidden sm:block" />
             </div>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-64 p-1.5 rounded-2xl shadow-[0_8px_32px_rgba(15,23,42,0.12)] border border-stone-200">
+          <DropdownMenuContent align="end" className="w-64 rounded-2xl border border-border p-1.5 shadow-dropdown">
             {/* User info */}
             <div className="flex items-center gap-3 px-3 py-3 mb-1">
-              <div className="w-10 h-10 rounded-xl bg-[#1e3a8a] flex items-center justify-center text-sm font-bold text-white shrink-0">
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-sm font-bold text-white">
                 {userInitial}
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-stone-900 truncate">{userName}</p>
                 <p className="text-xs text-stone-400 truncate">{userEmail}</p>
-                <span className="inline-flex items-center mt-0.5 px-1.5 py-0.5 rounded-md bg-blue-50 text-[10px] font-semibold text-blue-700 border border-blue-200">
+                <span className="mt-1 inline-flex items-center rounded-md border border-primary/15 bg-primary/8 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
                   {user?.role ?? "USER"}
                 </span>
               </div>
@@ -159,8 +164,8 @@ export function Topbar({ onMobileMenuToggle, user, notificationCount = 0 }: Topb
                 onClick={() => router.push("/settings/users")}
                 className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm text-stone-700 cursor-pointer hover:bg-stone-50 focus:bg-stone-50"
               >
-                <div className="w-7 h-7 rounded-lg bg-violet-50 flex items-center justify-center shrink-0">
-                  <svg className="w-3.5 h-3.5 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary/8">
+                  <UserRound className="size-3.5 text-primary" />
                 </div>
                 <span>Profil & Pengguna</span>
               </DropdownMenuItem>
@@ -168,8 +173,8 @@ export function Topbar({ onMobileMenuToggle, user, notificationCount = 0 }: Topb
                 onClick={() => router.push("/settings/company")}
                 className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm text-stone-700 cursor-pointer hover:bg-stone-50 focus:bg-stone-50"
               >
-                <div className="w-7 h-7 rounded-lg bg-sky-50 flex items-center justify-center shrink-0">
-                  <svg className="w-3.5 h-3.5 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary/8">
+                  <Building2 className="size-3.5 text-primary" />
                 </div>
                 <span>Pengaturan Bisnis</span>
               </DropdownMenuItem>
@@ -179,8 +184,8 @@ export function Topbar({ onMobileMenuToggle, user, notificationCount = 0 }: Topb
               className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm text-red-600 cursor-pointer hover:bg-red-50 focus:bg-red-50 focus:text-red-600"
               onClick={async () => { await signOutAction(); }}
             >
-              <div className="w-7 h-7 rounded-lg bg-red-50 flex items-center justify-center shrink-0">
-                <svg className="w-3.5 h-3.5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+              <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-red-50">
+                <LogOut className="size-3.5 text-red-500" />
               </div>
               <span className="font-medium">Keluar</span>
             </DropdownMenuItem>

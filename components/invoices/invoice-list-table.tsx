@@ -16,7 +16,8 @@ import {
   CreditCard,
   Loader2,
   Pencil,
-  XCircle,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -77,7 +78,6 @@ export function InvoiceListTable({ initialInvoices = [], role, company }: Invoic
   const [deletingInvoice, setDeletingInvoice] = useState<Invoice | null>(null);
   const [voidingInvoice, setVoidingInvoice] = useState<Invoice | null>(null);
   const [selectedPaymentInvoiceId, setSelectedPaymentInvoiceId] = useState<string | null>(null);
-  const [batalanInvoiceId, setBatalanInvoiceId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const pageSize = 10;
 
@@ -174,11 +174,6 @@ export function InvoiceListTable({ initialInvoices = [], role, company }: Invoic
             <CreditCard className="mr-2 h-3.5 w-3.5" /> Catat Pembayaran
           </DropdownMenuItem>
         )}
-        {role !== "STAFF" && inv.status === "PAID" && (
-          <DropdownMenuItem className="cursor-pointer text-red-600 focus:text-red-600" onClick={() => setBatalanInvoiceId(inv.id)}>
-            <XCircle className="mr-2 h-3.5 w-3.5" /> Batalkan Pembayaran
-          </DropdownMenuItem>
-        )}
         <DropdownMenuSeparator />
         {role === "OWNER" && inv.status !== "VOID" && inv.status !== "DRAFT" && inv.totalPaid === 0 && (
           <DropdownMenuItem className="cursor-pointer text-amber-600 focus:text-amber-600" onClick={() => setVoidingInvoice(inv)}>
@@ -199,9 +194,9 @@ export function InvoiceListTable({ initialInvoices = [], role, company }: Invoic
   );
 
   return (
-    <div className="bg-white rounded-2xl border border-border shadow-card overflow-hidden">
+    <section className="erp-surface overflow-hidden" aria-label="Daftar invoice">
       {/* Toolbar */}
-      <div className="p-4 border-b border-border space-y-3">
+      <div className="space-y-3 border-b border-border p-4 sm:p-5">
         <div className="flex items-center gap-3">
           <div className="relative flex-1 max-w-full sm:max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -209,7 +204,7 @@ export function InvoiceListTable({ initialInvoices = [], role, company }: Invoic
               placeholder="Cari nomor invoice atau restoran..."
               value={search}
               onChange={(event) => { setSearch(event.target.value); setPage(1); }}
-              className="pl-9 h-9 w-full"
+              className="h-10 w-full pl-9"
             />
           </div>
         </div>
@@ -222,7 +217,7 @@ export function InvoiceListTable({ initialInvoices = [], role, company }: Invoic
               onClick={() => { setStatusFilter(f.value); setPage(1); }}
               className={`min-h-9 px-3.5 py-2 text-xs rounded-xl font-semibold whitespace-nowrap transition-colors flex-shrink-0 ${
                 statusFilter === f.value
-                  ? "bg-foreground text-background"
+                  ? "bg-primary text-primary-foreground shadow-sm"
                   : "text-muted-foreground hover:bg-muted"
               }`}
             >
@@ -246,7 +241,7 @@ export function InvoiceListTable({ initialInvoices = [], role, company }: Invoic
         />
       ) : (
         <>
-        <div className="hidden overflow-x-auto sm:block">
+        <div className="hidden overflow-x-auto lg:block">
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/30 hover:bg-muted/30">
@@ -327,12 +322,12 @@ export function InvoiceListTable({ initialInvoices = [], role, company }: Invoic
             </TableBody>
           </Table>
         </div>
-        <div className="divide-y divide-stone-200 sm:hidden">
+        <div className="divide-y divide-border lg:hidden">
           {pageRows.map((inv) => (
-            <article key={inv.id} className="space-y-3 p-4">
+            <article key={inv.id} className="space-y-3 p-4 sm:p-5">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <Link href={`/invoices/${inv.id}`} className="truncate font-mono text-sm font-semibold text-stone-900 hover:underline">
+                  <Link href={`/invoices/${inv.id}`} className="block truncate font-mono text-sm font-semibold text-foreground hover:text-primary hover:underline">
                     {inv.invoiceNumber || "Draft"}
                   </Link>
                   <p className="mt-1 truncate text-xs text-muted-foreground">{inv.customerName}</p>
@@ -342,9 +337,9 @@ export function InvoiceListTable({ initialInvoices = [], role, company }: Invoic
                   {renderInvoiceActions(inv)}
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-2 rounded-xl bg-stone-50 p-3 text-xs">
-                <div><p className="text-stone-500">Total invoice</p><p className="mt-1 font-bold tabular-nums text-stone-900">{formatCurrency(inv.total)}</p></div>
-                <div className="border-l border-stone-200 pl-3"><p className="text-stone-500">Sisa tagihan</p><p className={`mt-1 font-bold tabular-nums ${inv.status === "OVERDUE" ? "text-red-600" : "text-stone-900"}`}>{inv.status === "VOID" ? "—" : inv.remainingBalance > 0 ? formatCurrency(inv.remainingBalance) : "Lunas"}</p></div>
+              <div className="grid grid-cols-2 gap-2 rounded-xl bg-muted/55 p-3 text-xs">
+                <div className="min-w-0"><p className="text-muted-foreground">Total invoice</p><p className="mt-1 break-words font-bold text-foreground tabular-nums">{formatCurrency(inv.total)}</p></div>
+                <div className="min-w-0 border-l border-border pl-3"><p className="text-muted-foreground">Sisa tagihan</p><p className={`mt-1 break-words font-bold tabular-nums ${inv.status === "OVERDUE" ? "text-red-600" : "text-foreground"}`}>{inv.status === "VOID" ? "—" : inv.remainingBalance > 0 ? formatCurrency(inv.remainingBalance) : "Lunas"}</p></div>
               </div>
               <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground"><span>Terbit {formatDateShort(inv.issueDate)}</span><span>{inv.dueDate ? `Jatuh tempo ${formatDateShort(inv.dueDate)}` : "Tanpa jatuh tempo"}</span></div>
             </article>
@@ -354,17 +349,17 @@ export function InvoiceListTable({ initialInvoices = [], role, company }: Invoic
       )}
 
       {/* Footer */}
-      <div className="flex items-center justify-between px-4 py-3 border-t border-border">
+      <div className="flex items-center justify-between gap-3 border-t border-border px-4 py-3 sm:px-5">
         <p className="text-xs text-muted-foreground">
           {filtered.length} dari {invoicesList.length} invoice
         </p>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((value) => Math.max(1, value - 1))}>
-            Sebelumnya
+          <Button variant="outline" size="sm" className="px-2.5 sm:px-3" disabled={page <= 1} onClick={() => setPage((value) => Math.max(1, value - 1))} aria-label="Halaman sebelumnya">
+            <ChevronLeft className="size-4 sm:mr-1" /><span className="hidden sm:inline">Sebelumnya</span>
           </Button>
           <span className="text-xs text-muted-foreground">{page}/{pageCount}</span>
-          <Button variant="outline" size="sm" disabled={page >= pageCount} onClick={() => setPage((value) => Math.min(pageCount, value + 1))}>
-            Berikutnya
+          <Button variant="outline" size="sm" className="px-2.5 sm:px-3" disabled={page >= pageCount} onClick={() => setPage((value) => Math.min(pageCount, value + 1))} aria-label="Halaman berikutnya">
+            <span className="hidden sm:inline">Berikutnya</span><ChevronRight className="size-4 sm:ml-1" />
           </Button>
         </div>
       </div>
@@ -405,6 +400,6 @@ export function InvoiceListTable({ initialInvoices = [], role, company }: Invoic
           onConfirm={handleConfirmVoidInvoice}
         />
       )}
-    </div>
+    </section>
   );
 }

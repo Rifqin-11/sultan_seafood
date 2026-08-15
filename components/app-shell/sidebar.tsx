@@ -3,66 +3,39 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  LayoutDashboard,
-  Package,
-  Boxes,
-  Tag,
-  FileText,
-  CreditCard,
-  UtensilsCrossed,
-  Truck,
-  Receipt,
   BarChart3,
-  Landmark,
-  Settings,
-  ChevronRight,
+  Boxes,
+  CreditCard,
+  FileText,
   Fish,
+  Hash,
+  Landmark,
+  LayoutDashboard,
   LogOut,
-  ChevronLeft,
+  Menu,
+  Package,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Receipt,
+  Settings,
+  Truck,
+  UtensilsCrossed,
+  X,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { signOutAction } from "@/lib/actions/auth";
-import type { UserProfileInfo } from "@/components/app-shell/topbar";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 import type { CompanyProfile } from "@/lib/company-store";
 import type { Role } from "@/types";
+import type { UserProfileInfo } from "@/components/app-shell/topbar";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
-const navItems = [
-  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Produk", href: "/products", icon: Package },
-  { label: "Stok", href: "/stock", icon: Boxes },
-  { label: "Harga Beli", href: "/pricing/purchase", icon: Tag },
-  { label: "Harga Jual", href: "/pricing/selling", icon: Tag },
-  { label: "Invoice", href: "/invoices", icon: FileText },
-  { label: "Pembayaran", href: "/payments", icon: CreditCard },
-  { label: "Restoran", href: "/customers", icon: UtensilsCrossed },
-  { label: "Supplier", href: "/suppliers", icon: Truck },
-  { label: "Pengeluaran", href: "/expenses", icon: Receipt },
-  { label: "Lap. Penjualan", href: "/reports/sales", icon: BarChart3 },
-  { label: "Lap. Laba", href: "/reports/profit", icon: BarChart3 },
-  { label: "Piutang", href: "/reports/receivables", icon: BarChart3 },
-  { label: "Hutang Supplier", href: "/reports/supplier-payables", icon: Landmark },
-  { label: "Biaya Internal", href: "/reports/internal-costs", icon: BarChart3 },
-];
-
-const navGrouped = [
+const navGroups = [
   {
-    label: null,
+    label: "Operasional",
     items: [
-      { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+      { label: "Ringkasan", href: "/dashboard", icon: LayoutDashboard },
       { label: "Produk", href: "/products", icon: Package },
-      { label: "Stok", href: "/stock", icon: Boxes },
-    ],
-  },
-  {
-    label: "Harga",
-    items: [
-      { label: "Harga Beli", href: "/pricing/purchase", icon: Tag },
-      { label: "Harga Jual Restoran", href: "/pricing/selling", icon: Tag },
+      { label: "Stok, harga & modal", href: "/stock", icon: Boxes },
     ],
   },
   {
@@ -70,14 +43,14 @@ const navGrouped = [
     items: [
       { label: "Invoice", href: "/invoices", icon: FileText },
       { label: "Pembayaran", href: "/payments", icon: CreditCard },
+      { label: "Pengeluaran", href: "/expenses", icon: Receipt },
     ],
   },
   {
-    label: "Master Data",
+    label: "Relasi bisnis",
     items: [
       { label: "Restoran", href: "/customers", icon: UtensilsCrossed },
       { label: "Supplier", href: "/suppliers", icon: Truck },
-      { label: "Pengeluaran", href: "/expenses", icon: Receipt },
     ],
   },
   {
@@ -86,67 +59,181 @@ const navGrouped = [
       { label: "Penjualan", href: "/reports/sales", icon: BarChart3 },
       { label: "Laba", href: "/reports/profit", icon: BarChart3 },
       { label: "Piutang", href: "/reports/receivables", icon: BarChart3 },
-      { label: "Hutang Supplier", href: "/reports/supplier-payables", icon: Landmark },
-      { label: "Biaya Internal", href: "/reports/internal-costs", icon: BarChart3 },
+      { label: "Hutang supplier", href: "/reports/supplier-payables", icon: Landmark },
+      { label: "Biaya langsung", href: "/reports/internal-costs", icon: BarChart3 },
     ],
   },
-];
+] as const;
 
-const bottomItems = [
-  { label: "Profil Bisnis", href: "/settings/company", icon: Settings },
-  { label: "Profil & Pengguna", href: "/settings/users", icon: Settings },
-  { label: "Audit Log", href: "/settings/audit-logs", icon: Settings },
-];
+const settingItems = [
+  { label: "Profil bisnis", href: "/settings/company", icon: Settings },
+  { label: "Pengguna", href: "/settings/users", icon: Settings },
+  { label: "Nomor invoice", href: "/settings/invoice", icon: Hash },
+  { label: "Audit log", href: "/settings/audit-logs", icon: Settings },
+] as const;
 
-function NavLink({
+function canAccess(href: string, role: Role) {
+  if (role === "OWNER") return true;
+  if (role === "FINANCE") return !href.startsWith("/settings/");
+  return ["/dashboard", "/products", "/invoices", "/customers", "/suppliers"].includes(href);
+}
+
+function isActivePath(pathname: string, href: string) {
+  if (pathname === href) return true;
+  return pathname.startsWith(`${href}/`);
+}
+
+function Brand({ company, collapsed = false }: { company: CompanyProfile; collapsed?: boolean }) {
+  return (
+    <div className={cn("flex min-w-0 items-center", collapsed ? "justify-center" : "gap-3")}>
+      <div className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-white p-1 shadow-[0_8px_24px_-14px_rgba(0,0,0,0.8)]">
+        {company.logoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={company.logoUrl} alt={company.name} className="size-full object-contain" />
+        ) : (
+          <Fish className="size-4 text-primary" strokeWidth={2.2} />
+        )}
+      </div>
+      {!collapsed && (
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold tracking-[-0.015em] text-white">{company.name || "Sultan Seafood"}</p>
+          <p className="mt-0.5 text-[10px] font-medium uppercase tracking-[0.18em] text-sidebar-foreground">Operations</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function NavigationLink({
   href,
   label,
   icon: Icon,
   active,
-  collapsed,
+  collapsed = false,
+  onNavigate,
 }: {
   href: string;
   label: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
   active: boolean;
-  collapsed: boolean;
+  collapsed?: boolean;
+  onNavigate?: () => void;
 }) {
+  const link = (
+    <Link
+      href={href}
+      onClick={onNavigate}
+      aria-current={active ? "page" : undefined}
+      className={cn(
+        "group flex min-h-10 items-center rounded-[10px] text-[0.8125rem] font-medium transition-[background-color,color,transform] duration-200 active:scale-[0.985]",
+        collapsed ? "justify-center px-0" : "gap-3 px-3",
+        active
+          ? "bg-sidebar-active text-[#1b1b1a] shadow-[0_8px_20px_-14px_rgba(0,0,0,0.65)]"
+          : "text-sidebar-foreground hover:bg-sidebar-hover hover:text-white",
+      )}
+    >
+      <Icon className="size-[1.05rem] shrink-0" strokeWidth={active ? 2.25 : 1.8} />
+      {!collapsed && <span className="min-w-0 flex-1 truncate">{label}</span>}
+      {!collapsed && active && <span className="size-1.5 shrink-0 rounded-full bg-primary" />}
+    </Link>
+  );
+
+  if (!collapsed) return link;
+  return (
+    <Tooltip>
+      <TooltipTrigger render={link} />
+      <TooltipContent side="right" className="text-xs">{label}</TooltipContent>
+    </Tooltip>
+  );
+}
+
+function Navigation({
+  role,
+  pathname,
+  collapsed = false,
+  onNavigate,
+}: {
+  role: Role;
+  pathname: string;
+  collapsed?: boolean;
+  onNavigate?: () => void;
+}) {
+  if (collapsed) {
+    const flatItems = [
+      ...navGroups.flatMap<{ label: string; href: string; icon: React.ComponentType<{ className?: string; strokeWidth?: number }> }>((group) => [...group.items]),
+      ...settingItems,
+    ];
+    return (
+      <nav aria-label="Navigasi utama" className="space-y-1 px-2 py-3">
+        {flatItems.filter((item) => canAccess(item.href, role)).map((item) => (
+          <NavigationLink key={item.href} {...item} active={isActivePath(pathname, item.href)} collapsed onNavigate={onNavigate} />
+        ))}
+      </nav>
+    );
+  }
+
+  return (
+    <nav aria-label="Navigasi utama" className="space-y-5 px-3 py-4">
+      {navGroups.map((group) => {
+        const visibleItems = group.items.filter((item) => canAccess(item.href, role));
+        if (visibleItems.length === 0) return null;
+        return (
+          <section key={group.label} aria-labelledby={`nav-${group.label.replaceAll(" ", "-")}`}>
+          <p id={`nav-${group.label.replaceAll(" ", "-")}`} className="mb-1.5 px-3 text-[0.625rem] font-semibold uppercase tracking-[0.16em] text-sidebar-foreground/70">
+              {group.label}
+            </p>
+            <div className="space-y-1">
+              {visibleItems.map((item) => (
+                <NavigationLink key={item.href} {...item} active={isActivePath(pathname, item.href)} onNavigate={onNavigate} />
+              ))}
+            </div>
+          </section>
+        );
+      })}
+
+      {settingItems.some((item) => canAccess(item.href, role)) && (
+        <section className="border-t border-sidebar-border pt-4" aria-labelledby="nav-pengaturan">
+          <p id="nav-pengaturan" className="mb-1.5 px-3 text-[0.625rem] font-semibold uppercase tracking-[0.16em] text-sidebar-foreground/70">Pengaturan</p>
+          <div className="space-y-1">
+            {settingItems.filter((item) => canAccess(item.href, role)).map((item) => (
+              <NavigationLink key={item.href} {...item} active={isActivePath(pathname, item.href)} onNavigate={onNavigate} />
+            ))}
+          </div>
+        </section>
+      )}
+    </nav>
+  );
+}
+
+function UserPanel({ user, collapsed = false }: { user?: UserProfileInfo; collapsed?: boolean }) {
+  const userName = user?.name || "Owner";
+  const userEmail = user?.email || "owner@sultansf.id";
+  const initial = user?.initial || userName.charAt(0).toUpperCase();
+
   if (collapsed) {
     return (
       <Tooltip>
-        <TooltipTrigger render={
-          <Link
-            href={href}
-            className={cn(
-              "flex items-center justify-center w-full h-9 rounded-lg transition-colors",
-              active
-                ? "bg-[#1e3a8a] text-white"
-                : "text-stone-500 hover:bg-[#eff6ff] hover:text-[#1e3a8a]"
-            )}
-          />
-        }>
-          <Icon className="w-4 h-4" />
+        <TooltipTrigger
+          render={<button type="button" onClick={async () => signOutAction()} className="flex size-10 items-center justify-center rounded-xl text-sidebar-foreground transition-colors hover:bg-sidebar-hover hover:text-white" aria-label="Keluar" />}
+        >
+          <span className="flex size-7 items-center justify-center rounded-lg bg-[#e5e5e1] text-xs font-bold text-[#242423]">{initial}</span>
         </TooltipTrigger>
-        <TooltipContent side="right" className="text-xs">
-          {label}
-        </TooltipContent>
+        <TooltipContent side="right" className="text-xs">{userName} · keluar</TooltipContent>
       </Tooltip>
     );
   }
 
   return (
-    <Link
-      href={href}
-      className={cn(
-        "flex items-center gap-3 w-full h-9 px-3 rounded-lg transition-colors text-sm",
-        active
-          ? "bg-[#1e3a8a] text-white font-medium"
-          : "text-stone-500 hover:bg-[#eff6ff] hover:text-[#1e3a8a]"
-      )}
-    >
-      <Icon className="w-4 h-4 flex-shrink-0" />
-      <span className="flex-1 truncate">{label}</span>
-    </Link>
+    <div className="flex items-center gap-3 rounded-xl border border-white/8 bg-white/[0.045] p-2.5">
+      <div className="flex size-8 shrink-0 items-center justify-center rounded-[10px] bg-[#e5e5e1] text-xs font-bold text-[#242423]">{initial}</div>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-xs font-semibold text-white">{userName}</p>
+        <p className="mt-0.5 truncate text-[10px] text-sidebar-foreground">{userEmail}</p>
+      </div>
+      <button type="button" onClick={async () => signOutAction()} className="flex size-8 shrink-0 items-center justify-center rounded-lg text-sidebar-foreground transition-colors hover:bg-red-950/40 hover:text-red-300" aria-label="Keluar" title="Keluar">
+        <LogOut className="size-3.5" />
+      </button>
+    </div>
   );
 }
 
@@ -158,166 +245,29 @@ interface SidebarProps {
   company: CompanyProfile;
 }
 
-function canAccess(href: string, role: Role) {
-  if (role === "OWNER") return true;
-  if (role === "FINANCE") return !href.startsWith("/settings/");
-  return ["/dashboard", "/products", "/invoices", "/customers", "/suppliers"].includes(href);
-}
-
 export function Sidebar({ collapsed, onToggle, user, role, company }: SidebarProps) {
   const pathname = usePathname();
-
-  const isActive = (href: string) => {
-    if (pathname === href) return true;
-    // Hindari /reports match ke /reports/sales sekaligus /reports/profit dll sebagai satu active
-    // Hanya aktif jika pathname dimulai dengan href + "/" DAN href lebih dari 1 segment
-    const segments = href.split("/").filter(Boolean);
-    if (segments.length >= 2) return pathname.startsWith(href + "/") || pathname === href;
-    return pathname === href;
-  };
-
-  const userName = user?.name || "Owner";
-  const userEmail = user?.email || "owner@sultansf.id";
-  const userInitial = user?.initial || userName.charAt(0).toUpperCase();
-
   return (
-    <aside
-      className={cn(
-        "flex flex-col h-full bg-white transition-all duration-300 ease-in-out flex-shrink-0 relative",
-        collapsed ? "w-[64px]" : "w-[240px]"
-      )}
-    >
-      {/* Logo */}
-      <div
-        className={cn(
-          "flex items-center h-16 border-b border-stone-200 flex-shrink-0",
-          collapsed ? "justify-center px-0" : "px-4 gap-3"
-        )}
-      >
-        <div className="flex items-center justify-center w-8 h-8 bg-white rounded-lg flex-shrink-0 overflow-hidden p-0.5">
-          {company.logoUrl ? (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img
-              src={company.logoUrl}
-              alt={company.name}
-              className="w-full h-full object-contain"
-            />
-          ) : (
-            <Fish className="w-4 h-4 text-[#1e3a8a]" />
-          )}
-        </div>
+    <aside className={cn("relative flex h-full shrink-0 flex-col bg-sidebar transition-[width] duration-300", collapsed ? "w-[76px]" : "w-[256px]")}>
+      <div className={cn("flex h-[72px] shrink-0 items-center border-b border-sidebar-border", collapsed ? "justify-center px-2" : "justify-between px-4")}>
+        <Brand company={company} collapsed={collapsed} />
         {!collapsed && (
-          <div className="flex flex-col min-w-0">
-            <span className="text-stone-900 text-sm font-semibold leading-tight truncate">
-              {company.name || "Sultan Seafood"}
-            </span>
-            <span className="text-stone-400 text-xs leading-tight">ERP</span>
-          </div>
+          <button type="button" onClick={onToggle} className="flex size-9 items-center justify-center rounded-[10px] text-sidebar-foreground transition-colors hover:bg-sidebar-hover hover:text-white" aria-label="Ciutkan navigasi">
+            <PanelLeftClose className="size-4" />
+          </button>
         )}
       </div>
-
-      {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
-        {collapsed ? (
-          // Collapsed: flat list
-          navItems.filter((item) => canAccess(item.href, role)).map((item) => (
-            <NavLink
-              key={item.href}
-              href={item.href}
-              label={item.label}
-              icon={item.icon}
-              active={isActive(item.href)}
-              collapsed
-            />
-          ))
-        ) : (
-          // Expanded: grouped
-          navGrouped.map((group, gi) => (
-            <div key={gi} className={gi > 0 ? "mt-3" : ""}>
-              {group.label && (
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-stone-400 px-3 mb-1">
-                  {group.label}
-                </p>
-              )}
-              {group.items.filter((item) => canAccess(item.href, role)).map((item) => (
-                <NavLink
-                  key={item.href}
-                  href={item.href}
-                  label={item.label}
-                  icon={item.icon}
-                  active={isActive(item.href)}
-                  collapsed={false}
-                />
-              ))}
-            </div>
-          ))
-        )}
-        
-        {/* Bottom items */}
-        <div className="pt-3 border-t border-stone-200 mt-3">
-          {bottomItems.filter((item) => canAccess(item.href, role)).map((item) => (
-            <NavLink
-              key={item.href}
-              href={item.href}
-              label={item.label}
-              icon={item.icon}
-              active={isActive(item.href)}
-              collapsed={collapsed}
-            />
-          ))}
-        </div>
-      </nav>
-
-      {/* User profile */}
-      <div className="border-t border-stone-200 p-3">
-        {collapsed ? (
-          <Tooltip>
-            <TooltipTrigger render={
-              <button
-                onClick={async () => { await signOutAction(); }}
-                className="flex items-center justify-center w-full h-9 rounded-lg text-stone-500 hover:bg-[#eff6ff] hover:text-[#1e3a8a] transition-colors"
-              />
-            }>
-              <div className="w-7 h-7 rounded-full bg-[#1e3a8a] flex items-center justify-center text-xs font-medium text-white">
-                {userInitial}
-              </div>
-            </TooltipTrigger>
-            <TooltipContent side="right" className="text-xs">
-              {userName} — Keluar
-            </TooltipContent>
-          </Tooltip>
-        ) : (
-          <div className="flex items-center gap-3 px-1">
-            <div className="w-8 h-8 rounded-full bg-[#1e3a8a] flex items-center justify-center text-xs font-semibold text-white flex-shrink-0">
-              {userInitial}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-stone-800 text-xs font-medium truncate">{userName}</p>
-              <p className="text-stone-400 text-xs truncate">{userEmail}</p>
-            </div>
-            <button
-              onClick={async () => { await signOutAction(); }}
-              title="Keluar"
-              className="text-stone-400 hover:text-red-500 transition-colors cursor-pointer"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
-          </div>
-        )}
+      {collapsed && (
+        <button type="button" onClick={onToggle} className="mx-auto mt-3 flex size-10 items-center justify-center rounded-[10px] text-sidebar-foreground transition-colors hover:bg-sidebar-hover hover:text-white" aria-label="Buka navigasi">
+          <PanelLeftOpen className="size-4" />
+        </button>
+      )}
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+        <Navigation role={role} pathname={pathname} collapsed={collapsed} />
       </div>
-
-      {/* Collapse toggle */}
-      <button
-        onClick={onToggle}
-        className="absolute -right-3 top-20 w-6 h-6 bg-white border border-stone-300 shadow-sm rounded-full flex items-center justify-center text-stone-400 hover:text-[#1e3a8a] hover:border-blue-200 transition-colors z-10"
-        aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-      >
-        {collapsed ? (
-          <ChevronRight className="w-3 h-3" />
-        ) : (
-          <ChevronLeft className="w-3 h-3" />
-        )}
-      </button>
+      <div className={cn("shrink-0 border-t border-sidebar-border", collapsed ? "flex justify-center p-3" : "p-3")}>
+        <UserPanel user={user} collapsed={collapsed} />
+      </div>
     </aside>
   );
 }
@@ -332,105 +282,59 @@ interface MobileSidebarProps {
 
 export function MobileSidebar({ open, onClose, user, role, company }: MobileSidebarProps) {
   const pathname = usePathname();
-
-  const isActive = (href: string) => {
-    if (pathname === href) return true;
-    // Hindari /reports match ke /reports/sales sekaligus /reports/profit dll sebagai satu active
-    // Hanya aktif jika pathname dimulai dengan href + "/" DAN href lebih dari 1 segment
-    const segments = href.split("/").filter(Boolean);
-    if (segments.length >= 2) return pathname.startsWith(href + "/") || pathname === href;
-    return pathname === href;
-  };
-
-  const userName = user?.name || "Owner";
-  const userEmail = user?.email || "owner@sultansf.id";
-  const userInitial = user?.initial || userName.charAt(0).toUpperCase();
-
   return (
     <>
-      <div
-        className={cn(
-          "fixed inset-0 bg-black/50 z-40 transition-opacity duration-300",
-          open ? "opacity-100" : "opacity-0 pointer-events-none"
-        )}
-        onClick={onClose}
-      />
-      <aside
-        className={cn(
-          "fixed left-0 top-0 bottom-0 w-[260px] bg-white z-50 flex flex-col transition-transform duration-300 ease-in-out",
-          open ? "translate-x-0" : "-translate-x-full"
-        )}
-      >
-        <div className="flex items-center h-16 px-4 gap-3 border-b border-stone-200 flex-shrink-0">
-          <div className="flex items-center justify-center w-8 h-8 bg-white rounded-lg overflow-hidden p-0.5 shrink-0">
-            {company.logoUrl ? (
-              /* eslint-disable-next-line @next/next/no-img-element */
-              <img
-                src={company.logoUrl}
-                alt={company.name}
-                className="w-full h-full object-contain"
-              />
-            ) : (
-              <Fish className="w-4 h-4 text-[#1e3a8a]" />
-            )}
-          </div>
-          <div className="flex flex-col min-w-0">
-            <span className="text-stone-900 text-sm font-semibold leading-tight truncate">{company.name || "Sultan Seafood"}</span>
-            <span className="text-stone-400 text-xs">ERP</span>
-          </div>
+      <button type="button" aria-label="Tutup menu" onClick={onClose} className={cn("fixed inset-0 z-40 bg-[#111110]/58 backdrop-blur-[2px] transition-opacity duration-200 lg:hidden", open ? "opacity-100" : "pointer-events-none opacity-0")} />
+      <aside aria-label="Menu mobile" aria-hidden={!open} className={cn("fixed inset-y-0 left-0 z-50 flex w-[86vw] max-w-[330px] flex-col bg-sidebar shadow-[24px_0_70px_-30px_rgba(0,0,0,0.8)] transition-transform duration-300 ease-out lg:hidden", open ? "translate-x-0" : "-translate-x-full")}>
+        <div className="flex h-[72px] shrink-0 items-center justify-between border-b border-sidebar-border px-4">
+          <Brand company={company} />
+          <button type="button" onClick={onClose} className="flex size-10 items-center justify-center rounded-[10px] text-sidebar-foreground transition-colors hover:bg-sidebar-hover hover:text-white" aria-label="Tutup navigasi">
+            <X className="size-4" />
+          </button>
         </div>
-
-        <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
-          {navGrouped.map((group, gi) => (
-            <div key={gi} className={gi > 0 ? "mt-3" : ""}>
-              {group.label && (
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-stone-400 px-3 mb-1">
-                  {group.label}
-                </p>
-              )}
-              {group.items.filter((item) => canAccess(item.href, role)).map((item) => {
-                const Icon = item.icon;
-                const active = isActive(item.href);
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={onClose}
-                    className={cn(
-                      "flex items-center gap-3 w-full h-9 px-3 rounded-lg transition-colors text-sm",
-                      active
-                        ? "bg-[#1e3a8a] text-white font-medium"
-                        : "text-stone-500 hover:bg-[#eff6ff] hover:text-[#1e3a8a]"
-                    )}
-                  >
-                    <Icon className="w-4 h-4 flex-shrink-0" />
-                    <span>{item.label}</span>
-                  </Link>
-                );
-              })}
-            </div>
-          ))}
-        </nav>
-
-        <div className="border-t border-stone-200 p-3">
-          <div className="flex items-center gap-3 px-1">
-            <div className="w-8 h-8 rounded-full bg-[#1e3a8a] flex items-center justify-center text-xs font-semibold text-white flex-shrink-0">
-              {userInitial}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-stone-800 text-xs font-medium truncate">{userName}</p>
-              <p className="text-stone-400 text-xs truncate">{userEmail}</p>
-            </div>
-            <button
-              onClick={async () => { await signOutAction(); }}
-              title="Keluar"
-              className="text-stone-400 hover:text-red-500 transition-colors cursor-pointer"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
-          </div>
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-5">
+          <Navigation role={role} pathname={pathname} onNavigate={onClose} />
+        </div>
+        <div className="shrink-0 border-t border-sidebar-border p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
+          <UserPanel user={user} />
         </div>
       </aside>
     </>
+  );
+}
+
+export function MobileBottomNav({ role, onMenuOpen }: { role: Role; onMenuOpen: () => void }) {
+  const pathname = usePathname();
+  const quickItems = role === "STAFF"
+    ? [
+        { label: "Beranda", href: "/dashboard", icon: LayoutDashboard },
+        { label: "Invoice", href: "/invoices", icon: FileText },
+        { label: "Produk", href: "/products", icon: Package },
+        { label: "Restoran", href: "/customers", icon: UtensilsCrossed },
+      ]
+    : [
+        { label: "Beranda", href: "/dashboard", icon: LayoutDashboard },
+        { label: "Invoice", href: "/invoices", icon: FileText },
+        { label: "Stok", href: "/stock", icon: Boxes },
+        { label: "Restoran", href: "/customers", icon: UtensilsCrossed },
+      ];
+
+  return (
+    <nav aria-label="Navigasi cepat mobile" className="fixed inset-x-3 bottom-3 z-30 grid grid-cols-5 rounded-[18px] border border-white/10 bg-sidebar/95 px-1.5 pb-[calc(0.35rem+env(safe-area-inset-bottom))] pt-1.5 shadow-[0_20px_55px_-20px_rgba(0,0,0,0.72)] backdrop-blur-xl lg:hidden">
+      {quickItems.map((item) => {
+        const active = isActivePath(pathname, item.href);
+        const Icon = item.icon;
+        return (
+          <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined} className={cn("flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-xl text-[0.625rem] font-medium transition-colors", active ? "bg-sidebar-active text-[#1b1b1a]" : "text-sidebar-foreground hover:text-white")}>
+            <Icon className="size-4" strokeWidth={active ? 2.3 : 1.8} />
+            <span>{item.label}</span>
+          </Link>
+        );
+      })}
+      <button type="button" onClick={onMenuOpen} className="flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-xl text-[0.625rem] font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-hover hover:text-white" aria-label="Buka semua menu">
+        <Menu className="size-4" />
+        <span>Menu</span>
+      </button>
+    </nav>
   );
 }

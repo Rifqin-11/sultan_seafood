@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Tag } from "lucide-react";
+import { Boxes } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { PageHeader } from "@/components/app-shell/page-header";
 import { ProductTable } from "@/components/products/product-table";
@@ -23,11 +23,11 @@ export default async function ProductsPage() {
         description="Kelola produk seafood dan harga jual default"
       >
         {canManage && <Link
-          href="/pricing/purchase"
+          href="/stock"
           className={buttonVariants({ variant: "outline", size: "sm" })}
         >
-          <Tag className="w-4 h-4 mr-1" />
-          Harga Beli
+          <Boxes className="mr-1 size-4" />
+          Stok & Harga
         </Link>}
         {canManage && <AddProductDialog />}
       </PageHeader>

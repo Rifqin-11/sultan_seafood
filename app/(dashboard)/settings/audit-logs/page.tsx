@@ -13,7 +13,7 @@ export default async function AuditLogsPage() {
   const logs = await getAuditLogsAction();
   return <div className="space-y-6">
     <PageHeader title="Audit Log" description="Riwayat aktivitas penting yang berasal dari database" />
-    <div className="bg-white rounded-2xl border border-border shadow-card overflow-hidden">
+    <div className="erp-surface overflow-hidden">
       <Table><TableHeader><TableRow><TableHead>Waktu</TableHead><TableHead>Pengguna</TableHead><TableHead>Entitas</TableHead><TableHead>Aksi</TableHead></TableRow></TableHeader>
       <TableBody>{logs.length === 0 ? <TableRow><TableCell colSpan={4} className="text-center py-10 text-muted-foreground">Belum ada aktivitas tercatat.</TableCell></TableRow> : logs.map((log) => <TableRow key={log.id}><TableCell className="text-xs font-mono">{formatDatetime(log.createdAt)}</TableCell><TableCell>{log.userName}</TableCell><TableCell>{log.entityName} #{log.entityId.slice(-6)}</TableCell><TableCell className="font-medium">{labels[log.action] ?? log.action}</TableCell></TableRow>)}</TableBody></Table>
       <div className="px-4 py-3 border-t text-xs text-muted-foreground">{logs.length} aktivitas</div>

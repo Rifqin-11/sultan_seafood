@@ -146,7 +146,7 @@ export function PurchasePriceTable({ costs, products }: PurchasePriceTableProps)
 
   return (
     <>
-      <div className="bg-white rounded-2xl border border-amber-200 shadow-card overflow-hidden">
+      <div className="erp-surface overflow-hidden border-amber-200">
         <div className="px-5 py-4 border-b border-amber-200 bg-amber-50/50 flex items-center gap-2">
           <span className="text-[10px] font-medium px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded border border-amber-200">
             Internal

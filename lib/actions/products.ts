@@ -21,10 +21,10 @@ export async function createProductAction(payload: CreateProductPayload) {
     const { data, error } = await supabase.from("products").insert({ sku: payload.sku?.trim() || null, name: payload.name.trim(), category: payload.category.trim(), size: payload.size?.trim() || null, default_unit: payload.defaultUnit.trim(), default_selling_price: payload.defaultSellingPrice ?? 0, status: "ACTIVE" }).select("id").single();
     if (error) throw error;
     if ((payload.activeCost ?? 0) > 0) {
-      const { error: costError } = await supabase.rpc("set_product_cost", { p_product_id: data.id, p_supplier_id: null, p_unit_cost: payload.activeCost, p_effective_at: new Date().toISOString(), p_notes: "HPP awal produk" });
+      const { error: costError } = await supabase.rpc("set_product_average_cost", { p_product_id: data.id, p_supplier_id: null, p_unit_cost: payload.activeCost, p_effective_at: new Date().toISOString(), p_notes: "HPP awal produk" });
       if (costError) throw new Error(`Produk dibuat, tetapi HPP gagal disimpan: ${costError.message}`);
     }
-    revalidatePath("/products"); revalidatePath("/pricing/purchase"); return { success: true, message: "Produk berhasil ditambahkan." };
+    revalidatePath("/products"); revalidatePath("/stock"); revalidatePath("/pricing/purchase"); return { success: true, message: "Produk berhasil ditambahkan." };
   } catch (error) { return { error: normalizeActionError(error, "Gagal menambahkan produk.") }; }
 }
 
@@ -35,10 +35,10 @@ export async function updateProductAction(payload: UpdateProductPayload) {
     const { error } = await supabase.from("products").update({ sku: payload.sku?.trim() || null, name: payload.name.trim(), category: payload.category.trim(), size: payload.size?.trim() || null, default_unit: payload.defaultUnit.trim(), default_selling_price: payload.defaultSellingPrice ?? 0, status: payload.status }).eq("id", payload.id);
     if (error) throw error;
     if ((payload.activeCost ?? 0) > 0) {
-      const { error: costError } = await supabase.rpc("set_product_cost", { p_product_id: payload.id, p_supplier_id: null, p_unit_cost: payload.activeCost, p_effective_at: new Date().toISOString(), p_notes: "HPP diperbarui dari produk" });
+      const { error: costError } = await supabase.rpc("set_product_average_cost", { p_product_id: payload.id, p_supplier_id: null, p_unit_cost: payload.activeCost, p_effective_at: new Date().toISOString(), p_notes: "HPP diperbarui dari produk" });
       if (costError) throw costError;
     }
-    revalidatePath("/products"); revalidatePath("/pricing/purchase"); return { success: true, message: "Produk berhasil diperbarui." };
+    revalidatePath("/products"); revalidatePath("/stock"); revalidatePath("/pricing/purchase"); return { success: true, message: "Produk berhasil diperbarui." };
   } catch (error) { return { error: normalizeActionError(error, "Gagal memperbarui produk.") }; }
 }
 
@@ -64,7 +64,7 @@ export async function deleteProductAction(id: string) {
     const { data, error } = await supabase.from("products").delete().eq("id", id).select("id").maybeSingle();
     if (error) throw error;
     if (!data) return { error: "Produk tidak ditemukan atau tidak dapat dihapus." };
-    revalidatePath("/products"); revalidatePath("/pricing/purchase"); revalidatePath("/pricing/selling");
+    revalidatePath("/products"); revalidatePath("/stock"); revalidatePath("/pricing/purchase"); revalidatePath("/pricing/selling");
     return { success: true, isWarning: false, message: "Produk berhasil dihapus. Riwayat invoice tetap tersimpan." };
   } catch (error) { return { error: normalizeActionError(error, "Gagal menghapus produk.") }; }
 }
@@ -82,18 +82,19 @@ export async function getProductsAction(): Promise<Product[]> {
       .order("created_at", { ascending: false }),
     supabase
       .from("stock_balances")
-      .select("product_id,quantity,minimum_quantity"),
+      .select("product_id,quantity,minimum_quantity,average_unit_cost"),
   ]);
 
   if (error) throw new Error(error.message);
   if (stockError) throw new Error(stockError.message);
 
   // Build a lookup map for O(1) access per product
-  const stockMap = new Map<string, { quantity: number; minimum_quantity: number }>();
+  const stockMap = new Map<string, { quantity: number; minimum_quantity: number; average_unit_cost: number }>();
   for (const row of stockData ?? []) {
     stockMap.set(String(row.product_id), {
       quantity: Number(row.quantity ?? 0),
       minimum_quantity: Number(row.minimum_quantity ?? 0),
+      average_unit_cost: Number(row.average_unit_cost ?? 0),
     });
   }
 
@@ -103,7 +104,7 @@ export async function getProductsAction(): Promise<Product[]> {
     const stock = stockMap.get(String(product.id));
     const active = costs.filter((cost) => !cost.ended_at).sort((a, b) => new Date(String(b.effective_at)).getTime() - new Date(String(a.effective_at)).getTime())[0];
     const selling = Number(product.default_selling_price ?? 0);
-    const activeCost = Number(active?.unit_cost ?? 0);
+    const activeCost = stock?.average_unit_cost || Number(active?.unit_cost ?? 0);
     return {
       id: String(product.id),
       sku: product.sku ? String(product.sku) : undefined,

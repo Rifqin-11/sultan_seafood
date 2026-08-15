@@ -9,11 +9,11 @@ interface InternalCostCardProps {
 
 export function InternalCostCard({ costs, total }: InternalCostCardProps) {
   return (
-    <div className="bg-white rounded-2xl border border-border p-5 shadow-card">
+    <div className="erp-surface p-5">
       <div className="flex items-start justify-between mb-4">
         <div>
           <div className="flex items-center gap-1.5 mb-0.5">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+            <p className="text-xs font-medium text-muted-foreground">
               Biaya Internal
             </p>
             <span className="text-[10px] font-medium px-1.5 py-0.5 bg-amber-50 text-amber-700 rounded border border-amber-200">
@@ -47,7 +47,7 @@ export function InternalCostCard({ costs, total }: InternalCostCardProps) {
               </div>
               <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-foreground rounded-full transition-all"
+                  className="h-full rounded-full bg-primary transition-all"
                   style={{ width: `${pct}%` }}
                 />
               </div>

@@ -11,7 +11,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Edit2, Trash2, Loader2, Plus, Tag } from "lucide-react";
@@ -126,7 +125,7 @@ export function SellingPriceTable({
 
   return (
     <>
-      <div className="bg-white rounded-2xl border border-border shadow-card overflow-hidden">
+      <div className="erp-surface overflow-hidden">
         <div className="border-b border-stone-200 bg-stone-50 px-4 py-3 text-xs leading-relaxed text-stone-600 sm:hidden">
           Geser tabel ke samping untuk melihat dan mengatur harga khusus tiap restoran. Kolom produk tetap terlihat saat digeser.
         </div>

@@ -41,30 +41,30 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#121212] flex items-center justify-center p-4">
+    <main id="main-content" className="flex min-h-[100dvh] items-center justify-center bg-sidebar px-4 py-8 sm:px-6">
       <div className="w-full max-w-sm">
         {/* Header Logo */}
-        <div className="flex flex-col items-center mb-8">
-          <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center mb-3 shadow-lg">
-            <Fish className="w-6 h-6 text-[#121212]" />
+        <div className="mb-7 flex flex-col items-center">
+          <div className="mb-3 flex size-12 items-center justify-center rounded-2xl border border-white/15 bg-white shadow-lg">
+            <Fish className="size-6 text-primary" />
           </div>
-          <h1 className="text-xl font-bold text-white tracking-tight">Sultan Seafood</h1>
-          <p className="text-xs text-neutral-400 mt-0.5">ERP Internal Restoran</p>
+          <h1 className="text-xl font-bold tracking-tight text-white">Sultan Seafood</h1>
+          <p className="mt-1 text-xs text-sidebar-foreground">Workspace operasional</p>
         </div>
 
         {/* Card Form */}
-        <div className="bg-[#1a1a1a] border border-[#2e2e2e] rounded-2xl p-6 shadow-2xl space-y-5">
+        <div className="space-y-5 rounded-[24px] border border-white/70 bg-white p-5 shadow-[0_32px_90px_-34px_rgba(0,0,0,0.75)] sm:p-7">
           <div className="flex items-start justify-between">
             <div>
-              <h2 className="text-base font-semibold text-white">
-                Masuk ke Akun
+              <h2 className="text-lg font-bold tracking-[-0.025em] text-foreground">
+                Selamat datang kembali
               </h2>
-              <p className="text-xs text-neutral-400 mt-0.5">
-                Masukkan email dan password terdaftar Supabase Auth.
+              <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                Masuk menggunakan akun ERP yang telah disetujui.
               </p>
             </div>
-            <div className="p-2 bg-[#262626] rounded-lg text-neutral-400">
-              <Lock className="w-4 h-4" />
+            <div className="rounded-xl bg-primary/9 p-2.5 text-primary">
+              <Lock className="size-4" />
             </div>
           </div>
 
@@ -72,7 +72,7 @@ export default function LoginPage() {
             <div>
               <label
                 htmlFor="email"
-                className="block text-xs font-medium text-neutral-300 mb-1.5"
+                className="mb-1.5 block text-xs font-medium text-foreground"
               >
                 Email
               </label>
@@ -82,7 +82,7 @@ export default function LoginPage() {
                 placeholder="nama@email.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="h-10 bg-[#242424] border-[#333] text-white placeholder:text-neutral-600 focus-visible:ring-white/20 text-xs"
+                className="h-11 text-sm"
                 autoComplete="email"
                 required
               />
@@ -91,7 +91,7 @@ export default function LoginPage() {
             <div>
               <label
                 htmlFor="password"
-                className="block text-xs font-medium text-neutral-300 mb-1.5"
+                className="mb-1.5 block text-xs font-medium text-foreground"
               >
                 Password
               </label>
@@ -102,14 +102,14 @@ export default function LoginPage() {
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="h-10 bg-[#242424] border-[#333] text-white placeholder:text-neutral-600 focus-visible:ring-white/20 pr-10 text-xs"
+                  className="h-11 pr-11 text-sm"
                   autoComplete="current-password"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-300 transition-colors"
+                  className="absolute right-3 top-1/2 flex size-9 -translate-y-1/2 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                   aria-label={showPassword ? "Sembunyikan password" : "Tampilkan password"}
                 >
                   {showPassword ? (
@@ -122,15 +122,15 @@ export default function LoginPage() {
             </div>
 
             {error && (
-              <div className="text-xs text-red-400 bg-red-950/40 border border-red-900/60 rounded-lg p-3 space-y-0.5">
+              <div className="space-y-0.5 rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-700" role="alert">
                 <p className="font-semibold">Gagal Masuk</p>
-                <p className="text-red-300/90">{error}</p>
+                <p className="text-red-600">{error}</p>
               </div>
             )}
 
             <Button
               type="submit"
-              className="w-full h-10 bg-white text-[#121212] hover:bg-neutral-200 font-semibold text-xs transition-colors mt-2"
+              className="mt-2 h-11 w-full text-sm font-semibold"
               disabled={loading}
             >
               {loading ? (
@@ -140,22 +140,22 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          <p className="text-[11px] text-neutral-500 text-center leading-relaxed">
-            Keamanan terenkripsi via Supabase Auth Session Cookie HTTP-Only.
+          <p className="text-center text-[11px] leading-relaxed text-muted-foreground">
+            Sesi akun dilindungi melalui autentikasi terenkripsi.
           </p>
 
-          <div className="pt-2 border-t border-[#262626] text-center text-xs text-neutral-400">
+          <div className="border-t border-border pt-4 text-center text-xs text-muted-foreground">
             Belum memiliki akun?{" "}
-            <a href="/register" className="text-white font-medium hover:underline">
+            <a href="/register" className="font-semibold text-primary hover:underline">
               Daftar Akun Baru
             </a>
           </div>
         </div>
 
-        <p className="text-xs text-neutral-600 text-center mt-6">
+        <p className="mt-6 text-center text-xs text-sidebar-foreground/70">
           © 2026 Sultan Seafood. Semua hak dilindungi.
         </p>
       </div>
-    </div>
+    </main>
   );
 }

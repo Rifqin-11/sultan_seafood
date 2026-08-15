@@ -4,7 +4,12 @@ import {
   DollarSign,
   TrendingUp,
   AlertTriangle,
+  ArrowRight,
+  Plus,
 } from "lucide-react";
+import Link from "next/link";
+import { PageHeader } from "@/components/app-shell/page-header";
+import { buttonVariants } from "@/components/ui/button";
 import { MetricCard } from "@/components/dashboard/metric-card";
 import { SalesChart } from "@/components/dashboard/sales-chart";
 import { ProfitChart } from "@/components/dashboard/profit-chart";
@@ -23,24 +28,28 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <header className="rounded-2xl border border-stone-200/80 bg-white/85 px-5 py-5 shadow-[0_18px_48px_-32px_rgba(28,25,23,0.38)] backdrop-blur sm:px-6 sm:py-6">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-stone-500">Ringkasan bisnis</p>
-        <h2 className="mt-1 text-2xl font-bold tracking-[-0.035em] text-foreground sm:text-[1.75rem]">Dashboard</h2>
-        <p className="mt-1.5 max-w-2xl text-sm leading-6 text-muted-foreground">
-          Ringkasan performa bisnis Sultan Seafood
-        </p>
-      </header>
+      <PageHeader
+        title="Ringkasan bisnis"
+        description={`Pantau order, arus pendapatan, dan kewajiban dalam ${periodLabel.toLowerCase()}.`}
+      >
+        {canViewInternal && <Link href="/reports/sales" className={buttonVariants({ variant: "outline", size: "sm" })}>
+          Lihat laporan <ArrowRight className="ml-1 size-3.5" />
+        </Link>}
+        <Link href="/invoices/new" className={buttonVariants({ size: "sm" })}>
+          <Plus className="mr-1 size-3.5" /> Buat invoice
+        </Link>
+      </PageHeader>
 
       {/* Row 1 — Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        {canViewInternal && <MetricCard
+      <div className={`grid grid-cols-1 gap-3 min-[430px]:grid-cols-2 lg:gap-4 ${canViewInternal ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}>
+        <MetricCard
           title="Order Hari Ini"
           value={m.ordersToday}
           icon={ShoppingBag}
           change={m.ordersTodayChange}
           changeLabel="vs kemarin"
           href="/invoices?filter=today"
-        />}
+        />
         <MetricCard
           title="Order Minggu Ini"
           value={m.ordersThisWeek}
@@ -56,18 +65,18 @@ export default async function DashboardPage() {
           icon={DollarSign}
           change={m.revenueThisMonthChange}
           changeLabel="vs bulan lalu"
-          href="/reports/sales"
+          href={canViewInternal ? "/reports/sales" : undefined}
         />
-        <MetricCard
-          title="Laba Transaksi"
-          value={m.transactionProfitThisMonth}
+        {canViewInternal && <MetricCard
+          title="Laba Bersih"
+          value={m.netProfitThisMonth}
           isCurrency
           icon={TrendingUp}
-          change={m.transactionMarginThisMonth}
+          change={m.netMarginThisMonth}
           changeLabel="margin"
           href="/reports/profit"
           internal
-        />
+        />}
       </div>
 
       {/* Row 2 — Charts */}
@@ -84,8 +93,8 @@ export default async function DashboardPage() {
         />}
 
         {/* Receivables summary */}
-        {canViewInternal && <div className="bg-white rounded-2xl border border-border p-5 shadow-card">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">
+        {canViewInternal && <div className="erp-surface p-5">
+          <p className="mb-3 text-xs font-medium text-muted-foreground">
             Status Piutang
           </p>
           <div className="space-y-3">
@@ -129,8 +138,8 @@ export default async function DashboardPage() {
         </div>}
 
         {/* Quick stats */}
-        <div className="bg-white rounded-2xl border border-border p-5 shadow-card">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">
+        {canViewInternal && <div className="erp-surface p-5">
+          <p className="mb-3 text-xs font-medium text-muted-foreground">
             Ringkasan Keuangan
           </p>
           <div className="space-y-3">
@@ -150,14 +159,19 @@ export default async function DashboardPage() {
                 internal: true,
               },
               {
-                label: "Laba Transaksi",
-                value: formatCurrency(m.transactionProfitThisMonth),
+                label: "Pengeluaran Operasional",
+                value: formatCurrency(m.operatingExpensesThisMonth),
+                internal: true,
+              },
+              {
+                label: "Laba Bersih",
+                value: formatCurrency(m.netProfitThisMonth),
                 highlight: true,
                 internal: true,
               },
               {
                 label: "Margin",
-                value: formatPercent(m.transactionMarginThisMonth),
+                value: formatPercent(m.netMarginThisMonth),
                 highlight: true,
                 internal: true,
               },
@@ -188,7 +202,7 @@ export default async function DashboardPage() {
               </div>
             ))}
           </div>
-        </div>
+        </div>}
       </div>
 
       {/* Row 4 — Outstanding Invoices */}

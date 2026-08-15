@@ -19,18 +19,18 @@ export async function createExpenseAction(payload: CreateExpensePayload) {
   try {
     const user = await requireRole(["OWNER", "FINANCE"]); const supabase = await createClient();
     const { error } = await supabase.from("expenses").insert({ category: payload.category.trim(), description: payload.description.trim(), amount: payload.amount, expense_date: payload.expenseDate, recorded_by: user.id });
-    if (error) throw error; revalidatePath("/expenses"); return { success: true, message: "Pengeluaran berhasil dicatat." };
+    if (error) throw error; revalidatePath("/expenses"); revalidatePath("/dashboard"); revalidatePath("/reports/profit"); return { success: true, message: "Pengeluaran berhasil dicatat." };
   } catch (error) { return { error: normalizeActionError(error, "Gagal mencatat pengeluaran.") }; }
 }
 
 export async function updateExpenseAction(payload: UpdateExpensePayload) {
   const invalid = validate(payload); if (invalid) return { error: invalid };
-  try { await requireRole(["OWNER", "FINANCE"]); const supabase = await createClient(); const { error } = await supabase.from("expenses").update({ category: payload.category.trim(), description: payload.description.trim(), amount: payload.amount, expense_date: payload.expenseDate }).eq("id", payload.id); if (error) throw error; revalidatePath("/expenses"); return { success: true, message: "Pengeluaran berhasil diperbarui." }; }
+  try { await requireRole(["OWNER", "FINANCE"]); const supabase = await createClient(); const { error } = await supabase.from("expenses").update({ category: payload.category.trim(), description: payload.description.trim(), amount: payload.amount, expense_date: payload.expenseDate }).eq("id", payload.id); if (error) throw error; revalidatePath("/expenses"); revalidatePath("/dashboard"); revalidatePath("/reports/profit"); return { success: true, message: "Pengeluaran berhasil diperbarui." }; }
   catch (error) { return { error: normalizeActionError(error, "Gagal memperbarui pengeluaran.") }; }
 }
 
 export async function deleteExpenseAction(id: string) {
-  try { await requireRole(["OWNER", "FINANCE"]); const supabase = await createClient(); const { error } = await supabase.from("expenses").delete().eq("id", id); if (error) throw error; revalidatePath("/expenses"); return { success: true, message: "Pengeluaran berhasil dihapus." }; }
+  try { await requireRole(["OWNER", "FINANCE"]); const supabase = await createClient(); const { error } = await supabase.from("expenses").delete().eq("id", id); if (error) throw error; revalidatePath("/expenses"); revalidatePath("/dashboard"); revalidatePath("/reports/profit"); return { success: true, message: "Pengeluaran berhasil dihapus." }; }
   catch (error) { return { error: normalizeActionError(error, "Gagal menghapus pengeluaran.") }; }
 }
 

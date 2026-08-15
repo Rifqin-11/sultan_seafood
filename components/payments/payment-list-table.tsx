@@ -76,7 +76,7 @@ export function PaymentListTable({ payments, invoices }: PaymentListTableProps) 
 
   return (
     <>
-      <div className="bg-white rounded-2xl border border-border shadow-card overflow-hidden">
+      <div className="erp-surface overflow-hidden">
         <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-4 sm:px-5">
           <div>
             <h3 className="text-sm font-semibold">Riwayat Pembayaran</h3>
@@ -84,7 +84,7 @@ export function PaymentListTable({ payments, invoices }: PaymentListTableProps) 
           </div>
           <RecordPaymentDialog invoices={invoices} />
         </div>
-        <div className="hidden sm:block">
+        <div className="hidden lg:block">
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/30 hover:bg-muted/30">
@@ -93,6 +93,7 @@ export function PaymentListTable({ payments, invoices }: PaymentListTableProps) 
                 <TableHead className="text-xs font-semibold">Metode</TableHead>
                 <TableHead className="text-xs font-semibold">Bukti Transfer</TableHead>
                 <TableHead className="text-xs font-semibold text-right">Nominal</TableHead>
+                <TableHead className="w-10" />
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -162,7 +163,7 @@ export function PaymentListTable({ payments, invoices }: PaymentListTableProps) 
             </TableBody>
           </Table>
         </div>
-        <div className="divide-y divide-stone-200 sm:hidden">
+        <div className="divide-y divide-border lg:hidden">
           {payments.length === 0 ? (
             <div className="py-12">
               <EmptyState
@@ -184,14 +185,14 @@ export function PaymentListTable({ payments, invoices }: PaymentListTableProps) 
                     </div>
                     <p className="shrink-0 text-sm font-bold tabular-nums text-emerald-600">+{formatCurrency(payment.amount)}</p>
                   </div>
-                  <div className="grid grid-cols-2 gap-2 rounded-xl bg-stone-50 p-3 text-xs">
+                  <div className="grid grid-cols-2 gap-2 rounded-xl bg-muted/55 p-3 text-xs">
                     <div>
-                      <p className="text-stone-500">Tanggal bayar</p>
-                      <p className="mt-1 font-medium text-stone-800">{formatDateShort(payment.paymentDate)}</p>
+                      <p className="text-muted-foreground">Tanggal bayar</p>
+                      <p className="mt-1 font-medium text-foreground">{formatDateShort(payment.paymentDate)}</p>
                     </div>
-                    <div className="border-l border-stone-200 pl-3">
-                      <p className="text-stone-500">Metode</p>
-                      <p className="mt-1 font-medium text-stone-800">{methodLabel[payment.method] ?? payment.method}</p>
+                    <div className="border-l border-border pl-3">
+                      <p className="text-muted-foreground">Metode</p>
+                      <p className="mt-1 font-medium text-foreground">{methodLabel[payment.method] ?? payment.method}</p>
                     </div>
                   </div>
                   <button

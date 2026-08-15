@@ -4,7 +4,7 @@ import { calculateInvoice, formatCurrency } from "../lib/utils.ts";
 import { createCsv } from "../lib/csv.ts";
 import { getEffectiveInvoiceStatus, isPublicInvoice, sanitizeInvoiceForRole } from "../lib/domain/invoices.ts";
 import { ROLE_PERMISSIONS, type Invoice } from "../types/index.ts";
-import { getStockMovementLabel, validateStockAdjustment, validateStockReceiptPayload } from "../lib/domain/inventory.ts";
+import { calculateWeightedAverageCost, getStockMovementLabel, validateStockAdjustment, validateStockReceiptPayload, validateStockSettings } from "../lib/domain/inventory.ts";
 import { normalizeActionError } from "../lib/security/errors.ts";
 
 const invoice: Invoice = {
@@ -65,6 +65,16 @@ test("stock adjustment requires a reason and movement labels stay readable", () 
   assert.match(validateStockAdjustment("p1", 1, "") ?? "", /Alasan/);
   assert.equal(validateStockAdjustment("p1", -2, "Stok opname"), null);
   assert.equal(getStockMovementLabel("SALE_OUT"), "Keluar untuk invoice");
+});
+
+test("weighted-average HPP combines current stock with a differently priced receipt", () => {
+  assert.equal(calculateWeightedAverageCost(10, 50_000, 5, 65_000), 55_000);
+  assert.equal(calculateWeightedAverageCost(0, 0, 5, 65_000), 65_000);
+});
+
+test("stock opname accepts an absolute target balance", () => {
+  assert.equal(validateStockSettings({ productId: "p1", targetQuantity: 15, minimumQuantity: 5, notes: "Stok opname" }), null);
+  assert.match(validateStockSettings({ productId: "p1", targetQuantity: -1, minimumQuantity: 0 }) ?? "", /aktual/);
 });
 
 test("action errors expose structured database details", () => {

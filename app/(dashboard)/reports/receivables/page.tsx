@@ -40,7 +40,7 @@ export default async function ReceivablesPage() {
     <div className="space-y-6">
       <PageHeader title="Piutang" description="Daftar invoice yang belum lunas" />
 
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-3 min-[430px]:grid-cols-2 lg:grid-cols-3 lg:gap-4">
         <MetricCard accent="amber"
           title="Total Piutang"
           value={totalReceivables}
@@ -59,8 +59,8 @@ export default async function ReceivablesPage() {
         />
       </div>
 
-      <div className="bg-white rounded-2xl border border-border shadow-card overflow-hidden">
-        <div className="hidden sm:block">
+      <div className="erp-surface overflow-hidden">
+        <div className="hidden lg:block">
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/30 hover:bg-muted/30">
@@ -126,7 +126,7 @@ export default async function ReceivablesPage() {
             </TableBody>
           </Table>
         </div>
-        <div className="divide-y divide-stone-200 sm:hidden">
+        <div className="divide-y divide-border lg:hidden">
           {unpaid.length === 0 ? (
             <p className="px-5 py-12 text-center text-sm leading-6 text-muted-foreground">
               Tidak ada piutang outstanding. Semua invoice telah lunas!
@@ -163,7 +163,7 @@ export default async function ReceivablesPage() {
             ))
           )}
         </div>
-        <div className="flex items-center justify-between px-4 py-3 border-t border-border">
+        <div className="flex flex-col gap-1 border-t border-border px-4 py-3 min-[430px]:flex-row min-[430px]:items-center min-[430px]:justify-between">
           <p className="text-xs text-muted-foreground">
             {unpaid.length} invoice belum lunas
           </p>

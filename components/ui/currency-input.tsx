@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { cn } from "@/lib/utils";
 
 interface CurrencyInputProps {
@@ -46,14 +46,6 @@ export function CurrencyInput({
 }: CurrencyInputProps) {
   const [isFocused, setIsFocused] = useState(false);
   const [displayValue, setDisplayValue] = useState(() => formatRupiah(value));
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  // Sync display when value changes externally (e.g. product selected)
-  const prevValueRef = useRef(value);
-  if (prevValueRef.current !== value && !isFocused) {
-    prevValueRef.current = value;
-    setDisplayValue(formatRupiah(value));
-  }
 
   const handleFocus = useCallback(
     (e: React.FocusEvent<HTMLInputElement>) => {
@@ -73,7 +65,6 @@ export function CurrencyInput({
       const clamped = min !== undefined ? Math.max(min, parsed) : parsed;
       onChange(clamped);
       setDisplayValue(formatRupiah(clamped));
-      prevValueRef.current = clamped;
       onBlur?.(e);
     },
     [displayValue, min, onChange, onBlur]
@@ -101,11 +92,10 @@ export function CurrencyInput({
         Rp
       </span>
       <input
-        ref={inputRef}
         id={id}
         type="text"
         inputMode="numeric"
-        value={displayValue}
+        value={isFocused ? displayValue : formatRupiah(value)}
         onChange={handleChange}
         onFocus={handleFocus}
         onBlur={handleBlur}

@@ -7,7 +7,7 @@ export default function InvoiceSettingsPage() {
   return (
     <div className="space-y-6 max-w-2xl">
       <PageHeader title="Pengaturan Nomor Invoice" description="Format dan urutan penomoran invoice" />
-      <div className="bg-white rounded-2xl border border-border shadow-card p-6 space-y-6">
+      <div className="erp-surface space-y-6 p-5 sm:p-6">
         <div>
           <p className="text-sm font-semibold mb-1">Format Saat Ini</p>
           <div className="inline-flex items-center gap-2 px-4 py-2.5 bg-muted rounded-xl font-mono text-sm font-medium">

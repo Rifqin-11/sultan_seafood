@@ -17,7 +17,7 @@ export async function createPurchasePriceAction(payload: CreatePurchasePricePayl
     await requirePermission("manage_purchase_price");
     if (!payload.productId || !Number.isFinite(payload.unitCost) || payload.unitCost <= 0) return { error: "Produk dan harga beli wajib valid." };
     const supabase = await createClient();
-    const { error } = await supabase.rpc("set_product_cost", {
+    const { error } = await supabase.rpc("set_product_average_cost", {
       p_product_id: payload.productId,
       p_supplier_id: payload.supplierId || null,
       p_unit_cost: payload.unitCost,
@@ -25,8 +25,8 @@ export async function createPurchasePriceAction(payload: CreatePurchasePricePayl
       p_notes: payload.notes || null,
     });
     if (error) throw error;
-    revalidatePath("/pricing/purchase"); revalidatePath("/products"); revalidatePath("/reports/profit");
-    return { success: true, message: "Harga beli aktif berhasil diperbarui." };
+    revalidatePath("/stock"); revalidatePath("/pricing/purchase"); revalidatePath("/products"); revalidatePath("/reports/profit");
+    return { success: true, message: "Harga beli rata-rata berhasil diperbarui." };
   } catch (error) { return { error: normalizeActionError(error, "Gagal menyimpan harga beli.") }; }
 }
 
@@ -55,6 +55,7 @@ export async function createCustomerPriceAction(payload: CreateCustomerPricePayl
     const { error } = await supabase.rpc("set_customer_price", { p_customer_id: payload.customerId, p_product_id: payload.productId, p_selling_price: payload.sellingPrice, p_effective_at: new Date().toISOString() });
     if (error) throw error;
     revalidatePath("/pricing/selling");
+    revalidatePath("/stock");
     return { success: true, message: "Harga khusus restoran berhasil disimpan." };
   } catch (error) { return { error: normalizeActionError(error, "Gagal menyimpan harga khusus.") }; }
 }
@@ -89,7 +90,7 @@ export async function deletePurchasePriceAction(id: string) {
     const supabase = await createClient();
     const { error } = await supabase.from("product_costs").update({ ended_at: new Date().toISOString() }).eq("id", id).is("ended_at", null);
     if (error) throw error;
-    revalidatePath("/pricing/purchase"); revalidatePath("/products");
+    revalidatePath("/stock"); revalidatePath("/pricing/purchase"); revalidatePath("/products");
     return { success: true, message: "Harga beli dinonaktifkan tanpa menghapus riwayat." };
   } catch (error) { return { error: normalizeActionError(error, "Gagal menonaktifkan harga beli.") }; }
 }
@@ -110,7 +111,7 @@ export async function deleteCustomerPriceAction(id: string) {
     const supabase = await createClient();
     const { error } = await supabase.from("customer_prices").update({ ended_at: new Date().toISOString() }).eq("id", id).is("ended_at", null);
     if (error) throw error;
-    revalidatePath("/pricing/selling");
+    revalidatePath("/pricing/selling"); revalidatePath("/stock");
     return { success: true, message: "Harga khusus dinonaktifkan; harga default kembali digunakan." };
   } catch (error) { return { error: normalizeActionError(error, "Gagal menonaktifkan harga khusus.") }; }
 }

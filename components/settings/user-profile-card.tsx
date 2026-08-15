@@ -19,7 +19,7 @@ export function UserProfileCard({
 
   return (
     <>
-      <div className="bg-white rounded-2xl border border-border shadow-card p-6 space-y-4">
+      <div className="erp-surface space-y-4 p-5 sm:p-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-4">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-xl bg-slate-900 text-white flex items-center justify-center font-bold text-lg shrink-0">
@@ -36,9 +36,9 @@ export function UserProfileCard({
           <div className="flex items-center gap-2 flex-wrap">
             <Badge
               variant="outline"
-              className="bg-emerald-50 text-emerald-700 border-emerald-200 text-xs font-semibold px-2.5 py-1"
+              className="border-neutral-300 bg-neutral-100 px-2.5 py-1 text-xs font-semibold text-neutral-800"
             >
-              <CheckCircle2 className="w-3 h-3 mr-1 text-emerald-600" />
+              <CheckCircle2 className="mr-1 size-3" />
               Aktif
             </Badge>
             <Badge className="bg-slate-900 text-white text-xs px-2.5 py-1">

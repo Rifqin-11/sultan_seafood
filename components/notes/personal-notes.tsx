@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Clock3, Loader2, Pencil, Plus, StickyNote, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -17,9 +17,8 @@ interface PersonalNotesProps {
   notes: PersonalNote[];
 }
 
-export function PersonalNotes({ notes: initialNotes }: PersonalNotesProps) {
+export function PersonalNotes({ notes }: PersonalNotesProps) {
   const router = useRouter();
-  const [notes, setNotes] = useState(initialNotes);
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingNote, setEditingNote] = useState<PersonalNote | null>(null);
   const [deletingNote, setDeletingNote] = useState<PersonalNote | null>(null);
@@ -27,8 +26,6 @@ export function PersonalNotes({ notes: initialNotes }: PersonalNotesProps) {
   const [content, setContent] = useState("");
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
-
-  useEffect(() => setNotes(initialNotes), [initialNotes]);
 
   const openNewNote = () => {
     setEditingNote(null);
@@ -85,7 +82,7 @@ export function PersonalNotes({ notes: initialNotes }: PersonalNotesProps) {
 
   return (
     <>
-      <section className="overflow-hidden rounded-2xl border border-stone-200/80 bg-white shadow-card">
+      <section className="erp-surface overflow-hidden">
         <div className="flex flex-col gap-4 border-b border-stone-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h3 className="text-sm font-semibold text-stone-900">Catatan Anda</h3>

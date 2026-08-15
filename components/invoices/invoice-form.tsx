@@ -719,7 +719,7 @@ export function InvoiceForm({ customers = [], products = [], customerPrices = []
                         <Input value={item.unit} readOnly className="h-10 rounded-xl border-stone-200 bg-stone-50 text-sm" />
                       </div>
                     </div>
-                    <div className={canViewInternal ? "grid grid-cols-2 gap-3" : "grid grid-cols-1"}>
+                    <div className={canViewInternal ? "grid grid-cols-1 gap-3 min-[430px]:grid-cols-2" : "grid grid-cols-1"}>
                       {canViewInternal && (
                         <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-3">
                           <label className="mb-2 flex items-center gap-1 text-xs font-semibold text-amber-700"><PencilLine className="size-3" /> Harga Beli Invoice</label>

@@ -102,7 +102,7 @@ export function EditProductDialog({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <label className="block text-sm font-medium text-muted-foreground mb-1.5">
                 Kategori <span className="text-red-500">*</span>
@@ -146,7 +146,7 @@ export function EditProductDialog({
             {unitChoice === CUSTOM_PRODUCT_OPTION && <Input className="mt-2 h-10 rounded-xl border-stone-200" placeholder="Contoh: keranjang" value={customUnit} onChange={(event) => setCustomUnit(event.target.value)} autoFocus />}
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <label className="block text-sm font-medium text-muted-foreground mb-1.5">
                 Harga Jual Default (Rp)

@@ -32,8 +32,8 @@ function CustomTooltip({
       <p className="text-muted-foreground text-xs mb-2">{label}</p>
       <div className="space-y-1">
         <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-emerald-500" />
-          <span className="text-xs text-muted-foreground">Laba</span>
+          <div className="size-2 rounded-full bg-neutral-900" />
+          <span className="text-xs text-muted-foreground">Laba bersih</span>
           <span className="text-xs font-semibold ml-auto">
             {formatCurrencyCompact(payload[0]?.value ?? 0)}
           </span>
@@ -52,17 +52,17 @@ function CustomTooltip({
 
 export function ProfitChart({ data, periodLabel }: ProfitChartProps) {
   return (
-    <div className="bg-white rounded-2xl border border-border p-5 shadow-card">
+    <div className="erp-surface p-5">
       <div className="mb-4">
-        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-0.5">
-          Laba & Margin
+        <p className="mb-0.5 text-xs font-medium text-muted-foreground">
+          Laba Bersih & Margin
         </p>
         <p className="text-lg font-bold text-foreground">{periodLabel ?? "Periode berjalan"}</p>
       </div>
       <div className="h-48">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e8edf5" vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="#ddddda" vertical={false} />
             <XAxis
               dataKey="date"
               tick={{ fontSize: 11, fill: "#999" }}
@@ -80,10 +80,10 @@ export function ProfitChart({ data, periodLabel }: ProfitChartProps) {
             <Line
               type="monotone"
               dataKey="profit"
-              stroke="#059669"
+              stroke="#20201f"
               strokeWidth={2}
               dot={false}
-              activeDot={{ r: 4, fill: "#171717" }}
+              activeDot={{ r: 4, fill: "#171716" }}
             />
             <Line
               type="monotone"

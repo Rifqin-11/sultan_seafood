@@ -52,7 +52,7 @@ export default async function InternalCostsReportPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <InternalCostCard costs={internalCostsList} total={totalDirectCost} />
 
-        <div className="bg-white rounded-2xl border border-amber-200 shadow-card p-5">
+        <div className="erp-surface border-amber-200 p-5">
           <h3 className="text-sm font-semibold mb-4 text-amber-800">
             Breakdown Kategori
           </h3>

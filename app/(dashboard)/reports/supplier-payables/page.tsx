@@ -25,7 +25,7 @@ export default async function SupplierPayablesPage() {
         <AddSupplierBillDialog suppliers={suppliers} products={products} />
       </PageHeader>
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 min-[430px]:grid-cols-2 lg:grid-cols-3 lg:gap-4">
         <MetricCard accent="red" title="Total Hutang" value={totalPayables} isCurrency icon={Landmark} />
         <MetricCard accent="amber" title="Tagihan Jatuh Tempo" value={overdue.length} suffix="tagihan" icon={AlertTriangle} />
         <MetricCard accent="orange" title="Nilai Jatuh Tempo" value={overdueAmount} isCurrency icon={ReceiptText} />

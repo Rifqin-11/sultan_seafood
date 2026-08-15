@@ -42,9 +42,9 @@ function CustomTooltip({
 
 export function SalesChart({ data, periodLabel }: SalesChartProps) {
   return (
-    <div className="bg-white rounded-2xl border border-border p-5 shadow-card">
+    <div className="erp-surface p-5">
       <div className="mb-4">
-        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-0.5">
+        <p className="mb-0.5 text-xs font-medium text-muted-foreground">
           Penjualan Harian
         </p>
         <p className="text-lg font-bold text-foreground">{periodLabel ?? "Periode berjalan"}</p>
@@ -52,7 +52,7 @@ export function SalesChart({ data, periodLabel }: SalesChartProps) {
       <div className="h-48">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e8edf5" vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="#ddddda" vertical={false} />
             <XAxis
               dataKey="date"
               tick={{ fontSize: 11, fill: "#999" }}
@@ -66,9 +66,9 @@ export function SalesChart({ data, periodLabel }: SalesChartProps) {
               axisLine={false}
               tickLine={false}
             />
-            <Tooltip content={<CustomTooltip />} cursor={{ fill: "#f5f5f5" }} />
-            <Bar dataKey="revenue" fill="#1e40af" radius={[4, 4, 0, 0]} maxBarSize={32} />
-            <Bar dataKey="orders" fill="#bfdbfe" radius={[4, 4, 0, 0]} maxBarSize={32} />
+            <Tooltip content={<CustomTooltip />} cursor={{ fill: "#f1f4f2" }} />
+            <Bar dataKey="revenue" fill="#20201f" radius={[5, 5, 0, 0]} maxBarSize={32} />
+            <Bar dataKey="orders" fill="#b9b9b4" radius={[5, 5, 0, 0]} maxBarSize={32} />
           </BarChart>
         </ResponsiveContainer>
       </div>

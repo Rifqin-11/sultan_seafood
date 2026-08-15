@@ -14,6 +14,24 @@ export interface StockReceiptInput {
   items: StockReceiptItemInput[];
 }
 
+export interface StockSettingsInput {
+  productId: string;
+  targetQuantity: number;
+  minimumQuantity: number;
+  notes?: string;
+}
+
+export function calculateWeightedAverageCost(
+  currentQuantity: number,
+  currentAverageCost: number,
+  incomingQuantity: number,
+  incomingUnitCost: number,
+) {
+  const quantityAfter = currentQuantity + incomingQuantity;
+  if (quantityAfter <= 0) return 0;
+  return ((currentQuantity * currentAverageCost) + (incomingQuantity * incomingUnitCost)) / quantityAfter;
+}
+
 export function validateStockReceiptPayload(payload: StockReceiptInput): string | null {
   if (!payload || !payload.supplierId || !payload.receivedDate || !Array.isArray(payload.items) || payload.items.length === 0) {
     return "Supplier, tanggal penerimaan, dan minimal satu produk wajib diisi.";
@@ -33,6 +51,14 @@ export function validateStockReceiptPayload(payload: StockReceiptInput): string 
 export function validateStockAdjustment(productId: string, quantityDelta: number, notes: string): string | null {
   if (!productId || !Number.isFinite(quantityDelta) || quantityDelta === 0) return "Produk dan perubahan stok wajib valid.";
   if (typeof notes !== "string" || !notes.trim()) return "Alasan penyesuaian stok wajib diisi.";
+  return null;
+}
+
+export function validateStockSettings(payload: StockSettingsInput): string | null {
+  if (!payload?.productId) return "Produk wajib dipilih.";
+  if (!Number.isFinite(payload.targetQuantity) || payload.targetQuantity < 0) return "Stok aktual tidak valid.";
+  if (!Number.isFinite(payload.minimumQuantity) || payload.minimumQuantity < 0) return "Batas minimum stok tidak valid.";
+  if (payload.notes !== undefined && typeof payload.notes !== "string") return "Alasan penyesuaian stok tidak valid.";
   return null;
 }
 

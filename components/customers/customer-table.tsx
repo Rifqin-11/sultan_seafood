@@ -43,6 +43,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import Link from "next/link";
+import { MetricCard } from "@/components/dashboard/metric-card";
 
 interface CustomerTableProps {
   customers: Customer[];
@@ -134,50 +135,21 @@ export function CustomerTable({ customers, canManage = false }: CustomerTablePro
   return (
     <div className="space-y-5">
       {/* ─── Metric Cards ─── */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white p-4 rounded-2xl border border-border shadow-card flex items-center justify-between">
-          <div>
-            <p className="text-xs text-muted-foreground font-medium">Total Restoran</p>
-            <p className="text-2xl font-bold text-foreground mt-1">{totalCount}</p>
-          </div>
-          <div className="h-10 w-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100">
-            <Building2 className="w-5 h-5" />
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-2xl border border-border shadow-card flex items-center justify-between">
-          <div>
-            <p className="text-xs text-muted-foreground font-medium">Restoran Aktif</p>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-2xl font-bold text-emerald-600">{activeCount}</span>
-              <span className="text-xs text-muted-foreground">/ {inactiveCount} nonaktif</span>
-            </div>
-          </div>
-          <div className="h-10 w-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100">
-            <CheckCircle2 className="w-5 h-5" />
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-2xl border border-border shadow-card flex items-center justify-between">
-          <div>
-            <p className="text-xs text-muted-foreground font-medium">Rata-Rata Termin</p>
-            <p className="text-2xl font-bold text-foreground mt-1">{avgTermDays} <span className="text-xs font-normal text-muted-foreground">Hari</span></p>
-          </div>
-          <div className="h-10 w-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center border border-indigo-100">
-            <Clock className="w-5 h-5" />
-          </div>
-        </div>
+      <div className="grid grid-cols-1 gap-3 min-[430px]:grid-cols-2 lg:grid-cols-3 lg:gap-4">
+        <MetricCard title="Total restoran" value={totalCount} suffix="restoran" icon={Building2} accent="sky" />
+        <MetricCard title="Restoran aktif" value={activeCount} suffix={`${inactiveCount} nonaktif`} icon={CheckCircle2} accent="emerald" />
+        <MetricCard title="Rata-rata termin" value={avgTermDays} suffix="hari" icon={Clock} accent="stone" />
       </div>
 
       {/* ─── Search & Filters Bar ─── */}
-      <div className="bg-white rounded-2xl border border-border shadow-card p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+      <div className="erp-surface flex flex-col items-center justify-between gap-3 p-4 sm:flex-row sm:p-5">
         <div className="relative w-full sm:w-80">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Cari nama restoran, PIC, no hp..."
-            className="pl-9 text-xs h-9"
+            className="h-10 pl-9 text-xs"
           />
         </div>
 
@@ -187,7 +159,7 @@ export function CustomerTable({ customers, canManage = false }: CustomerTablePro
             onClick={() => setStatusFilter("ALL")}
             className={`min-h-9 px-3.5 py-2 text-xs rounded-xl font-semibold cursor-pointer transition-all ${
               statusFilter === "ALL"
-                ? "bg-slate-900 text-white shadow-sm"
+                ? "bg-primary text-primary-foreground shadow-sm"
                 : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
             }`}
           >
@@ -198,7 +170,7 @@ export function CustomerTable({ customers, canManage = false }: CustomerTablePro
             onClick={() => setStatusFilter("ACTIVE")}
             className={`min-h-9 px-3.5 py-2 text-xs rounded-xl font-semibold cursor-pointer transition-all ${
               statusFilter === "ACTIVE"
-                ? "bg-emerald-600 text-white shadow-sm"
+                ? "bg-primary text-primary-foreground shadow-sm"
                 : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
             }`}
           >
@@ -209,7 +181,7 @@ export function CustomerTable({ customers, canManage = false }: CustomerTablePro
             onClick={() => setStatusFilter("INACTIVE")}
             className={`min-h-9 px-3.5 py-2 text-xs rounded-xl font-semibold cursor-pointer transition-all ${
               statusFilter === "INACTIVE"
-                ? "bg-slate-600 text-white shadow-sm"
+                ? "bg-primary text-primary-foreground shadow-sm"
                 : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
             }`}
           >
@@ -219,10 +191,10 @@ export function CustomerTable({ customers, canManage = false }: CustomerTablePro
       </div>
 
       {/* ─── Customers Table ─── */}
-      <div className="bg-white rounded-2xl border border-border shadow-card overflow-hidden">
+      <div className="erp-surface overflow-hidden">
 
         {/* Desktop table */}
-        <div className="hidden sm:block overflow-x-auto">
+        <div className="hidden overflow-x-auto lg:block">
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/30 hover:bg-muted/30">
@@ -252,7 +224,7 @@ export function CustomerTable({ customers, canManage = false }: CustomerTablePro
                     <TableRow key={c.id} className="hover:bg-slate-50/60 transition-colors">
                       <TableCell className="py-3">
                         <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold text-sm shadow-sm shrink-0">
+                          <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-sm font-bold text-primary">
                             {initial}
                           </div>
                           <div>
@@ -342,7 +314,7 @@ export function CustomerTable({ customers, canManage = false }: CustomerTablePro
         </div>
 
         {/* Mobile card list */}
-        <div className="sm:hidden">
+        <div className="lg:hidden">
           {filteredCustomers.length === 0 ? (
             <EmptyState
               icon={Building2}
@@ -356,7 +328,7 @@ export function CustomerTable({ customers, canManage = false }: CustomerTablePro
                 return (
                   <div key={c.id} className="p-4 flex items-start justify-between gap-3">
                     <div className="flex items-start gap-3 flex-1 min-w-0">
-                      <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold text-sm shadow-sm shrink-0">
+                      <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-sm font-bold text-primary">
                         {initial}
                       </div>
                       <div className="flex-1 min-w-0 space-y-1.5">
@@ -428,7 +400,7 @@ export function CustomerTable({ customers, canManage = false }: CustomerTablePro
 
         <div className="px-5 py-3 border-t border-border bg-slate-50/50 flex items-center justify-between text-xs text-muted-foreground">
           <span>Menampilkan {filteredCustomers.length} dari {customers.length} restoran</span>
-          <span>Sultan Seafood ERP</span>
+          <span className="hidden sm:inline">Sultan Seafood ERP</span>
         </div>
       </div>
 

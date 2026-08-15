@@ -11,7 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { User, Info, CheckCircle2, Clock, XCircle, Check, X, ShieldAlert } from "lucide-react";
+import { User, Info, CheckCircle2, XCircle, X, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { approveUserAction, rejectUserAction, type SystemUserItem } from "@/lib/actions/users";
@@ -45,7 +45,7 @@ export function UserManagementTable({ users, currentUserRole }: UserManagementTa
     if (res.error) {
       toast.error(`Gagal menyetujui: ${res.error}`);
     } else {
-      toast.success(res.message || `Akun ${user.name} berhasil disetujui!`);
+      toast.success(res.message || `Akun ${user.name} berhasil disetujui.`);
       router.refresh();
     }
   };
@@ -64,146 +64,79 @@ export function UserManagementTable({ users, currentUserRole }: UserManagementTa
 
   return (
     <div className="space-y-6">
-      {/* Pending Approvals Card */}
-      <div className="bg-white rounded-2xl border border-amber-200/80 shadow-card overflow-hidden">
-        <div className="p-5 border-b border-amber-100 bg-amber-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <section className="border-y border-border" aria-labelledby="pending-access-title">
+        <div className="flex items-end justify-between gap-5 py-5">
           <div>
-            <h3 className="text-sm font-bold text-amber-950 flex items-center gap-2">
-              <Clock className="w-4 h-4 text-amber-600" />
-              Permintaan Pendaftaran PENDING (Menunggu ACC Owner)
-            </h3>
-            <p className="text-xs text-amber-800/80 mt-0.5">
-              Akun baru yang mendaftar dan membutuhkan verifikasi/persetujuan dari Owner.
-            </p>
+            <p className="text-[11px] font-medium text-muted-foreground">Akses pengguna</p>
+            <h3 id="pending-access-title" className="mt-1 text-lg font-semibold tracking-[-0.025em] text-foreground">Permintaan akses</h3>
+            <p className="mt-1 max-w-2xl text-xs leading-5 text-muted-foreground">Tinjau akun baru sebelum memberikan akses ke data operasional ERP.</p>
           </div>
-
-          <Badge variant="outline" className="bg-amber-100/80 text-amber-900 border-amber-300 font-bold self-start sm:self-center">
-            {pendingUsers.length} Permintaan
-          </Badge>
+          <div className="shrink-0 text-right">
+            <p className="font-mono text-2xl font-medium leading-none text-foreground tabular-nums">{String(pendingUsers.length).padStart(2, "0")}</p>
+            <p className="mt-1 text-[10px] text-muted-foreground">menunggu</p>
+          </div>
         </div>
 
         {pendingUsers.length === 0 ? (
-          <div className="p-8 text-center text-xs text-muted-foreground space-y-1">
-            <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto mb-2 opacity-80" />
-            <p className="font-semibold text-slate-700">Tidak ada permintaan pendaftaran pending</p>
-            <p className="text-slate-500">Semua pendaftaran akun baru telah diproses.</p>
+          <div className="flex items-baseline gap-4 border-t border-border py-8">
+            <span className="font-mono text-xs text-muted-foreground">00</span>
+            <div>
+              <p className="text-sm font-medium text-foreground">Tidak ada akun untuk ditinjau</p>
+              <p className="mt-1 text-xs text-muted-foreground">Semua permintaan pendaftaran sudah diproses.</p>
+            </div>
           </div>
         ) : (
-          <>
-          <div className="hidden sm:block">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-amber-50/20 hover:bg-amber-50/20">
-                  <TableHead className="text-xs font-semibold">Nama Pengguna</TableHead>
-                  <TableHead className="text-xs font-semibold">Email Registrasi</TableHead>
-                  <TableHead className="text-xs font-semibold">Peran Diajukan</TableHead>
-                  <TableHead className="text-xs font-semibold">Tanggal Daftar</TableHead>
-                  <TableHead className="text-xs font-semibold text-right">Tindakan ACC</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {pendingUsers.map((u) => (
-                  <TableRow key={u.id} className="hover:bg-amber-50/30">
-                    <TableCell className="text-sm font-bold text-slate-900">
-                      {u.name}
-                    </TableCell>
-                    <TableCell className="text-sm text-slate-600 font-mono">
-                      {u.email}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary" className="bg-amber-100 text-amber-800 text-xs border border-amber-200">
-                        {roleLabel[u.role] || u.role}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
-                      {u.createdAt}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {isOwner ? (
-                        <div className="flex items-center justify-end gap-2">
-                          <Button
-                            size="sm"
-                            onClick={() => handleApprove(u, "STAFF")}
-                            disabled={loadingId === u.id}
-                            className="h-10 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3.5"
-                          >
-                            <Check className="w-3.5 h-3.5 mr-1" />
-                            ACC Staff
-                          </Button>
-                          <Button size="sm" variant="outline" onClick={() => handleApprove(u, "FINANCE")} disabled={loadingId === u.id} className="h-10 text-xs px-3.5">ACC Finance</Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleReject(u)}
-                            disabled={loadingId === u.id}
-                            className="h-10 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 px-3.5"
-                          >
-                            <X className="w-3.5 h-3.5 mr-1" />
-                            Tolak
-                          </Button>
-                        </div>
-                      ) : (
-                        <span className="text-xs text-muted-foreground italic flex items-center justify-end gap-1">
-                          <ShieldAlert className="w-3.5 h-3.5 text-amber-600" />
-                          Hanya Owner yang dapat ACC
-                        </span>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-          <div className="divide-y divide-amber-100 sm:hidden">
-            {pendingUsers.map((user) => (
-              <article key={user.id} className="space-y-3 p-4">
-                <div>
-                  <p className="text-sm font-semibold text-slate-900">{user.name}</p>
-                  <p className="mt-1 break-all text-xs text-slate-600">{user.email}</p>
+          <div className="divide-y divide-border border-t border-border">
+            {pendingUsers.map((user, index) => (
+              <article key={user.id} className="grid gap-4 py-5 xl:grid-cols-[2rem_minmax(0,1fr)_13rem_auto] xl:items-center">
+                <span className="hidden font-mono text-[11px] text-muted-foreground xl:block">{String(index + 1).padStart(2, "0")}</span>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-foreground">{user.name}</p>
+                  <p className="mt-1 break-all font-mono text-xs text-muted-foreground">{user.email}</p>
                 </div>
-                <div className="flex items-center justify-between gap-3 rounded-xl bg-amber-50/70 p-3 text-xs">
+                <div className="grid grid-cols-2 gap-3 text-xs xl:block">
                   <div>
-                    <p className="text-amber-700">Peran diajukan</p>
-                    <p className="mt-1 font-medium text-amber-950">{roleLabel[user.role] || user.role}</p>
+                    <p className="text-muted-foreground">Akses awal</p>
+                    <p className="mt-1 font-medium text-foreground">{roleLabel[user.role] || user.role}</p>
                   </div>
-                  <p className="text-right text-amber-800">{user.createdAt}</p>
+                  <div className="xl:mt-3">
+                    <p className="text-muted-foreground">Mendaftar</p>
+                    <p className="mt-1 font-medium text-foreground">{user.createdAt}</p>
+                  </div>
                 </div>
                 {isOwner ? (
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button size="sm" onClick={() => handleApprove(user, "STAFF")} disabled={loadingId === user.id} className="h-10 rounded-xl bg-emerald-600 text-xs hover:bg-emerald-700">
-                      <Check className="mr-1 h-3.5 w-3.5" /> ACC Staff
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={() => handleApprove(user, "FINANCE")} disabled={loadingId === user.id} className="h-10 rounded-xl text-xs">ACC Finance</Button>
-                    <Button size="sm" variant="outline" onClick={() => handleReject(user)} disabled={loadingId === user.id} className="col-span-2 h-10 rounded-xl border-red-200 text-xs text-red-600 hover:bg-red-50 hover:text-red-700">
-                      <X className="mr-1 h-3.5 w-3.5" /> Tolak Pendaftaran
+                  <div className="flex flex-col gap-2 min-[430px]:flex-row min-[430px]:flex-wrap xl:justify-end">
+                    <Button size="sm" onClick={() => handleApprove(user, "STAFF")} disabled={loadingId === user.id} className="w-full min-[430px]:w-auto">Setujui sebagai staff</Button>
+                    <Button size="sm" variant="outline" onClick={() => handleApprove(user, "FINANCE")} disabled={loadingId === user.id} className="w-full min-[430px]:w-auto">Jadikan finance</Button>
+                    <Button size="sm" variant="ghost" onClick={() => handleReject(user)} disabled={loadingId === user.id} className="w-full text-red-600 hover:bg-red-50 hover:text-red-700 min-[430px]:w-auto">
+                      <X className="size-3.5" /> Tolak
                     </Button>
                   </div>
                 ) : (
-                  <p className="flex items-center gap-1.5 text-xs text-amber-800"><ShieldAlert className="h-3.5 w-3.5" /> Hanya Owner yang dapat menyetujui akun.</p>
+                  <p className="flex items-center gap-1.5 text-xs text-muted-foreground xl:justify-end"><ShieldAlert className="size-3.5" /> Hanya Owner yang dapat menyetujui akun.</p>
                 )}
               </article>
             ))}
           </div>
-          </>
         )}
-      </div>
+      </section>
 
       {/* Registered & Active Users Table */}
-      <div className="bg-white rounded-2xl border border-border shadow-card overflow-hidden space-y-0">
-        <div className="p-5 border-b border-border bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="erp-surface space-y-0 overflow-hidden">
+        <div className="flex flex-col justify-between gap-3 border-b border-border p-5 sm:flex-row sm:items-center">
           <div>
-            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              <User className="w-4 h-4 text-slate-700" />
-              Daftar Pengguna Aktif & Terverifikasi
+            <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+              <User className="size-4 text-muted-foreground" />
+              Pengguna aktif
             </h3>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Daftar akun terdaftar yang telah disetujui dan memiliki hak akses ke ERP.
+            <p className="mt-1 text-xs text-muted-foreground">
+              Akun yang sudah memiliki hak akses ke ERP.
             </p>
           </div>
 
-          <div className="flex items-center gap-1.5 text-xs text-slate-600 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 shrink-0">
-            <Info className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-            <span>Total Pengguna: <b>{activeUsers.length}</b></span>
+          <div className="flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground">
+            <Info className="size-3.5 shrink-0" />
+            <span><b className="text-foreground">{activeUsers.length}</b> pengguna</span>
           </div>
         </div>
 
@@ -232,7 +165,7 @@ export function UserManagementTable({ users, currentUserRole }: UserManagementTa
                       variant="secondary"
                       className={
                         u.role === "OWNER"
-                          ? "bg-blue-50 text-blue-700 border border-blue-200 text-xs"
+                          ? "border border-neutral-300 bg-neutral-100 text-neutral-900 text-xs"
                           : "bg-slate-100 text-slate-700 text-xs"
                       }
                     >
@@ -243,9 +176,9 @@ export function UserManagementTable({ users, currentUserRole }: UserManagementTa
                     {u.createdAt}
                   </TableCell>
                   <TableCell className="text-right">
-                    <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                      <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                      Aktif (ACC)
+                    <span className="inline-flex items-center gap-1 rounded border border-neutral-300 bg-neutral-100 px-2 py-0.5 text-xs font-medium text-neutral-800">
+                      <CheckCircle2 className="size-3" />
+                      Aktif
                     </span>
                   </TableCell>
                 </TableRow>
@@ -288,7 +221,7 @@ export function UserManagementTable({ users, currentUserRole }: UserManagementTa
                     <p className={`truncate text-sm font-semibold ${isRejected ? "text-slate-600 line-through" : "text-slate-900"}`}>{user.name}</p>
                     <p className="mt-1 break-all text-xs text-slate-600">{user.email}</p>
                   </div>
-                  <span className={`shrink-0 rounded-full border px-2 py-1 text-[11px] font-medium ${isRejected ? "border-red-200 bg-red-50 text-red-700" : "border-emerald-200 bg-emerald-50 text-emerald-700"}`}>
+                  <span className={`shrink-0 rounded-md border px-2 py-1 text-[11px] font-medium ${isRejected ? "border-red-200 bg-red-50 text-red-700" : "border-neutral-300 bg-neutral-100 text-neutral-800"}`}>
                     {isRejected ? "Ditolak" : "Aktif"}
                   </span>
                 </div>

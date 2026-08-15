@@ -122,8 +122,8 @@ export function SupplierTable({ suppliers, canManage = false }: SupplierTablePro
 
   return (
     <>
-      <div className="bg-white rounded-2xl border border-border shadow-card overflow-hidden">
-        <div className="hidden sm:block">
+      <div className="erp-surface overflow-hidden">
+        <div className="hidden lg:block">
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/30 hover:bg-muted/30">
@@ -172,7 +172,7 @@ export function SupplierTable({ suppliers, canManage = false }: SupplierTablePro
             </TableBody>
           </Table>
         </div>
-        <div className="divide-y divide-stone-200 sm:hidden">
+        <div className="divide-y divide-border lg:hidden">
           {suppliersList.length === 0 ? (
             <div className="py-12">
               <EmptyState
@@ -196,14 +196,14 @@ export function SupplierTable({ suppliers, canManage = false }: SupplierTablePro
                     {renderActions(supplier)}
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-2 rounded-xl bg-stone-50 p-3 text-xs">
+                <div className="grid grid-cols-2 gap-2 rounded-xl bg-muted/55 p-3 text-xs">
                   <div>
-                    <p className="text-stone-500">Telepon</p>
-                    <p className="mt-1 font-medium text-stone-800">{supplier.phone || "—"}</p>
+                    <p className="text-muted-foreground">Telepon</p>
+                    <p className="mt-1 font-medium text-foreground">{supplier.phone || "—"}</p>
                   </div>
-                  <div className="border-l border-stone-200 pl-3">
-                    <p className="text-stone-500">Alamat</p>
-                    <p className="mt-1 line-clamp-2 font-medium leading-relaxed text-stone-800">{supplier.address || "—"}</p>
+                  <div className="border-l border-border pl-3">
+                    <p className="text-muted-foreground">Alamat</p>
+                    <p className="mt-1 line-clamp-2 font-medium leading-relaxed text-foreground">{supplier.address || "—"}</p>
                   </div>
                 </div>
               </article>

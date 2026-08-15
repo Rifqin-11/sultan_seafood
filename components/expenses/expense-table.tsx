@@ -86,7 +86,7 @@ export function ExpenseTable({ expenses, totalExpenses }: ExpenseTableProps) {
 
   return (
     <>
-      <div className="hidden sm:block">
+      <div className="hidden lg:block">
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/30 hover:bg-muted/30">
@@ -136,7 +136,7 @@ export function ExpenseTable({ expenses, totalExpenses }: ExpenseTableProps) {
           </TableBody>
         </Table>
       </div>
-      <div className="divide-y divide-stone-200 sm:hidden">
+      <div className="divide-y divide-border lg:hidden">
         {expensesList.length === 0 ? (
           <div className="py-12">
             <EmptyState icon={Receipt} title="Tidak ada pengeluaran" description="Belum ada data pengeluaran yang terdaftar." />

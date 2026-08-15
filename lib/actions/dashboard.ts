@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { getInvoicesAction } from "@/lib/actions/invoices";
+import { getExpensesAction } from "@/lib/actions/expenses";
 import { getApprovedUser, requireApprovedUser } from "@/lib/security/auth";
 import { getDirectCostLabel } from "@/lib/utils";
 import type { DashboardMetrics, DirectCostCategory, InternalCostBreakdown, ProfitDataPoint, SalesDataPoint } from "@/types";
@@ -17,7 +18,10 @@ function dateKey(date: Date) {
 
 export async function getDashboardDataAction() {
   const user = await requireApprovedUser();
-  const invoices = await getInvoicesAction();
+  const [invoices, expenses] = await Promise.all([
+    getInvoicesAction(),
+    user.role === "STAFF" ? Promise.resolve([]) : getExpensesAction(),
+  ]);
   const now = new Date();
   const today = dateKey(now);
   const yesterdayDate = new Date(now); yesterdayDate.setDate(now.getDate() - 1);
@@ -41,6 +45,9 @@ export async function getDashboardDataAction() {
   const monthRevenue = monthInvoices.reduce((sum, invoice) => sum + invoice.total, 0);
   const previousMonthRevenue = previousMonthInvoices.reduce((sum, invoice) => sum + invoice.total, 0);
   const monthProfit = monthInvoices.reduce((sum, invoice) => sum + invoice.transactionProfit, 0);
+  const monthExpenses = expenses.filter((expense) => inRange(expense.expenseDate, startOfMonth, new Date(now.getFullYear(), now.getMonth() + 1, 1)));
+  const operatingExpenses = monthExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+  const netProfit = monthProfit - operatingExpenses;
   const directCostTotal = monthInvoices.reduce((sum, invoice) => sum + invoice.totalDirectCost, 0);
   const receivables = issued.filter((invoice) => invoice.status !== "PAID").reduce((sum, invoice) => sum + invoice.remainingBalance, 0);
   const overdueCount = issued.filter((invoice) => invoice.status === "OVERDUE").length;
@@ -54,6 +61,9 @@ export async function getDashboardDataAction() {
     revenueThisMonthChange: percentChange(monthRevenue, previousMonthRevenue),
     transactionProfitThisMonth: monthProfit,
     transactionMarginThisMonth: monthRevenue > 0 ? (monthProfit / monthRevenue) * 100 : 0,
+    operatingExpensesThisMonth: operatingExpenses,
+    netProfitThisMonth: netProfit,
+    netMarginThisMonth: monthRevenue > 0 ? (netProfit / monthRevenue) * 100 : 0,
     receivables,
     overdueCount,
     totalDirectCostsThisMonth: directCostTotal,
@@ -67,13 +77,18 @@ export async function getDashboardDataAction() {
     current.orders += 1;
     daily.set(invoice.issueDate, current);
   });
+  monthExpenses.forEach((expense) => {
+    const current = daily.get(expense.expenseDate) ?? { revenue: 0, profit: 0, orders: 0 };
+    current.profit -= expense.amount;
+    daily.set(expense.expenseDate, current);
+  });
   const salesData: SalesDataPoint[] = [...daily].map(([date, value]) => ({ date: new Date(`${date}T00:00:00`).toLocaleDateString("id-ID", { day: "2-digit" }), revenue: value.revenue, orders: value.orders }));
-  const profitData: ProfitDataPoint[] = [...daily].map(([date, value]) => ({ date: new Date(`${date}T00:00:00`).toLocaleDateString("id-ID", { day: "2-digit" }), profit: value.profit, margin: value.revenue > 0 ? value.profit / value.revenue * 100 : 0 }));
+  const profitData: ProfitDataPoint[] = [...daily].sort(([a], [b]) => a.localeCompare(b)).map(([date, value]) => ({ date: new Date(`${date}T00:00:00`).toLocaleDateString("id-ID", { day: "2-digit" }), profit: value.profit, margin: value.revenue > 0 ? value.profit / value.revenue * 100 : 0 }));
   const costMap = new Map<DirectCostCategory, number>();
   monthInvoices.flatMap((invoice) => invoice.directCosts).forEach((cost) => costMap.set(cost.category, (costMap.get(cost.category) ?? 0) + cost.amount));
   const internalCosts: InternalCostBreakdown[] = [...costMap].map(([category, amount]) => ({ category, label: getDirectCostLabel(category), amount }));
 
-  return { user, metrics, salesData, profitData, internalCosts, invoices, periodLabel: now.toLocaleDateString("id-ID", { month: "long", year: "numeric" }) };
+  return { user, metrics, salesData, profitData, internalCosts, invoices, expenses, periodLabel: now.toLocaleDateString("id-ID", { month: "long", year: "numeric" }) };
 }
 
 export async function getNotificationSummaryAction() {
