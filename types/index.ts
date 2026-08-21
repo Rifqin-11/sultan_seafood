@@ -196,6 +196,8 @@ export interface InvoiceItem {
   descriptionSnapshot: string;
   unit: string;
   quantity: number;
+  marginQuantity?: number;
+  billingQuantity?: number;
   sellingPriceSnapshot: number;
   purchasePriceSnapshot: number;
   subtotal: number;
@@ -254,6 +256,8 @@ export interface PublicInvoiceItem {
   id: string;
   descriptionSnapshot: string;
   quantity: number;
+  marginQuantity?: number;
+  billingQuantity?: number;
   unit: string;
   sellingPriceSnapshot: number;
   subtotal: number;

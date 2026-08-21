@@ -70,6 +70,8 @@ export function formatDatetime(dateStr: string): string {
 
 export interface InvoiceCalcItem {
   quantity: number;
+  billingQuantity?: number;
+  purchaseQuantity?: number;
   sellingPrice: number;
   purchasePrice: number;
 }
@@ -84,11 +86,11 @@ export function calculateInvoice(
   discount: number
 ) {
   const subtotal = items.reduce(
-    (sum, item) => sum + item.quantity * item.sellingPrice,
+    (sum, item) => sum + (item.billingQuantity ?? item.quantity) * item.sellingPrice,
     0
   );
   const totalProductCost = items.reduce(
-    (sum, item) => sum + item.quantity * item.purchasePrice,
+    (sum, item) => sum + (item.purchaseQuantity ?? item.quantity) * item.purchasePrice,
     0
   );
   const totalDirectCost = directCosts.reduce((sum, c) => sum + c.amount, 0);

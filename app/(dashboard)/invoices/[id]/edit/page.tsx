@@ -46,6 +46,7 @@ export default async function EditInvoicePage(props: PageProps<"/invoices/[id]/e
       productId: item.productId ?? "",
       description: item.descriptionSnapshot,
       quantity: item.quantity,
+      marginQuantity: item.marginQuantity ?? 0,
       unit: item.unit,
       sellingPrice: item.sellingPriceSnapshot,
       purchasePrice: item.purchasePriceSnapshot ?? 0,

@@ -112,7 +112,7 @@ export default async function CustomerInvoicePreviewPage({ params }: PageProps) 
                           <span className="text-slate-300">—</span>
                         )}
                       </td>
-                      <td className="py-3 px-3 text-right tabular-nums font-medium">{item.quantity}</td>
+                      <td className="py-3 px-3 text-right tabular-nums font-medium">{item.quantity + (item.marginQuantity ?? 0)}</td>
                       <td className="py-3 px-3 text-slate-500">{item.unit}</td>
                       <td className="py-3 px-3 text-right tabular-nums">{formatCurrency(item.sellingPriceSnapshot)}</td>
                       <td className="py-3 px-3 text-right tabular-nums font-semibold text-slate-900">

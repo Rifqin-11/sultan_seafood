@@ -13,6 +13,7 @@ import {
   PencilLine,
   Plus,
   ReceiptText,
+  Scale,
   Save,
   Send,
   Trash2,
@@ -55,6 +56,7 @@ interface InvoiceItemRow {
   productId: string;
   description: string;
   quantity: number;
+  marginQuantity: number;
   unit: string;
   sellingPrice: number;
   purchasePrice: number;
@@ -91,6 +93,7 @@ interface InitialInvoiceData {
     productId: string;
     description: string;
     quantity: number;
+    marginQuantity?: number;
     unit: string;
     sellingPrice: number;
     purchasePrice: number;
@@ -128,6 +131,7 @@ export function InvoiceForm({ customers = [], products = [], customerPrices = []
         productId: item.productId,
         description: item.description,
         quantity: item.quantity,
+        marginQuantity: item.marginQuantity ?? 0,
         unit: item.unit,
         sellingPrice: item.sellingPrice,
         purchasePrice: item.purchasePrice,
@@ -138,12 +142,14 @@ export function InvoiceForm({ customers = [], products = [], customerPrices = []
       productId: "",
       description: "",
       quantity: 1,
+      marginQuantity: 0,
       unit: "",
       sellingPrice: 0,
       purchasePrice: 0,
     }];
   });
   const [quantityDrafts, setQuantityDrafts] = useState<Record<string, string>>({});
+  const [marginEditors, setMarginEditors] = useState<Record<string, boolean>>({});
   const [costs, setCosts] = useState<DirectCostRow[]>(() => {
     if (initialData?.costs?.length) {
       return initialData.costs.map((cost, i) => ({
@@ -179,6 +185,7 @@ export function InvoiceForm({ customers = [], products = [], customerPrices = []
         productId: "",
         description: "",
         quantity: 1,
+        marginQuantity: 0,
         unit: "kg",
         sellingPrice: 0,
         purchasePrice: 0,
@@ -281,6 +288,8 @@ export function InvoiceForm({ customers = [], products = [], customerPrices = []
   const calc = calculateInvoice(
     items.map((i) => ({
       quantity: i.quantity,
+      billingQuantity: i.quantity + i.marginQuantity,
+      purchaseQuantity: i.quantity,
       sellingPrice: i.sellingPrice,
       purchasePrice: i.purchasePrice,
     })),
@@ -321,6 +330,7 @@ export function InvoiceForm({ customers = [], products = [], customerPrices = []
         productId: i.productId,
         description: i.description,
         quantity: i.quantity,
+        marginQuantity: i.marginQuantity,
         unit: i.unit,
         sellingPrice: i.sellingPrice,
         purchasePrice: i.purchasePrice,
@@ -370,6 +380,7 @@ export function InvoiceForm({ customers = [], products = [], customerPrices = []
         productId: i.productId,
         description: i.description,
         quantity: i.quantity,
+        marginQuantity: i.marginQuantity,
         unit: i.unit,
         sellingPrice: i.sellingPrice,
         purchasePrice: i.purchasePrice,
@@ -567,9 +578,9 @@ export function InvoiceForm({ customers = [], products = [], customerPrices = []
                       Harga Jual
                     </th>
                     <th className="w-32 px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-stone-500">
-                      Subtotal
-                    </th>
-                    <th className="w-10 px-2" />
+                       Subtotal
+                     </th>
+                    <th className="w-28 px-2 text-center text-[10px] font-semibold uppercase tracking-wider text-stone-500">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-stone-100">
@@ -653,17 +664,15 @@ export function InvoiceForm({ customers = [], products = [], customerPrices = []
                         />
                       </td>
                       <td className="px-3 py-3 text-right text-xs font-bold tabular-nums text-stone-800">
-                        {formatCurrency(item.quantity * item.sellingPrice)}
+                        <p>{formatCurrency((item.quantity + item.marginQuantity) * item.sellingPrice)}</p>
+                        {item.marginQuantity > 0 && <p className="mt-1 text-[10px] font-medium text-sky-700">Tagih {item.quantity + item.marginQuantity} {item.unit}</p>}
                       </td>
                       <td className="px-2 py-3">
-                        <button
-                          type="button"
-                          onClick={() => removeItem(item.id)}
-                          className="flex size-8 items-center justify-center rounded-lg text-stone-400 transition-colors hover:bg-red-50 hover:text-red-600"
-                          aria-label="Hapus item"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        <div className="flex items-center justify-center gap-1">
+                          <button type="button" onClick={() => setMarginEditors((current) => ({ ...current, [item.id]: !current[item.id] }))} className={`flex size-8 items-center justify-center rounded-lg transition-colors ${item.marginQuantity > 0 ? "bg-sky-50 text-sky-700" : "text-stone-400 hover:bg-sky-50 hover:text-sky-700"}`} aria-label="Atur margin kilogram"><Scale className="size-3.5" /></button>
+                          <button type="button" onClick={() => removeItem(item.id)} className="flex size-8 items-center justify-center rounded-lg text-stone-400 transition-colors hover:bg-red-50 hover:text-red-600" aria-label="Hapus item"><Trash2 className="size-3.5" /></button>
+                        </div>
+                        {marginEditors[item.id] && <div className="mt-2 w-28"><label className="sr-only" htmlFor={`margin-${item.id}`}>Margin kg</label><input id={`margin-${item.id}`} type="number" min="0" step="0.001" value={item.marginQuantity || ""} onChange={(event) => updateItem(item.id, "marginQuantity", Number(event.target.value) || 0)} placeholder="Margin kg" className="h-8 w-full rounded-lg border border-sky-200 bg-sky-50 px-2 text-right text-xs tabular-nums text-sky-900 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200" /></div>}
                       </td>
                     </tr>
                   ))}
@@ -680,14 +689,7 @@ export function InvoiceForm({ customers = [], products = [], customerPrices = []
                   <div key={item.id} className="space-y-4 px-4 py-5">
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] font-semibold uppercase tracking-wider text-stone-400">Item {index + 1}</span>
-                      <button
-                        type="button"
-                        onClick={() => removeItem(item.id)}
-                        className="flex h-9 items-center gap-1.5 rounded-xl px-2.5 text-xs font-medium text-stone-400 transition-colors hover:bg-red-50 hover:text-red-600"
-                        aria-label={`Hapus item ${index + 1}`}
-                      >
-                        <Trash2 className="size-3.5" /> Hapus
-                      </button>
+                      <div className="flex items-center gap-1"><button type="button" onClick={() => setMarginEditors((current) => ({ ...current, [item.id]: !current[item.id] }))} className={`flex h-9 items-center gap-1.5 rounded-xl px-2.5 text-xs font-medium transition-colors ${item.marginQuantity > 0 ? "bg-sky-50 text-sky-700" : "text-stone-400 hover:bg-sky-50 hover:text-sky-700"}`} aria-label={`Atur margin item ${index + 1}`}><Scale className="size-3.5" /> Margin</button><button type="button" onClick={() => removeItem(item.id)} className="flex h-9 items-center gap-1.5 rounded-xl px-2.5 text-xs font-medium text-stone-400 transition-colors hover:bg-red-50 hover:text-red-600" aria-label={`Hapus item ${index + 1}`}><Trash2 className="size-3.5" /> Hapus</button></div>
                     </div>
                     <div>
                       <label className="mb-2 block text-xs font-semibold text-stone-600">Produk</label>
@@ -747,14 +749,16 @@ export function InvoiceForm({ customers = [], products = [], customerPrices = []
                         <p className="mt-1.5 text-[10px] leading-relaxed text-stone-500">Khusus invoice ini. Harga default tetap.</p>
                       </div>
                     </div>
-                    <div className="flex items-end justify-between border-t border-dashed border-stone-200 pt-3">
+                     {marginEditors[item.id] && <div className="rounded-xl border border-sky-200 bg-sky-50/70 p-3"><label htmlFor={`margin-mobile-${item.id}`} className="mb-2 flex items-center gap-1 text-xs font-semibold text-sky-700"><Scale className="size-3" /> Margin tagihan ({item.unit})</label><input id={`margin-mobile-${item.id}`} type="number" min="0" step="0.001" value={item.marginQuantity || ""} onChange={(event) => updateItem(item.id, "marginQuantity", Number(event.target.value) || 0)} placeholder="Contoh: 0.5" className="h-10 w-full rounded-xl border border-sky-200 bg-white px-3 text-right text-sm font-semibold tabular-nums text-sky-900 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200" /><p className="mt-1.5 text-[10px] leading-relaxed text-sky-700/80">Margin menambah qty tagihan, tetapi tidak mengurangi stok.</p></div>}
+                     <div className="flex items-end justify-between border-t border-dashed border-stone-200 pt-3">
                       <div>
                         <p className="text-[10px] font-semibold uppercase tracking-wider text-stone-400">Ukuran</p>
                         <p className="mt-1 text-xs font-medium text-stone-600">{selectedProduct?.size || "—"}</p>
                       </div>
                       <div className="text-right">
                         <p className="text-[10px] font-semibold uppercase tracking-wider text-stone-400">Subtotal</p>
-                        <p className="mt-1 text-base font-bold tabular-nums text-stone-900">{formatCurrency(item.quantity * item.sellingPrice)}</p>
+                         <p className="mt-1 text-base font-bold tabular-nums text-stone-900">{formatCurrency((item.quantity + item.marginQuantity) * item.sellingPrice)}</p>
+                         {item.marginQuantity > 0 && <p className="mt-1 text-[10px] font-medium text-sky-700">Tagih {item.quantity + item.marginQuantity} {item.unit} · stok {item.quantity} {item.unit}</p>}
                       </div>
                     </div>
                   </div>
@@ -1085,7 +1089,7 @@ export function InvoiceForm({ customers = [], products = [], customerPrices = []
           <div className="rounded-xl border p-4 space-y-4 text-sm">
             <div className="flex justify-between"><span className="text-muted-foreground">Restoran</span><span className="font-semibold">{selectedCustomer?.name}</span></div>
             <div className="divide-y">
-              {items.map((item) => <div key={item.id} className="py-2 flex justify-between gap-4"><span>{item.description} x {item.quantity} {item.unit}</span><span className="font-medium">{formatCurrency(item.quantity * item.sellingPrice)}</span></div>)}
+              {items.map((item) => <div key={item.id} className="py-2 flex justify-between gap-4"><span>{item.description} x {item.quantity + item.marginQuantity} {item.unit}{item.marginQuantity > 0 ? ` (stok ${item.quantity} ${item.unit})` : ""}</span><span className="font-medium">{formatCurrency((item.quantity + item.marginQuantity) * item.sellingPrice)}</span></div>)}
             </div>
             <div className="border-t pt-3 flex justify-between text-base font-bold"><span>Total</span><span>{formatCurrency(calc.revenue)}</span></div>
           </div>

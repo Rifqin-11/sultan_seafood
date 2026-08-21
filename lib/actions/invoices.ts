@@ -17,6 +17,7 @@ export interface CreateInvoicePayload {
     productId: string;
     description?: string;
     quantity: number;
+    marginQuantity?: number;
     unit?: string;
     sellingPrice?: number;
     purchasePrice?: number;
@@ -26,7 +27,7 @@ export interface CreateInvoicePayload {
 
 function validateCreatePayload(payload: CreateInvoicePayload) {
   if (!payload.customerId || !payload.issueDate || payload.items.length === 0) return "Restoran, tanggal, dan item invoice wajib diisi.";
-  if (payload.items.some((item) => !item.productId || !Number.isFinite(item.quantity) || item.quantity <= 0)) return "Semua item harus memiliki produk dan jumlah yang valid.";
+  if (payload.items.some((item) => !item.productId || !Number.isFinite(item.quantity) || item.quantity <= 0 || !Number.isFinite(item.marginQuantity ?? 0) || (item.marginQuantity ?? 0) < 0)) return "Semua item harus memiliki produk, jumlah, dan margin yang valid.";
   if ((payload.discount ?? 0) < 0) return "Diskon tidak boleh negatif.";
   if (payload.costs.some((cost) => !cost.name.trim() || !Number.isFinite(cost.amount) || cost.amount <= 0)) return "Biaya internal tidak valid.";
   return null;
@@ -131,6 +132,7 @@ export interface UpdateInvoicePayload {
     productId: string;
     description?: string;
     quantity: number;
+    marginQuantity?: number;
     unit?: string;
     sellingPrice?: number;
     purchasePrice?: number;
