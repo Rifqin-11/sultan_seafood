@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowDownToLine, ArrowUpFromLine, Boxes, History, PackageSearch } from "lucide-react";
+import { ArrowDown, ArrowDownToLine, ArrowUp, ArrowUpFromLine, ArrowUpDown, Boxes, History, PackageSearch } from "lucide-react";
 import { StockRowActions } from "@/components/stock/stock-row-actions";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -17,6 +17,8 @@ interface StockTableProps {
   view?: "balances" | "movements" | "all";
 }
 
+type StockSortKey = "productName" | "category" | "size" | "quantity" | "averageUnitCost" | "latestPurchaseCost" | "defaultSellingPrice" | "stockValue" | "minimumQuantity" | "stockStatus";
+
 const movementStyles: Record<string, string> = {
   PURCHASE_IN: "border-emerald-200 bg-emerald-50 text-emerald-700",
   SALE_OUT: "border-orange-200 bg-orange-50 text-orange-700",
@@ -29,6 +31,7 @@ export function StockTable({ balances, movements, batches = [], products = [], v
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("all");
   const [productStatus, setProductStatus] = useState("all");
+  const [sort, setSort] = useState<{ key: StockSortKey; direction: "asc" | "desc" }>({ key: "productName", direction: "asc" });
   const lowStock = (balance: StockBalance) =>
     balance.minimumQuantity > 0 && balance.quantity <= balance.minimumQuantity;
 
@@ -43,8 +46,32 @@ export function StockTable({ balances, movements, batches = [], products = [], v
     (balance.productName.toLowerCase().includes(query.toLowerCase()) || (balance.category ?? "").toLowerCase().includes(query.toLowerCase())) &&
     (status === "all" || balance.stockStatus === status) &&
     (productStatus === "all" || balance.productStatus === productStatus),
-  );
+  ).sort((left, right) => {
+    const leftValue = left[sort.key] ?? "";
+    const rightValue = right[sort.key] ?? "";
+    const comparison = typeof leftValue === "number" && typeof rightValue === "number"
+      ? leftValue - rightValue
+      : String(leftValue).localeCompare(String(rightValue), "id-ID", { numeric: true, sensitivity: "base" });
+    return sort.direction === "asc" ? comparison : -comparison;
+  });
   const productMap = new Map(products.map((product) => [product.id, product]));
+
+  const setSortKey = (key: StockSortKey) => {
+    setSort((current) => current.key === key
+      ? { key, direction: current.direction === "asc" ? "desc" : "asc" }
+      : { key, direction: "asc" });
+  };
+
+  const sortIcon = (key: StockSortKey) => {
+    if (sort.key !== key) return <ArrowUpDown className="size-3 opacity-40" />;
+    return sort.direction === "asc" ? <ArrowUp className="size-3 text-primary" /> : <ArrowDown className="size-3 text-primary" />;
+  };
+
+  const sortHeader = (label: string, key: StockSortKey, align: "left" | "right" = "left") => (
+    <button type="button" onClick={() => setSortKey(key)} className={`inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-stone-500 transition-colors hover:text-stone-900 ${align === "right" ? "ml-auto" : ""}`} aria-label={`Urutkan berdasarkan ${label}`}>
+      {label}{sortIcon(key)}
+    </button>
+  );
 
   return (
     <div className="space-y-6">
@@ -74,15 +101,15 @@ export function StockTable({ balances, movements, batches = [], products = [], v
               <table className="erp-table w-full min-w-[1040px] text-sm">
                 <thead>
                   <tr className="border-b border-stone-200 bg-stone-50/80">
-                    <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-stone-500">Produk</th>
-                    <th className="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-stone-500">Kategori</th>
-                    <th className="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-stone-500">Ukuran</th>
-                    <th className="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-stone-500">Stok</th>
-                    <th className="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-stone-500">HPP rata-rata</th>
-                    <th className="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-stone-500">Harga beli terakhir</th>
-                    <th className="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-stone-500">Harga jual default</th>
-                    <th className="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-stone-500">Nilai persediaan</th>
-                    <th className="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-stone-500">Minimum</th>
+                    <th className="px-5 py-3 text-left">{sortHeader("Produk", "productName")}</th>
+                    <th className="px-3 py-3 text-left">{sortHeader("Kategori", "category")}</th>
+                    <th className="px-3 py-3 text-left">{sortHeader("Ukuran", "size")}</th>
+                    <th className="px-3 py-3 text-right">{sortHeader("Stok", "quantity", "right")}</th>
+                    <th className="px-3 py-3 text-right">{sortHeader("HPP rata-rata", "averageUnitCost", "right")}</th>
+                    <th className="px-3 py-3 text-right">{sortHeader("Harga beli terakhir", "latestPurchaseCost", "right")}</th>
+                    <th className="px-3 py-3 text-right">{sortHeader("Harga jual default", "defaultSellingPrice", "right")}</th>
+                    <th className="px-3 py-3 text-right">{sortHeader("Nilai persediaan", "stockValue", "right")}</th>
+                    <th className="px-3 py-3 text-right">{sortHeader("Minimum", "minimumQuantity", "right")}</th>
                     <th className="px-5 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-stone-500">Aksi</th>
                   </tr>
                 </thead>
