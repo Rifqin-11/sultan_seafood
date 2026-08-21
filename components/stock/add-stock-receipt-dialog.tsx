@@ -6,12 +6,13 @@ import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { createStockReceiptAction } from "@/lib/actions/inventory";
 import type { Product, Supplier } from "@/types";
 import { formatCurrency } from "@/lib/utils";
 
-interface ReceiptRow { id: string; productId: string; quantity: string; unitCost: string; }
+interface ReceiptRow { id: string; productId: string; quantity: string; unitCost: number; }
 interface AddStockReceiptDialogProps { products: Product[]; suppliers: Supplier[]; }
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -32,15 +33,15 @@ export function AddStockReceiptDialog({ products, suppliers }: AddStockReceiptDi
     setCreatePayable(true); setNotes(""); setItems([]);
   };
   const handleOpenChange = (nextOpen: boolean) => { setOpen(nextOpen); if (!nextOpen && !saving) reset(); };
-  const addItem = () => setItems((current) => [...current, { id: `receipt_${Date.now()}_${current.length}`, productId: "", quantity: "1", unitCost: "" }]);
+  const addItem = () => setItems((current) => [...current, { id: `receipt_${Date.now()}_${current.length}`, productId: "", quantity: "1", unitCost: 0 }]);
   const removeItem = (id: string) => setItems((current) => current.filter((item) => item.id !== id));
   const updateItem = (id: string, field: keyof ReceiptRow, value: string) => setItems((current) => current.map((item) => item.id === id ? { ...item, [field]: value } : item));
   const chooseProduct = (id: string, productId: string) => {
     const product = products.find((item) => item.id === productId);
-    setItems((current) => current.map((item) => item.id === id ? { ...item, productId, unitCost: product?.activeCost ? String(product.activeCost) : item.unitCost } : item));
+    setItems((current) => current.map((item) => item.id === id ? { ...item, productId, unitCost: product?.activeCost || item.unitCost } : item));
   };
 
-  const total = items.reduce((sum, item) => sum + (Number(item.quantity) || 0) * (Number(item.unitCost) || 0), 0);
+  const total = items.reduce((sum, item) => sum + (Number(item.quantity) || 0) * item.unitCost, 0);
   const activeProducts = products.filter((product) => product.status === "ACTIVE");
   const activeSuppliers = suppliers.filter((supplier) => supplier.status === "ACTIVE");
 
@@ -49,7 +50,7 @@ export function AddStockReceiptDialog({ products, suppliers }: AddStockReceiptDi
     const result = await createStockReceiptAction({
       supplierId, receivedDate, dueDate: createPayable && dueDate ? dueDate : undefined,
       supplierReference: supplierReference || undefined, createPayable, notes: notes || undefined,
-      items: items.map((item) => ({ productId: item.productId, quantity: Number(item.quantity), unitCost: Number(item.unitCost) })),
+       items: items.map((item) => ({ productId: item.productId, quantity: Number(item.quantity), unitCost: item.unitCost })),
     });
     if (result.error) { toast.error(`Gagal: ${result.error}`); return; }
     setSaving(false); toast.success("message" in result ? result.message : "Penerimaan stok berhasil dicatat."); handleOpenChange(false); router.refresh();
@@ -77,7 +78,7 @@ export function AddStockReceiptDialog({ products, suppliers }: AddStockReceiptDi
 
           <div className="overflow-hidden rounded-xl border border-stone-200">
             <div className="flex items-center justify-between gap-3 border-b border-stone-200 bg-stone-50 px-3 py-3"><div><p className="text-sm font-semibold text-stone-800">Produk diterima</p><p className="text-xs text-stone-500">Harga supplier akan digabung ke HPP rata-rata berdasarkan jumlah stok.</p></div><Button type="button" size="sm" variant="outline" onClick={addItem} className="h-10 rounded-xl px-3.5"><Plus className="mr-1 h-3.5 w-3.5" /> Tambah</Button></div>
-            {items.length === 0 ? <div className="px-4 py-8 text-center text-xs text-stone-500">Belum ada produk. Tambahkan minimal satu produk.</div> : <div className="divide-y divide-stone-100">{items.map((item, index) => { const product = products.find((entry) => entry.id === item.productId); return <div key={item.id} className="grid gap-3 p-3 sm:grid-cols-[minmax(0,1fr)_7rem_9rem_auto] sm:items-end"><div className="space-y-1.5"><label className="text-[11px] font-semibold text-stone-600">Produk {index + 1}</label><select required value={item.productId} onChange={(event) => chooseProduct(item.id, event.target.value)} className="h-10 w-full rounded-xl border border-stone-200 bg-white px-3 text-sm outline-none focus:border-stone-500"><option value="">Pilih produk</option>{activeProducts.map((entry) => <option key={entry.id} value={entry.id}>{entry.name}{entry.size ? ` [${entry.size}]` : ""}</option>)}</select>{product && <p className="text-[11px] text-stone-500">Satuan: {product.defaultUnit} · stok saat ini {product.stockQuantity ?? 0}</p>}</div><div className="space-y-1.5"><label className="text-[11px] font-semibold text-stone-600">Jumlah</label><Input required min="0.001" step="0.001" type="number" value={item.quantity} onChange={(event) => updateItem(item.id, "quantity", event.target.value)} className="h-10 rounded-xl text-right tabular-nums" /></div><div className="space-y-1.5"><label className="text-[11px] font-semibold text-stone-600">Harga beli</label><Input required min="0.01" step="0.01" type="number" value={item.unitCost} onChange={(event) => updateItem(item.id, "unitCost", event.target.value)} className="h-10 rounded-xl text-right tabular-nums" /></div><Button type="button" variant="ghost" size="icon" onClick={() => removeItem(item.id)} className="h-10 w-full rounded-xl text-stone-400 hover:bg-red-50 hover:text-red-600 sm:w-10" aria-label={`Hapus produk ${index + 1}`}><Trash2 className="h-4 w-4" /></Button></div>; })}</div>}
+             {items.length === 0 ? <div className="px-4 py-8 text-center text-xs text-stone-500">Belum ada produk. Tambahkan minimal satu produk.</div> : <div className="divide-y divide-stone-100">{items.map((item, index) => { const product = products.find((entry) => entry.id === item.productId); return <div key={item.id} className="grid gap-3 p-3 sm:grid-cols-[minmax(0,1fr)_7rem_9rem_auto] sm:items-end"><div className="space-y-1.5"><label className="text-[11px] font-semibold text-stone-600">Produk {index + 1}</label><select required value={item.productId} onChange={(event) => chooseProduct(item.id, event.target.value)} className="h-10 w-full rounded-xl border border-stone-200 bg-white px-3 text-sm outline-none focus:border-stone-500"><option value="">Pilih produk</option>{activeProducts.map((entry) => <option key={entry.id} value={entry.id}>{entry.name}{entry.size ? ` [${entry.size}]` : ""}</option>)}</select>{product && <p className="text-[11px] text-stone-500">Satuan: {product.defaultUnit} · stok saat ini {product.stockQuantity ?? 0}</p>}</div><div className="space-y-1.5"><label className="text-[11px] font-semibold text-stone-600">Jumlah</label><Input required min="0.001" step="0.001" type="number" value={item.quantity} onChange={(event) => updateItem(item.id, "quantity", event.target.value)} className="h-10 rounded-xl text-right tabular-nums" /></div><div className="space-y-1.5"><label className="text-[11px] font-semibold text-stone-600">Harga beli</label><CurrencyInput required min={0.01} value={item.unitCost} onChange={(value) => updateItem(item.id, "unitCost", String(value))} placeholder="85000" /></div><Button type="button" variant="ghost" size="icon" onClick={() => removeItem(item.id)} className="h-10 w-full rounded-xl text-stone-400 hover:bg-red-50 hover:text-red-600 sm:w-10" aria-label={`Hapus produk ${index + 1}`}><Trash2 className="h-4 w-4" /></Button></div>; })}</div>}
             <div className="flex items-center justify-between border-t border-stone-200 bg-stone-50 px-3 py-3 text-sm"><span className="font-medium text-stone-600">Total pembelian</span><span className="font-bold tabular-nums text-stone-900">{formatCurrency(total)}</span></div>
           </div>
 

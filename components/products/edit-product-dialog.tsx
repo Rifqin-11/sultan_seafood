@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { CurrencyInput } from "@/components/ui/currency-input";
+import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -41,7 +41,6 @@ export function EditProductDialog({
   const [unitChoice, setUnitChoice] = useState(() => choiceFor(product.defaultUnit || "kg", PRODUCT_UNITS));
   const [customUnit, setCustomUnit] = useState(() => PRODUCT_UNITS.includes((product.defaultUnit || "kg") as typeof PRODUCT_UNITS[number]) ? "" : product.defaultUnit || "");
   const [defaultSellingPrice, setDefaultSellingPrice] = useState<number>(Number(product.defaultSellingPrice) || 0);
-  const [activeCost, setActiveCost] = useState<number>(Number(product.activeCost) || 0);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,7 +63,6 @@ export function EditProductDialog({
       size: size || undefined,
       defaultUnit,
       defaultSellingPrice: defaultSellingPrice > 0 ? defaultSellingPrice : undefined,
-      activeCost: activeCost > 0 ? activeCost : undefined,
       status: product.status,
     });
 
@@ -86,7 +84,7 @@ export function EditProductDialog({
         <DialogHeader>
           <DialogTitle>Edit Produk Seafood</DialogTitle>
           <DialogDescription>
-            Perbarui rincian produk, harga jual default, dan harga beli (HPP).
+            Perbarui identitas produk dan harga jual default. HPP berubah otomatis melalui penerimaan barang.
           </DialogDescription>
         </DialogHeader>
 
@@ -149,7 +147,7 @@ export function EditProductDialog({
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <label className="block text-sm font-medium text-muted-foreground mb-1.5">
-                Harga Jual Default (Rp)
+                Harga jual default (Rp)
               </label>
               <CurrencyInput
                 value={defaultSellingPrice}
@@ -157,15 +155,12 @@ export function EditProductDialog({
                 placeholder="110000"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-muted-foreground mb-1.5">
-                Harga Beli HPP (Rp)
-              </label>
-              <CurrencyInput
-                value={activeCost}
-                onChange={setActiveCost}
-                placeholder="85000"
-              />
+            <div className="rounded-xl border border-amber-200 bg-amber-50/70 px-3 py-2.5">
+              <p className="text-xs font-semibold text-amber-950">HPP rata-rata saat ini</p>
+              <p className="mt-1 text-sm font-bold tabular-nums text-amber-900">
+                {product.activeCost ? `Rp ${new Intl.NumberFormat("id-ID").format(product.activeCost)}` : "Belum tersedia"}
+              </p>
+              <p className="mt-1 text-[11px] leading-4 text-amber-900/75">HPP tidak diubah dari Edit Produk. Catat harga baru melalui Barang Masuk.</p>
             </div>
           </div>
 

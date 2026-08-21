@@ -52,7 +52,12 @@ export type StockMovementType =
   | "SALE_OUT"
   | "INVOICE_VOID_RETURN"
   | "ADJUSTMENT_IN"
-  | "ADJUSTMENT_OUT";
+  | "ADJUSTMENT_OUT"
+  | "RETURN_TO_SUPPLIER"
+  | "CUSTOMER_RETURN_IN"
+  | "DAMAGED_OUT"
+  | "EXPIRED_OUT"
+  | "INTERNAL_USE_OUT";
 
 export interface StockBalance {
   productId: string;
@@ -66,6 +71,27 @@ export interface StockBalance {
   defaultSellingPrice: number;
   stockValue: number;
   updatedAt: string;
+  category?: string;
+  productStatus?: ProductStatus;
+  latestPurchaseCost?: number;
+  supplierCount?: number;
+  marginNominal?: number;
+  marginPercentage?: number;
+  stockStatus?: "Aman" | "Menipis" | "Habis";
+}
+
+export interface StockBatch {
+  id: string;
+  productId: string;
+  supplierId?: string;
+  supplierName?: string;
+  quantityReceived: number;
+  quantityRemaining: number;
+  unitCost: number;
+  receivedAt: string;
+  expiryDate?: string;
+  status: string;
+  notes?: string;
 }
 
 export interface StockMovement {
@@ -79,7 +105,9 @@ export interface StockMovement {
   supplierName?: string;
   customerName?: string;
   invoiceNumber?: string;
+  receiptId?: string;
   receiptNumber?: string;
+  receiptCancelledAt?: string;
   purchaseUnitCost?: number;
   notes?: string;
   occurredAt: string;

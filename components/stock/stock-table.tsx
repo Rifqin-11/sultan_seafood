@@ -1,16 +1,20 @@
 "use client";
 
+import { useState } from "react";
 import { ArrowDownToLine, ArrowUpFromLine, Boxes, History, PackageSearch } from "lucide-react";
-import { AdjustStockDialog } from "@/components/stock/adjust-stock-dialog";
+import { StockRowActions } from "@/components/stock/stock-row-actions";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { getStockMovementLabel } from "@/lib/domain/inventory";
 import { formatCurrency, formatDatetime, formatNumber } from "@/lib/utils";
-import type { StockBalance, StockMovement } from "@/types";
+import type { Product, StockBalance, StockBatch, StockMovement } from "@/types";
 
 interface StockTableProps {
   balances: StockBalance[];
   movements: StockMovement[];
+  batches?: StockBatch[];
+  products?: Product[];
+  view?: "balances" | "movements" | "all";
 }
 
 const movementStyles: Record<string, string> = {
@@ -21,24 +25,46 @@ const movementStyles: Record<string, string> = {
   ADJUSTMENT_OUT: "border-red-200 bg-red-50 text-red-700",
 };
 
-export function StockTable({ balances, movements }: StockTableProps) {
+export function StockTable({ balances, movements, batches = [], products = [], view = "all" }: StockTableProps) {
+  const [query, setQuery] = useState("");
+  const [status, setStatus] = useState("all");
+  const [productStatus, setProductStatus] = useState("all");
   const lowStock = (balance: StockBalance) =>
     balance.minimumQuantity > 0 && balance.quantity <= balance.minimumQuantity;
 
+  const showBalances = view === "balances" || view === "all";
+  const showMovements = view === "movements" || view === "all";
+  const nonPurchaseMovements = movements.filter((movement) => movement.movementType !== "PURCHASE_IN");
+  const openBatchCount = new Map<string, number>();
+  for (const batch of batches) {
+    if (batch.quantityRemaining > 0) openBatchCount.set(batch.productId, (openBatchCount.get(batch.productId) ?? 0) + 1);
+  }
+  const filteredBalances = balances.filter((balance) =>
+    (balance.productName.toLowerCase().includes(query.toLowerCase()) || (balance.category ?? "").toLowerCase().includes(query.toLowerCase())) &&
+    (status === "all" || balance.stockStatus === status) &&
+    (productStatus === "all" || balance.productStatus === productStatus),
+  );
+  const productMap = new Map(products.map((product) => [product.id, product]));
+
   return (
     <div className="space-y-6">
-      <section className="erp-surface overflow-hidden">
+      {showBalances && <section className="erp-surface overflow-hidden">
         <div className="flex items-center gap-3 border-b border-stone-200 px-5 py-4">
           <div className="flex size-9 items-center justify-center rounded-xl bg-stone-100 text-stone-700">
             <Boxes className="size-4" />
           </div>
           <div>
-            <h2 className="text-sm font-semibold text-stone-900">Stok, Harga & Modal</h2>
-            <p className="mt-0.5 text-xs text-stone-500">Harga beli rata-rata bergerak menjadi HPP untuk menghitung modal dan laba.</p>
+            <h2 className="text-sm font-semibold text-stone-900">Produk & stok</h2>
+            <p className="mt-0.5 text-xs text-stone-500">HPP rata-rata digunakan saat invoice diterbitkan; harga beli terakhir tetap tersimpan per supplier.</p>
           </div>
         </div>
 
-        {balances.length === 0 ? (
+        <div className="flex flex-col gap-2 border-b border-stone-200 bg-stone-50/60 p-4 sm:flex-row sm:flex-wrap">
+          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Cari produk atau kategori" aria-label="Cari produk atau kategori" className="h-10 min-w-0 flex-1 rounded-xl border border-stone-200 bg-white px-3 text-sm outline-none focus:border-stone-500 focus:ring-3 focus:ring-stone-200/70 sm:min-w-56" />
+          <select value={productStatus} onChange={(event) => setProductStatus(event.target.value)} aria-label="Filter status produk" className="h-10 rounded-xl border border-stone-200 bg-white px-3 text-sm outline-none focus:border-stone-500"><option value="all">Semua produk</option><option value="ACTIVE">Produk aktif</option><option value="INACTIVE">Produk nonaktif</option></select>
+          <select value={status} onChange={(event) => setStatus(event.target.value)} aria-label="Filter status stok" className="h-10 rounded-xl border border-stone-200 bg-white px-3 text-sm outline-none focus:border-stone-500"><option value="all">Semua stok</option><option value="Aman">Stok aman</option><option value="Menipis">Stok menipis</option><option value="Habis">Stok habis</option></select>
+        </div>
+        {filteredBalances.length === 0 ? (
           <div className="py-12">
             <EmptyState icon={PackageSearch} title="Belum ada produk" description="Tambahkan produk terlebih dahulu untuk mulai mengelola stok." />
           </div>
@@ -49,30 +75,37 @@ export function StockTable({ balances, movements }: StockTableProps) {
                 <thead>
                   <tr className="border-b border-stone-200 bg-stone-50/80">
                     <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-stone-500">Produk</th>
+                    <th className="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-stone-500">Kategori</th>
+                    <th className="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-stone-500">Ukuran</th>
                     <th className="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-stone-500">Stok</th>
-                    <th className="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-stone-500">Harga beli rata-rata</th>
+                    <th className="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-stone-500">HPP rata-rata</th>
+                    <th className="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-stone-500">Harga beli terakhir</th>
                     <th className="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-stone-500">Harga jual default</th>
-                    <th className="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-stone-500">Modal stok</th>
+                    <th className="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-stone-500">Nilai persediaan</th>
                     <th className="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-stone-500">Minimum</th>
                     <th className="px-5 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-stone-500">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-stone-100">
-                  {balances.map((balance) => (
+                  {filteredBalances.map((balance) => (
                     <tr key={balance.productId} className="hover:bg-stone-50/60">
                       <td className="px-5 py-3">
                         <p className="font-semibold text-stone-900">{balance.productName}</p>
                         <p className="mt-1 text-xs text-stone-500">{balance.sku || "Tanpa SKU"}{balance.size ? ` · ${balance.size}` : ""}</p>
+                        <div className="mt-2"><Badge variant="outline" className={balance.productStatus === "ACTIVE" ? "border-emerald-200 bg-emerald-50 text-[10px] text-emerald-700" : "border-stone-300 bg-stone-100 text-[10px] text-stone-600"}>{balance.productStatus === "ACTIVE" ? "Produk aktif" : "Produk nonaktif"}</Badge></div>
                       </td>
+                      <td className="px-3 py-3 text-sm text-stone-600">{balance.category ?? "Tanpa kategori"}</td>
+                      <td className="px-3 py-3 text-sm text-stone-600">{balance.size || "—"}</td>
                       <td className={`px-3 py-3 text-right text-base font-bold tabular-nums ${lowStock(balance) ? "text-red-600" : "text-stone-900"}`}>
                         {formatNumber(balance.quantity)} <span className="text-xs font-medium text-stone-500">{balance.unit}</span>
                         {lowStock(balance) && <Badge variant="outline" className="ml-2 border-red-200 bg-red-50 text-[10px] text-red-700">Menipis</Badge>}
                       </td>
-                      <td className="px-3 py-3 text-right font-semibold tabular-nums text-amber-700">{balance.averageUnitCost > 0 ? formatCurrency(balance.averageUnitCost) : "—"}</td>
-                      <td className="px-3 py-3 text-right font-semibold tabular-nums text-sky-700">{balance.defaultSellingPrice > 0 ? formatCurrency(balance.defaultSellingPrice) : "—"}</td>
+                      <td className="px-3 py-3 text-right font-semibold tabular-nums text-amber-700">{balance.averageUnitCost > 0 ? formatCurrency(balance.averageUnitCost) : "—"}<p className="mt-1 text-[10px] font-medium text-amber-600/80">Dipakai invoice</p></td>
+                      <td className="px-3 py-3 text-right font-semibold tabular-nums text-emerald-700">{balance.latestPurchaseCost ? formatCurrency(balance.latestPurchaseCost) : "—"}<p className="mt-1 text-[10px] font-medium text-stone-400">{balance.supplierCount ?? 0} supplier</p></td>
+                      <td className="px-3 py-3 text-right font-semibold tabular-nums text-sky-700">{balance.defaultSellingPrice > 0 ? formatCurrency(balance.defaultSellingPrice) : "—"}<p className={`mt-1 text-[10px] ${balance.marginPercentage !== undefined && balance.marginPercentage < 15 ? "text-red-600" : "text-stone-400"}`}>{balance.marginPercentage !== undefined ? `${balance.marginPercentage.toFixed(1)}% margin` : "margin belum tersedia"} · {openBatchCount.get(balance.productId) ?? 0} batch</p></td>
                       <td className="px-3 py-3 text-right font-bold tabular-nums text-stone-900">{formatCurrency(balance.stockValue)}</td>
                       <td className="px-3 py-3 text-right text-sm tabular-nums text-stone-600">{balance.minimumQuantity > 0 ? `${formatNumber(balance.minimumQuantity)} ${balance.unit}` : "—"}</td>
-                      <td className="px-5 py-3 text-right"><AdjustStockDialog balance={balance} /></td>
+                      <td className="px-5 py-3 text-right"><StockRowActions balance={balance} product={productMap.get(balance.productId)} movements={movements} batches={batches} /></td>
                     </tr>
                   ))}
                 </tbody>
@@ -80,26 +113,26 @@ export function StockTable({ balances, movements }: StockTableProps) {
             </div>
 
             <div className="divide-y divide-stone-100 md:hidden">
-              {balances.map((balance) => (
+              {filteredBalances.map((balance) => (
                 <article key={balance.productId} className="space-y-3 p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="truncate font-semibold text-stone-900">{balance.productName}</p>
-                      <p className="mt-1 text-xs text-stone-500">{balance.sku || "Tanpa SKU"}{balance.size ? ` · ${balance.size}` : ""}</p>
+                        <p className="mt-1 text-xs text-stone-500">{balance.sku || "Tanpa SKU"}</p>
                     </div>
                     {lowStock(balance) && <Badge variant="outline" className="shrink-0 border-red-200 bg-red-50 text-[10px] text-red-700">Menipis</Badge>}
                   </div>
-                  <div className="grid grid-cols-2 gap-2 rounded-xl bg-stone-50 p-3">
+                   <div className="grid grid-cols-2 gap-2 rounded-xl bg-stone-50 p-3">
                     <div>
                       <p className="text-[11px] text-stone-500">Stok tersedia</p>
                       <p className="mt-1 text-lg font-bold tabular-nums text-stone-900">{formatNumber(balance.quantity)} <span className="text-xs font-medium text-stone-500">{balance.unit}</span></p>
                     </div>
                     <div className="text-right">
-                      <p className="text-[11px] text-stone-500">Modal stok</p>
+                       <p className="text-[11px] text-stone-500">Nilai persediaan</p>
                       <p className="mt-1 font-bold tabular-nums text-stone-900">{formatCurrency(balance.stockValue)}</p>
                     </div>
                     <div className="border-t border-stone-200 pt-2">
-                      <p className="text-[11px] text-stone-500">Beli rata-rata</p>
+                      <p className="text-[11px] text-stone-500">HPP rata-rata</p>
                       <p className="mt-1 text-xs font-semibold text-amber-700">{balance.averageUnitCost > 0 ? formatCurrency(balance.averageUnitCost) : "—"}</p>
                     </div>
                     <div className="border-t border-stone-200 pt-2 text-right">
@@ -107,24 +140,24 @@ export function StockTable({ balances, movements }: StockTableProps) {
                       <p className="mt-1 text-xs font-semibold text-sky-700">{balance.defaultSellingPrice > 0 ? formatCurrency(balance.defaultSellingPrice) : "—"}</p>
                     </div>
                   </div>
-                  <AdjustStockDialog balance={balance} />
+                   <div className="flex justify-end"><StockRowActions balance={balance} product={productMap.get(balance.productId)} movements={movements} batches={batches} /></div>
                 </article>
               ))}
             </div>
           </>
         )}
-      </section>
+      </section>}
 
-      <section className="erp-surface overflow-hidden">
+      {showMovements && <section className="erp-surface overflow-hidden">
         <div className="flex items-center gap-3 border-b border-stone-200 px-5 py-4">
           <div className="flex size-9 items-center justify-center rounded-xl bg-stone-100 text-stone-700"><History className="size-4" /></div>
-          <div><h2 className="text-sm font-semibold text-stone-900">Riwayat Mutasi</h2><p className="mt-0.5 text-xs text-stone-500">100 mutasi terbaru dari supplier, invoice, dan penyesuaian.</p></div>
+          <div><h2 className="text-sm font-semibold text-stone-900">Mutasi stok</h2><p className="mt-0.5 text-xs text-stone-500">Invoice, pengembalian invoice, pembelian, dan penyesuaian stok.</p></div>
         </div>
-        {movements.length === 0 ? (
-          <div className="py-12"><EmptyState icon={History} title="Belum ada mutasi stok" description="Barang masuk dan invoice yang diterbitkan akan muncul di sini." /></div>
+        {nonPurchaseMovements.length === 0 ? (
+          <div className="py-12"><EmptyState icon={History} title="Belum ada mutasi stok" description="Invoice yang diterbitkan dan penyesuaian stok akan muncul di sini." /></div>
         ) : (
           <div className="divide-y divide-stone-100">
-            {movements.map((movement) => {
+            {nonPurchaseMovements.map((movement) => {
               const incoming = movement.quantityDelta > 0;
               return (
                 <div key={movement.id} className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
@@ -157,7 +190,7 @@ export function StockTable({ balances, movements }: StockTableProps) {
             })}
           </div>
         )}
-      </section>
+      </section>}
     </div>
   );
 }

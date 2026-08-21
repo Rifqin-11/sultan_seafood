@@ -34,7 +34,6 @@ const navGroups = [
     label: "Operasional",
     items: [
       { label: "Ringkasan", href: "/dashboard", icon: LayoutDashboard },
-      { label: "Produk", href: "/products", icon: Package },
       { label: "Stok, harga & modal", href: "/stock", icon: Boxes },
     ],
   },
@@ -75,7 +74,7 @@ const settingItems = [
 function canAccess(href: string, role: Role) {
   if (role === "OWNER") return true;
   if (role === "FINANCE") return !href.startsWith("/settings/");
-  return ["/dashboard", "/products", "/invoices", "/customers", "/suppliers"].includes(href);
+  return ["/dashboard", "/invoices", "/customers", "/suppliers"].includes(href);
 }
 
 function isActivePath(pathname: string, href: string) {

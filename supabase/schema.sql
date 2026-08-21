@@ -108,6 +108,9 @@ CREATE TABLE IF NOT EXISTS public.product_costs (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- The deployed additive inventory migration also creates stock_batches,
+-- stock_batch_allocations, and product_cost_history for FIFO/audit reporting.
+
 CREATE TABLE IF NOT EXISTS public.customer_prices (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   customer_id UUID NOT NULL REFERENCES public.customers(id) ON DELETE CASCADE,

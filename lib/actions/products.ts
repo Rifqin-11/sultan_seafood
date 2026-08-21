@@ -6,7 +6,16 @@ import { normalizeActionError, requireApprovedUser, requireRole } from "@/lib/se
 import type { Product, ProductStatus } from "@/types";
 
 export interface CreateProductPayload { sku?: string; name: string; category: string; size?: string; defaultUnit: string; defaultSellingPrice?: number; activeCost?: number }
-export interface UpdateProductPayload extends CreateProductPayload { id: string; status?: ProductStatus }
+export interface UpdateProductPayload {
+  id: string;
+  sku?: string;
+  name: string;
+  category: string;
+  size?: string;
+  defaultUnit: string;
+  defaultSellingPrice?: number;
+  status?: ProductStatus;
+}
 
 function validate(payload: CreateProductPayload) {
   if (!payload.name.trim() || !payload.category.trim() || !payload.defaultUnit.trim()) return "Nama, kategori, dan satuan produk wajib diisi.";
@@ -34,12 +43,29 @@ export async function updateProductAction(payload: UpdateProductPayload) {
     await requireRole(["OWNER", "FINANCE"]); const supabase = await createClient();
     const { error } = await supabase.from("products").update({ sku: payload.sku?.trim() || null, name: payload.name.trim(), category: payload.category.trim(), size: payload.size?.trim() || null, default_unit: payload.defaultUnit.trim(), default_selling_price: payload.defaultSellingPrice ?? 0, status: payload.status }).eq("id", payload.id);
     if (error) throw error;
-    if ((payload.activeCost ?? 0) > 0) {
-      const { error: costError } = await supabase.rpc("set_product_average_cost", { p_product_id: payload.id, p_supplier_id: null, p_unit_cost: payload.activeCost, p_effective_at: new Date().toISOString(), p_notes: "HPP diperbarui dari produk" });
-      if (costError) throw costError;
-    }
     revalidatePath("/products"); revalidatePath("/stock"); revalidatePath("/pricing/purchase"); return { success: true, message: "Produk berhasil diperbarui." };
   } catch (error) { return { error: normalizeActionError(error, "Gagal memperbarui produk.") }; }
+}
+
+export async function adjustProductAverageCostAction(productId: string, newCost: number, reason: string) {
+  if (!productId || !Number.isFinite(newCost) || newCost <= 0) return { error: "HPP baru harus lebih besar dari nol." };
+  if (typeof reason !== "string" || !reason.trim()) return { error: "Alasan penyesuaian HPP wajib diisi." };
+  try {
+    await requireRole(["OWNER", "FINANCE"]);
+    const supabase = await createClient();
+    const { data, error } = await supabase.rpc("adjust_product_average_cost", {
+      p_product_id: productId,
+      p_new_cost: newCost,
+      p_reason: reason.trim(),
+    });
+    if (error) throw error;
+    revalidatePath("/products");
+    revalidatePath("/stock");
+    revalidatePath("/dashboard");
+    return { success: true, ...(data as { oldCost: number; newCost: number }), message: "HPP rata-rata berhasil disesuaikan dan tercatat di audit." };
+  } catch (error) {
+    return { error: normalizeActionError(error, "Gagal menyesuaikan HPP produk.") };
+  }
 }
 
 export async function toggleProductStatusAction(id: string, currentStatus: ProductStatus) {
@@ -49,23 +75,11 @@ export async function toggleProductStatusAction(id: string, currentStatus: Produ
 
 export async function deleteProductAction(id: string) {
   try {
-    await requireRole(["OWNER", "FINANCE"]); const supabase = await createClient();
-    const { count: movementCount, error: movementError } = await supabase.from("stock_movements").select("id", { count: "exact", head: true }).eq("product_id", id);
-    if (movementError && !movementError.message.toLowerCase().includes("does not exist")) throw movementError;
-    if ((movementCount ?? 0) > 0) {
-      const { error } = await supabase.from("products").update({ status: "INACTIVE" }).eq("id", id);
-      if (error) throw error;
-      revalidatePath("/products"); revalidatePath("/stock");
-      return { success: true, isWarning: true, message: "Produk memiliki histori stok dan dinonaktifkan agar riwayat tetap aman." };
-    }
-    // The database foreign key preserves every historical invoice item and
-    // only clears its optional product_id reference when this master product
-    // is deleted. Snapshot fields on invoice_items remain unchanged.
-    const { data, error } = await supabase.from("products").delete().eq("id", id).select("id").maybeSingle();
+    await requireRole(["OWNER"]); const supabase = await createClient();
+    const { data, error } = await supabase.rpc("force_delete_product", { p_product_id: id });
     if (error) throw error;
-    if (!data) return { error: "Produk tidak ditemukan atau tidak dapat dihapus." };
-    revalidatePath("/products"); revalidatePath("/stock"); revalidatePath("/pricing/purchase"); revalidatePath("/pricing/selling");
-    return { success: true, isWarning: false, message: "Produk berhasil dihapus. Riwayat invoice tetap tersimpan." };
+    revalidatePath("/products"); revalidatePath("/stock"); revalidatePath("/pricing/purchase"); revalidatePath("/pricing/selling"); revalidatePath("/dashboard");
+    return { success: true, ...(data as { productName: string; invoiceHistoryPreserved: boolean }), message: "Produk dan seluruh data stok/pembeliannya berhasil dihapus. Invoice tetap tersimpan sebagai snapshot." };
   } catch (error) { return { error: normalizeActionError(error, "Gagal menghapus produk.") }; }
 }
 

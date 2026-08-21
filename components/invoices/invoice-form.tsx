@@ -521,7 +521,7 @@ export function InvoiceForm({ customers = [], products = [], customerPrices = []
                     </span>
                   )}
                 </div>
-                <p className="mt-0.5 truncate text-xs text-muted-foreground">Harga beli dapat disesuaikan untuk invoice ini tanpa mengubah HPP master produk.</p>
+                <p className="mt-0.5 truncate text-xs text-muted-foreground">HPP otomatis memakai rata-rata harga stok dan dapat disesuaikan khusus untuk invoice ini.</p>
               </div>
             </div>
             <Button onClick={addItem} size="sm" variant="outline" className="h-10 rounded-xl bg-white px-4 shadow-sm">
@@ -560,7 +560,7 @@ export function InvoiceForm({ customers = [], products = [], customerPrices = []
                     </th>
                     {canViewInternal && <th className="w-32 bg-amber-50/70 px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-amber-700">
                       <span className="inline-flex items-center justify-end gap-1">
-                        <PencilLine className="w-3 h-3 text-amber-600" /> Harga Beli Invoice
+                        <PencilLine className="w-3 h-3 text-amber-600" /> HPP Rata-rata Stok
                       </span>
                     </th>}
                     <th className="w-32 px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-stone-500">
@@ -636,9 +636,13 @@ export function InvoiceForm({ customers = [], products = [], customerPrices = []
                         <CurrencyInput
                           value={item.purchasePrice}
                           onChange={(val) => updateItem(item.id, "purchasePrice", val)}
-                          aria-label={`Harga beli invoice ${item.description || "produk"}`}
+                          aria-label={`HPP rata-rata stok ${item.description || "produk"}`}
                           className="min-w-[8rem] border-amber-300 text-amber-900"
                         />
+                        {(() => {
+                          const product = productsList.find((entry) => entry.id === item.productId);
+                          return product?.activeCost ? <p className="mt-1 text-[10px] text-amber-700/80">Rata-rata stok: {formatCurrency(product.activeCost)}</p> : <p className="mt-1 text-[10px] text-amber-700/80">Belum ada harga stok</p>;
+                        })()}
                       </td>}
                       <td className="px-3 py-3">
                         <CurrencyInput
@@ -722,14 +726,14 @@ export function InvoiceForm({ customers = [], products = [], customerPrices = []
                     <div className={canViewInternal ? "grid grid-cols-1 gap-3 min-[430px]:grid-cols-2" : "grid grid-cols-1"}>
                       {canViewInternal && (
                         <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-3">
-                          <label className="mb-2 flex items-center gap-1 text-xs font-semibold text-amber-700"><PencilLine className="size-3" /> Harga Beli Invoice</label>
+                          <label className="mb-2 flex items-center gap-1 text-xs font-semibold text-amber-700"><PencilLine className="size-3" /> HPP Rata-rata Stok</label>
                           <CurrencyInput
                             value={item.purchasePrice}
                             onChange={(val) => updateItem(item.id, "purchasePrice", val)}
-                            aria-label={`Harga beli invoice ${item.description || "produk"}`}
+                            aria-label={`HPP rata-rata stok ${item.description || "produk"}`}
                             className="border-amber-300 text-amber-900"
                           />
-                          <p className="mt-1.5 text-[10px] leading-relaxed text-amber-700/80">Khusus invoice ini. HPP master tetap.</p>
+                          <p className="mt-1.5 text-[10px] leading-relaxed text-amber-700/80">Otomatis dari rata-rata harga stok{selectedProduct?.activeCost ? `: ${formatCurrency(selectedProduct.activeCost)}` : ""}. Bisa diubah khusus invoice ini.</p>
                         </div>
                       )}
                       <div className="rounded-xl border border-stone-200 bg-white p-3">

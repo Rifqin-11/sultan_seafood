@@ -46,6 +46,7 @@ export function ProductTable({ initialProducts = [], canManage = false }: Produc
   const [statusFilter, setStatusFilter] = useState<"ALL" | "ACTIVE" | "INACTIVE">("ALL");
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
+  const [forceDeletingProduct, setForceDeletingProduct] = useState<Product | null>(null);
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
   const handleToggleStatus = async (product: Product) => {
@@ -68,11 +69,8 @@ export function ProductTable({ initialProducts = [], canManage = false }: Produc
     setDeletingProduct(null);
     if (res.error) {
       toast.error(`Gagal menghapus: ${res.error}`);
-    } else if (res.isWarning) {
-      toast.warning(res.message);
-      router.refresh();
     } else {
-      toast.success(res.message || "Produk berhasil dihapus");
+      toast.success("message" in res ? res.message : "Produk berhasil dihapus");
       router.refresh();
     }
   };
@@ -327,10 +325,22 @@ export function ProductTable({ initialProducts = [], canManage = false }: Produc
           onOpenChange={(open) => {
             if (!open) setDeletingProduct(null);
           }}
-          title="Hapus Produk?"
-          description={`Apakah Anda yakin ingin menghapus produk "${deletingProduct.name}"? Tindakan ini tidak dapat dibatalkan.`}
-          note="Riwayat invoice yang sudah menggunakan produk ini tetap tersimpan sebagai snapshot dan tidak akan berubah."
-          confirmLabel="Hapus Produk"
+          title="Hapus produk?"
+          description={`Anda akan menghapus "${deletingProduct.name}" dari master produk.`}
+          note="Konfirmasi berikutnya akan menghapus data stok, batch, mutasi, penerimaan, dan histori harga produk ini. Invoice tetap tersimpan sebagai snapshot."
+          confirmLabel="Lanjutkan"
+          onConfirm={() => setForceDeletingProduct(deletingProduct)}
+        />
+      )}
+      {canManage && forceDeletingProduct && (
+        <ConfirmDialog
+          open={!!forceDeletingProduct}
+          onOpenChange={(open) => { if (!open) setForceDeletingProduct(null); }}
+          title="Konfirmasi penghapusan permanen"
+          description={`Data operasional "${forceDeletingProduct.name}" akan dihapus permanen.`}
+          note="Invoice dan item invoice tetap ada sebagai snapshot historis, tetapi tidak lagi terhubung ke produk ini."
+          confirmationText={forceDeletingProduct.name}
+          confirmLabel="Hapus permanen"
           onConfirm={handleConfirmDelete}
         />
       )}

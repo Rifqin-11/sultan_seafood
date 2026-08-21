@@ -1,18 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactElement } from "react";
 import { ClipboardPenLine, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { updateStockSettingsAction } from "@/lib/actions/inventory";
 import type { StockBalance } from "@/types";
 
-export function AdjustStockDialog({ balance }: { balance?: StockBalance }) {
+export function AdjustStockDialog({ balance, trigger, open: controlledOpen, onOpenChange }: { balance?: StockBalance; trigger?: ReactElement; open?: boolean; onOpenChange?: (open: boolean) => void }) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const open = controlledOpen ?? uncontrolledOpen;
+  const setOpen = onOpenChange ?? setUncontrolledOpen;
   const [saving, setSaving] = useState(false);
   const [quantity, setQuantity] = useState("");
   const [minimum, setMinimum] = useState("");
@@ -32,7 +34,9 @@ export function AdjustStockDialog({ balance }: { balance?: StockBalance }) {
   };
   if (!balance) return null;
   return <Dialog open={open} onOpenChange={(next) => { setOpen(next); if (next) reset(); if (!next && !saving) reset(); }}>
-    <Button variant="outline" size="sm" onClick={() => { reset(); setOpen(true); }} className="h-9 rounded-lg"><ClipboardPenLine className="mr-1.5 h-3.5 w-3.5" /> Sesuaikan</Button>
+    {controlledOpen === undefined && <DialogTrigger render={trigger ?? <Button variant="outline" size="sm" className="h-9 rounded-lg" />}>
+      {!trigger && <><ClipboardPenLine className="mr-1.5 h-3.5 w-3.5" /> Sesuaikan</>}
+    </DialogTrigger>}
     <DialogContent className="max-w-[calc(100%-1.5rem)] rounded-2xl sm:max-w-md">
       <DialogHeader><DialogTitle>Sesuaikan Stok</DialogTitle><DialogDescription>{balance.productName} · stok tercatat {balance.quantity} {balance.unit}. Isi jumlah fisik yang benar; sistem menghitung selisihnya otomatis.</DialogDescription></DialogHeader>
       <form onSubmit={async (event) => { setSaving(true); await submit(event); setSaving(false); }} className="space-y-4">

@@ -32,6 +32,17 @@ export function calculateWeightedAverageCost(
   return ((currentQuantity * currentAverageCost) + (incomingQuantity * incomingUnitCost)) / quantityAfter;
 }
 
+export function calculateMargin(sellingPrice: number, averageCost: number) {
+  const nominal = sellingPrice - averageCost;
+  return { nominal, percentage: sellingPrice > 0 ? (nominal / sellingPrice) * 100 : 0 };
+}
+
+export function getStockStatus(quantity: number, minimumQuantity: number) {
+  if (quantity <= 0) return "Habis";
+  if (minimumQuantity > 0 && quantity <= minimumQuantity) return "Menipis";
+  return "Aman";
+}
+
 export function validateStockReceiptPayload(payload: StockReceiptInput): string | null {
   if (!payload || !payload.supplierId || !payload.receivedDate || !Array.isArray(payload.items) || payload.items.length === 0) {
     return "Supplier, tanggal penerimaan, dan minimal satu produk wajib diisi.";
@@ -54,6 +65,12 @@ export function validateStockAdjustment(productId: string, quantityDelta: number
   return null;
 }
 
+export function validateStockReceiptCancellation(receiptId: string, reason: string): string | null {
+  if (!receiptId) return "Penerimaan stok tidak valid.";
+  if (typeof reason !== "string" || !reason.trim()) return "Alasan pembatalan wajib diisi.";
+  return null;
+}
+
 export function validateStockSettings(payload: StockSettingsInput): string | null {
   if (!payload?.productId) return "Produk wajib dipilih.";
   if (!Number.isFinite(payload.targetQuantity) || payload.targetQuantity < 0) return "Stok aktual tidak valid.";
@@ -69,6 +86,11 @@ export function getStockMovementLabel(type: string) {
     INVOICE_VOID_RETURN: "Pengembalian invoice",
     ADJUSTMENT_IN: "Penyesuaian masuk",
     ADJUSTMENT_OUT: "Penyesuaian keluar",
+    RETURN_TO_SUPPLIER: "Retur ke supplier",
+    CUSTOMER_RETURN_IN: "Retur pelanggan",
+    DAMAGED_OUT: "Produk rusak",
+    EXPIRED_OUT: "Produk kedaluwarsa",
+    INTERNAL_USE_OUT: "Pemakaian internal",
   };
   return labels[type] ?? type;
 }

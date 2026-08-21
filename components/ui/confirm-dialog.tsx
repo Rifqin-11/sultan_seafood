@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { AlertTriangle, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -19,6 +20,7 @@ interface ConfirmDialogProps {
   confirmLabel?: string;
   variant?: "destructive" | "default";
   note?: string;
+  confirmationText?: string;
   onConfirm: () => Promise<void> | void;
 }
 
@@ -30,9 +32,11 @@ export function ConfirmDialog({
   confirmLabel = "Ya, Hapus",
   variant = "destructive",
   note,
+  confirmationText,
   onConfirm,
 }: ConfirmDialogProps) {
   const [loading, setLoading] = useState(false);
+  const [typedConfirmation, setTypedConfirmation] = useState("");
 
   const handleConfirm = async () => {
     setLoading(true);
@@ -76,6 +80,12 @@ export function ConfirmDialog({
               {note}
             </p>
           )}
+          {confirmationText && (
+            <div className="mt-5 w-full max-w-sm text-left">
+              <label className="text-xs font-semibold text-stone-700">Ketik <span className="font-bold text-stone-950">{confirmationText}</span> untuk melanjutkan</label>
+              <Input value={typedConfirmation} onChange={(event) => setTypedConfirmation(event.target.value)} className="mt-2 h-11 border-stone-300" autoComplete="off" />
+            </div>
+          )}
         </DialogHeader>
 
         <div className="flex flex-col-reverse gap-3 border-t border-stone-200 bg-stone-50/80 px-5 py-5 sm:flex-row sm:justify-end sm:px-7">
@@ -84,7 +94,7 @@ export function ConfirmDialog({
             variant="outline"
             className="h-11 w-full rounded-xl bg-white px-5 sm:w-auto"
             onClick={() => onOpenChange(false)}
-            disabled={loading}
+            disabled={loading || (confirmationText !== undefined && typedConfirmation !== confirmationText)}
           >
             Batal
           </Button>

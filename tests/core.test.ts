@@ -4,7 +4,7 @@ import { calculateInvoice, formatCurrency } from "../lib/utils.ts";
 import { createCsv } from "../lib/csv.ts";
 import { getEffectiveInvoiceStatus, isPublicInvoice, sanitizeInvoiceForRole } from "../lib/domain/invoices.ts";
 import { ROLE_PERMISSIONS, type Invoice } from "../types/index.ts";
-import { calculateWeightedAverageCost, getStockMovementLabel, validateStockAdjustment, validateStockReceiptPayload, validateStockSettings } from "../lib/domain/inventory.ts";
+import { calculateMargin, calculateWeightedAverageCost, getStockMovementLabel, getStockStatus, validateStockAdjustment, validateStockReceiptCancellation, validateStockReceiptPayload, validateStockSettings } from "../lib/domain/inventory.ts";
 import { normalizeActionError } from "../lib/security/errors.ts";
 
 const invoice: Invoice = {
@@ -67,9 +67,23 @@ test("stock adjustment requires a reason and movement labels stay readable", () 
   assert.equal(getStockMovementLabel("SALE_OUT"), "Keluar untuk invoice");
 });
 
+test("stock receipt cancellation requires both a receipt and reason", () => {
+  assert.match(validateStockReceiptCancellation("", "Salah harga") ?? "", /tidak valid/);
+  assert.match(validateStockReceiptCancellation("receipt-1", "") ?? "", /Alasan/);
+  assert.equal(validateStockReceiptCancellation("receipt-1", "Harga supplier salah"), null);
+});
+
 test("weighted-average HPP combines current stock with a differently priced receipt", () => {
   assert.equal(calculateWeightedAverageCost(10, 50_000, 5, 65_000), 55_000);
   assert.equal(calculateWeightedAverageCost(0, 0, 5, 65_000), 65_000);
+  assert.equal(calculateWeightedAverageCost(20, 70_000, 20, 85_000), 77_500);
+});
+
+test("margin and minimum-stock status use HPP summary without confusing it with supplier price", () => {
+  assert.deepEqual(calculateMargin(100_000, 73_333), { nominal: 26_667, percentage: 26.667 });
+  assert.equal(getStockStatus(0, 5), "Habis");
+  assert.equal(getStockStatus(5, 5), "Menipis");
+  assert.equal(getStockStatus(6, 5), "Aman");
 });
 
 test("stock opname accepts an absolute target balance", () => {
