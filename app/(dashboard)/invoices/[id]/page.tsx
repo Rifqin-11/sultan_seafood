@@ -6,6 +6,8 @@ import {
   formatDate,
   formatPercent,
   getDirectCostLabel,
+  formatQuantity,
+  getBillingQuantity,
   parseProductDescription,
 } from "@/lib/utils";
 import { InvoiceStatusBadge } from "@/components/invoices/invoice-status-badge";
@@ -216,7 +218,7 @@ export default async function InvoiceDetailPage(props: PageProps<"/invoices/[id]
                           )}
                         </td>
                         <td className="px-3 py-3.5 text-right font-medium tabular-nums text-stone-700">
-                           {item.quantity + (item.marginQuantity ?? 0)}
+                           {formatQuantity(getBillingQuantity(item.quantity, item.marginQuantity))}
                         </td>
                         <td className="px-3 py-3.5 text-muted-foreground">
                           {item.unit}
@@ -280,7 +282,7 @@ export default async function InvoiceDetailPage(props: PageProps<"/invoices/[id]
                     <div className="grid grid-cols-3 gap-2 rounded-xl bg-stone-50 p-3">
                       <div>
                         <p className="text-[10px] font-semibold uppercase tracking-wider text-stone-400">Qty</p>
-                         <p className="mt-1 text-sm font-semibold tabular-nums text-stone-700">{item.quantity + (item.marginQuantity ?? 0)}</p>
+                         <p className="mt-1 text-sm font-semibold tabular-nums text-stone-700">{formatQuantity(getBillingQuantity(item.quantity, item.marginQuantity))}</p>
                       </div>
                       <div>
                         <p className="text-[10px] font-semibold uppercase tracking-wider text-stone-400">Satuan</p>

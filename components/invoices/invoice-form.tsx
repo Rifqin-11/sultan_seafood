@@ -44,6 +44,8 @@ import {
   calculateInvoice,
   formatPercent,
   getDirectCostLabel,
+  formatQuantity,
+  getBillingQuantity,
 } from "@/lib/utils";
 import type { CustomerPrice, DirectCostCategory } from "@/types";
 import { createInvoiceAction, updateInvoiceAction } from "@/lib/actions/invoices";
@@ -149,6 +151,7 @@ export function InvoiceForm({ customers = [], products = [], customerPrices = []
     }];
   });
   const [quantityDrafts, setQuantityDrafts] = useState<Record<string, string>>({});
+  const [marginDrafts, setMarginDrafts] = useState<Record<string, string>>({});
   const [marginEditors, setMarginEditors] = useState<Record<string, boolean>>({});
   const [costs, setCosts] = useState<DirectCostRow[]>(() => {
     if (initialData?.costs?.length) {
@@ -196,6 +199,11 @@ export function InvoiceForm({ customers = [], products = [], customerPrices = []
   const removeItem = (id: string) => {
     setItems((prev) => prev.filter((i) => i.id !== id));
     setQuantityDrafts((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+    setMarginDrafts((prev) => {
       const next = { ...prev };
       delete next[id];
       return next;
@@ -250,6 +258,29 @@ export function InvoiceForm({ customers = [], products = [], customerPrices = []
     const nextQuantity = Number.isFinite(quantity) && quantity >= 0 ? quantity : 0;
     updateItem(item.id, "quantity", nextQuantity);
     setQuantityDrafts((prev) => {
+      const next = { ...prev };
+      delete next[item.id];
+      return next;
+    });
+  };
+
+  const updateMargin = (id: string, rawValue: string) => {
+    const normalized = rawValue.replace(",", ".");
+    setMarginDrafts((prev) => ({ ...prev, [id]: rawValue }));
+    if (normalized === "" || normalized === "." || normalized === "0.") {
+      updateItem(id, "marginQuantity", normalized === "0." ? 0 : 0);
+      return;
+    }
+    const margin = Number(normalized);
+    if (Number.isFinite(margin) && margin >= 0) updateItem(id, "marginQuantity", margin);
+  };
+
+  const commitMargin = (item: InvoiceItemRow) => {
+    const rawValue = marginDrafts[item.id];
+    if (rawValue === undefined) return;
+    const margin = Number(rawValue.replace(",", "."));
+    updateItem(item.id, "marginQuantity", Number.isFinite(margin) && margin >= 0 ? Number(margin.toFixed(3)) : 0);
+    setMarginDrafts((prev) => {
       const next = { ...prev };
       delete next[item.id];
       return next;
@@ -664,15 +695,15 @@ export function InvoiceForm({ customers = [], products = [], customerPrices = []
                         />
                       </td>
                       <td className="px-3 py-3 text-right text-xs font-bold tabular-nums text-stone-800">
-                        <p>{formatCurrency((item.quantity + item.marginQuantity) * item.sellingPrice)}</p>
-                        {item.marginQuantity > 0 && <p className="mt-1 text-[10px] font-medium text-sky-700">Tagih {item.quantity + item.marginQuantity} {item.unit}</p>}
+                        <p>{formatCurrency(getBillingQuantity(item.quantity, item.marginQuantity) * item.sellingPrice)}</p>
+                        {item.marginQuantity > 0 && <p className="mt-1 text-[10px] font-medium text-sky-700">Tagih {formatQuantity(getBillingQuantity(item.quantity, item.marginQuantity))} {item.unit}</p>}
                       </td>
                       <td className="px-2 py-3">
                         <div className="flex items-center justify-center gap-1">
                           <button type="button" onClick={() => setMarginEditors((current) => ({ ...current, [item.id]: !current[item.id] }))} className={`flex size-8 items-center justify-center rounded-lg transition-colors ${item.marginQuantity > 0 ? "bg-sky-50 text-sky-700" : "text-stone-400 hover:bg-sky-50 hover:text-sky-700"}`} aria-label="Atur margin kilogram"><Scale className="size-3.5" /></button>
                           <button type="button" onClick={() => removeItem(item.id)} className="flex size-8 items-center justify-center rounded-lg text-stone-400 transition-colors hover:bg-red-50 hover:text-red-600" aria-label="Hapus item"><Trash2 className="size-3.5" /></button>
                         </div>
-                        {marginEditors[item.id] && <div className="mt-2 w-28"><label className="sr-only" htmlFor={`margin-${item.id}`}>Margin kg</label><input id={`margin-${item.id}`} type="number" min="0" step="0.001" value={item.marginQuantity || ""} onChange={(event) => updateItem(item.id, "marginQuantity", Number(event.target.value) || 0)} placeholder="Margin kg" className="h-8 w-full rounded-lg border border-sky-200 bg-sky-50 px-2 text-right text-xs tabular-nums text-sky-900 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200" /></div>}
+                        {marginEditors[item.id] && <div className="mt-2 w-28"><label className="sr-only" htmlFor={`margin-${item.id}`}>Margin kg</label><input id={`margin-${item.id}`} type="text" inputMode="decimal" value={marginDrafts[item.id] ?? (item.marginQuantity > 0 ? String(item.marginQuantity) : "")} onChange={(event) => updateMargin(item.id, event.target.value)} onBlur={() => commitMargin(item)} placeholder="Margin kg" className="h-8 w-full rounded-lg border border-sky-200 bg-sky-50 px-2 text-right text-xs tabular-nums text-sky-900 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200" /></div>}
                       </td>
                     </tr>
                   ))}
@@ -749,7 +780,7 @@ export function InvoiceForm({ customers = [], products = [], customerPrices = []
                         <p className="mt-1.5 text-[10px] leading-relaxed text-stone-500">Khusus invoice ini. Harga default tetap.</p>
                       </div>
                     </div>
-                     {marginEditors[item.id] && <div className="rounded-xl border border-sky-200 bg-sky-50/70 p-3"><label htmlFor={`margin-mobile-${item.id}`} className="mb-2 flex items-center gap-1 text-xs font-semibold text-sky-700"><Scale className="size-3" /> Margin tagihan ({item.unit})</label><input id={`margin-mobile-${item.id}`} type="number" min="0" step="0.001" value={item.marginQuantity || ""} onChange={(event) => updateItem(item.id, "marginQuantity", Number(event.target.value) || 0)} placeholder="Contoh: 0.5" className="h-10 w-full rounded-xl border border-sky-200 bg-white px-3 text-right text-sm font-semibold tabular-nums text-sky-900 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200" /><p className="mt-1.5 text-[10px] leading-relaxed text-sky-700/80">Margin menambah qty tagihan, tetapi tidak mengurangi stok.</p></div>}
+                     {marginEditors[item.id] && <div className="rounded-xl border border-sky-200 bg-sky-50/70 p-3"><label htmlFor={`margin-mobile-${item.id}`} className="mb-2 flex items-center gap-1 text-xs font-semibold text-sky-700"><Scale className="size-3" /> Margin tagihan ({item.unit})</label><input id={`margin-mobile-${item.id}`} type="text" inputMode="decimal" value={marginDrafts[item.id] ?? (item.marginQuantity > 0 ? String(item.marginQuantity) : "")} onChange={(event) => updateMargin(item.id, event.target.value)} onBlur={() => commitMargin(item)} placeholder="Contoh: 0.5" className="h-10 w-full rounded-xl border border-sky-200 bg-white px-3 text-right text-sm font-semibold tabular-nums text-sky-900 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200" /><p className="mt-1.5 text-[10px] leading-relaxed text-sky-700/80">Margin menambah qty tagihan, tetapi tidak mengurangi stok.</p></div>}
                      <div className="flex items-end justify-between border-t border-dashed border-stone-200 pt-3">
                       <div>
                         <p className="text-[10px] font-semibold uppercase tracking-wider text-stone-400">Ukuran</p>
@@ -757,8 +788,8 @@ export function InvoiceForm({ customers = [], products = [], customerPrices = []
                       </div>
                       <div className="text-right">
                         <p className="text-[10px] font-semibold uppercase tracking-wider text-stone-400">Subtotal</p>
-                         <p className="mt-1 text-base font-bold tabular-nums text-stone-900">{formatCurrency((item.quantity + item.marginQuantity) * item.sellingPrice)}</p>
-                         {item.marginQuantity > 0 && <p className="mt-1 text-[10px] font-medium text-sky-700">Tagih {item.quantity + item.marginQuantity} {item.unit} · stok {item.quantity} {item.unit}</p>}
+                         <p className="mt-1 text-base font-bold tabular-nums text-stone-900">{formatCurrency(getBillingQuantity(item.quantity, item.marginQuantity) * item.sellingPrice)}</p>
+                         {item.marginQuantity > 0 && <p className="mt-1 text-[10px] font-medium text-sky-700">Tagih {formatQuantity(getBillingQuantity(item.quantity, item.marginQuantity))} {item.unit}</p>}
                       </div>
                     </div>
                   </div>
@@ -1089,7 +1120,7 @@ export function InvoiceForm({ customers = [], products = [], customerPrices = []
           <div className="rounded-xl border p-4 space-y-4 text-sm">
             <div className="flex justify-between"><span className="text-muted-foreground">Restoran</span><span className="font-semibold">{selectedCustomer?.name}</span></div>
             <div className="divide-y">
-              {items.map((item) => <div key={item.id} className="py-2 flex justify-between gap-4"><span>{item.description} x {item.quantity + item.marginQuantity} {item.unit}{item.marginQuantity > 0 ? ` (stok ${item.quantity} ${item.unit})` : ""}</span><span className="font-medium">{formatCurrency((item.quantity + item.marginQuantity) * item.sellingPrice)}</span></div>)}
+              {items.map((item) => <div key={item.id} className="py-2 flex justify-between gap-4"><span>{item.description} x {formatQuantity(getBillingQuantity(item.quantity, item.marginQuantity))} {item.unit}</span><span className="font-medium">{formatCurrency(getBillingQuantity(item.quantity, item.marginQuantity) * item.sellingPrice)}</span></div>)}
             </div>
             <div className="border-t pt-3 flex justify-between text-base font-bold"><span>Total</span><span>{formatCurrency(calc.revenue)}</span></div>
           </div>

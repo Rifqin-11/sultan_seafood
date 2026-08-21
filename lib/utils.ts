@@ -36,6 +36,15 @@ export function formatNumber(value: number): string {
   return new Intl.NumberFormat("id-ID").format(value);
 }
 
+export function formatQuantity(value: number): string {
+  if (!Number.isFinite(value)) return "0";
+  return Number(value.toFixed(3)).toString();
+}
+
+export function getBillingQuantity(quantity: number, marginQuantity = 0): number {
+  return Number((quantity + marginQuantity).toFixed(3));
+}
+
 export function formatPercent(value: number, decimals = 1): string {
   return `${value.toFixed(decimals)}%`;
 }

@@ -221,7 +221,7 @@ export function InvoicePdfDocument({ invoice, company }: InvoicePdfDocumentProps
               <View key={item.id} style={styles.tableRow}>
                 <Text style={[styles.colDesc, styles.td]}>{name}</Text>
                 <Text style={[styles.colSize, styles.td]}>{size}</Text>
-                <Text style={[styles.colQty, styles.td]}>{item.quantity + (item.marginQuantity ?? 0)}</Text>
+                <Text style={[styles.colQty, styles.td]}>{Number((item.quantity + (item.marginQuantity ?? 0)).toFixed(3)).toString()}</Text>
                 <Text style={[styles.colUnit, styles.td]}>{item.unit}</Text>
                 <Text style={[styles.colPrice, styles.td]}>
                   {formatCurrency(item.sellingPriceSnapshot)}
