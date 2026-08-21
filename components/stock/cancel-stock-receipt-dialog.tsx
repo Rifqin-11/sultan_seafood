@@ -85,7 +85,6 @@ export function CancelStockReceiptDialog({ receiptId, receiptNumber, trigger, op
       onOpenChange={setForceDeleteOpen}
       title="Hapus pembelian supplier?"
       description={`${receiptNumber || "Penerimaan ini"} dan seluruh item di dalamnya akan dihapus permanen.`}
-      note="Stok, batch, mutasi, receipt, dan hutang supplier terkait akan dihapus. Invoice tetap dipertahankan sebagai snapshot historis. Tindakan ini tidak menjalankan pembatalan receipt biasa."
       confirmationText={receiptNumber || "HAPUS"}
       confirmLabel="Hapus permanen"
       onConfirm={forceDeleteReceipt}

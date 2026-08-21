@@ -83,7 +83,19 @@ export function ConfirmDialog({
           {confirmationText && (
             <div className="mt-5 w-full max-w-sm text-left">
               <label className="text-xs font-semibold text-stone-700">Ketik <span className="font-bold text-stone-950">{confirmationText}</span> untuk melanjutkan</label>
-              <Input value={typedConfirmation} onChange={(event) => setTypedConfirmation(event.target.value)} className="mt-2 h-11 border-stone-300" autoComplete="off" />
+              <Input
+                value={typedConfirmation}
+                onChange={(event) => setTypedConfirmation(event.target.value)}
+                onKeyDown={(event) => {
+                  // Destructive confirmation must require an explicit button click.
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    event.stopPropagation();
+                  }
+                }}
+                className="mt-2 h-11 border-stone-300"
+                autoComplete="off"
+              />
             </div>
           )}
         </DialogHeader>
