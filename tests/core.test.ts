@@ -61,6 +61,14 @@ test("stock receipt validation rejects duplicate products and invalid quantities
   assert.match(validateStockReceiptPayload({ ...base, items: [{ ...base.items[0], quantity: 0 }] }) ?? "", /valid/);
 });
 
+test("stock receipt validation accepts numeric formatted-currency values", () => {
+  assert.equal(validateStockReceiptPayload({
+    supplierId: "supplier",
+    receivedDate: "2026-08-03",
+    items: [{ productId: "p1", quantity: 2, unitCost: 85000 }],
+  }), null);
+});
+
 test("stock adjustment requires a reason and movement labels stay readable", () => {
   assert.match(validateStockAdjustment("p1", 1, "") ?? "", /Alasan/);
   assert.equal(validateStockAdjustment("p1", -2, "Stok opname"), null);
