@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import {
   ShoppingBag,
-  DollarSign,
   TrendingUp,
   AlertTriangle,
+  AlertCircle,
   ArrowRight,
   Plus,
 } from "lucide-react";
@@ -59,13 +59,11 @@ export default async function DashboardPage() {
           href="/invoices?filter=week"
         />
         <MetricCard
-          title="Pendapatan Bulan Ini"
-          value={m.revenueThisMonth}
+          title="Jumlah Piutang Berjalan"
+          value={m.receivables}
           isCurrency
-          icon={DollarSign}
-          change={m.revenueThisMonthChange}
-          changeLabel="vs bulan lalu"
-          href={canViewInternal ? "/reports/sales" : undefined}
+          icon={AlertCircle}
+          href={canViewInternal ? "/reports/receivables" : undefined}
         />
         {canViewInternal && <MetricCard
           title="Laba Bersih"
