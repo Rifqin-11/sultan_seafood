@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/table";
 import { CsvExportButton } from "@/components/ui/csv-export-button";
 import { requireRole } from "@/lib/security/auth";
+import { getInventoryAction } from "@/lib/actions/inventory";
 
 export const metadata: Metadata = {
   title: "Laporan Penjualan",
@@ -21,13 +22,20 @@ export const metadata: Metadata = {
 
 export default async function SalesReportPage() {
   await requireRole(["OWNER", "FINANCE"]);
-  const { invoices, salesData, periodLabel } = await getDashboardDataAction();
+  const [{ invoices, salesData, periodLabel }, { balances }] = await Promise.all([
+    getDashboardDataAction(),
+    getInventoryAction(),
+  ]);
 
   const issuedInvoices = invoices.filter(
     (inv) => inv.status !== "DRAFT" && inv.status !== "VOID"
   );
   const totalRevenue = issuedInvoices.reduce((s, i) => s + i.total, 0);
+  const totalHPP = issuedInvoices.reduce((s, i) => s + i.totalProductCost, 0);
   const totalProfit = issuedInvoices.reduce((s, i) => s + i.transactionProfit, 0);
+  const totalStockValue = balances
+    .filter((balance) => balance.productStatus === "ACTIVE")
+    .reduce((sum, balance) => sum + balance.stockValue, 0);
 
   return (
     <div className="space-y-6">
@@ -35,7 +43,7 @@ export default async function SalesReportPage() {
         <CsvExportButton filename="laporan-penjualan.csv" headers={["Nomor", "Restoran", "Tanggal", "Pendapatan", "HPP", "Biaya", "Laba", "Margin"]} rows={issuedInvoices.map((invoice) => [invoice.invoiceNumber, invoice.customerName, invoice.issueDate, invoice.total, invoice.totalProductCost, invoice.totalDirectCost, invoice.transactionProfit, invoice.transactionMargin])} />
       </PageHeader>
 
-      <div className="grid grid-cols-1 gap-3 min-[430px]:grid-cols-2 lg:grid-cols-4 lg:gap-4">
+      <div className="grid grid-cols-1 gap-3 min-[430px]:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 lg:gap-4">
         <MetricCard accent="emerald" title="Total Pendapatan" value={totalRevenue} isCurrency />
         <MetricCard accent="sky" title="Total Invoice" value={issuedInvoices.length} suffix="invoice" />
         <MetricCard accent="blue"
@@ -49,6 +57,8 @@ export default async function SalesReportPage() {
           isCurrency
           internal
         />
+        <MetricCard accent="amber" title="HPP Produk" value={totalHPP} isCurrency internal />
+        <MetricCard accent="violet" title="Total Nilai Persediaan" value={totalStockValue} isCurrency internal />
       </div>
 
       <SalesChart data={salesData} periodLabel={periodLabel} />
