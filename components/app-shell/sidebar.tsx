@@ -8,7 +8,6 @@ import {
   CreditCard,
   FileText,
   Fish,
-  Hash,
   Landmark,
   LayoutDashboard,
   LogOut,
@@ -67,7 +66,6 @@ const navGroups = [
 const settingItems = [
   { label: "Profil bisnis", href: "/settings/company", icon: Settings },
   { label: "Pengguna", href: "/settings/users", icon: Settings },
-  { label: "Nomor invoice", href: "/settings/invoice", icon: Hash },
   { label: "Audit log", href: "/settings/audit-logs", icon: Settings },
 ] as const;
 

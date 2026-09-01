@@ -33,7 +33,6 @@ const pathLabels: Record<string, string> = {
   "/reports/internal-costs": "Biaya Internal",
   "/settings/company": "Profil Bisnis",
   "/settings/users": "Profil & Pengguna",
-  "/settings/invoice": "Nomor Invoice",
   "/settings/audit-logs": "Audit Log",
 };
 
