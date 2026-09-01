@@ -1,4 +1,4 @@
-export type ReportPeriod = "1d" | "7d" | "30d" | "all";
+export type ReportPeriod = "1d" | "7d" | "30d" | "all" | "custom";
 
 export function getTodayJakarta() {
   return new Intl.DateTimeFormat("en-CA", {
@@ -17,10 +17,21 @@ function dateKey(date: Date) {
 }
 
 export function normalizeReportPeriod(value?: string): ReportPeriod {
-  return value === "1d" || value === "7d" || value === "all" || value === "30d" ? value : "30d";
+  return value === "1d" || value === "7d" || value === "30d" || value === "all" || value === "custom" ? value : "30d";
 }
 
-export function getReportPeriodRange(period: ReportPeriod, today = getTodayJakarta(), dates: string[] = []) {
+function isDateValue(value?: string): value is string {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const [year, month, day] = value.split("-").map(Number);
+  const date = new Date(year, month - 1, day);
+  return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
+}
+
+export function getReportPeriodRange(period: ReportPeriod, today = getTodayJakarta(), dates: string[] = [], customStartDate?: string, customEndDate?: string) {
+  if (period === "custom" && isDateValue(customStartDate) && isDateValue(customEndDate) && customStartDate <= customEndDate && customEndDate <= today) {
+    return { startDate: customStartDate, endDate: customEndDate, label: `${customStartDate} - ${customEndDate}` };
+  }
+
   if (period === "all") {
     const firstDate = [...dates].sort()[0];
     return { startDate: firstDate ?? today, endDate: today, label: "Semua data" };

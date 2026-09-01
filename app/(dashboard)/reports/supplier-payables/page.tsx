@@ -22,9 +22,11 @@ export default async function SupplierPayablesPage({
   await requireRole(["OWNER", "FINANCE"]);
   const params = await searchParams;
   const period = normalizeReportPeriod(typeof params.period === "string" ? params.period : undefined);
+  const customStartDate = typeof params.startDate === "string" ? params.startDate : undefined;
+  const customEndDate = typeof params.endDate === "string" ? params.endDate : undefined;
   const sort = typeof params.sort === "string" ? params.sort : "billDate";
   const direction = normalizeSortDirection(typeof params.direction === "string" ? params.direction : undefined);
-  const range = getReportPeriodRange(period, getTodayJakarta());
+  const range = getReportPeriodRange(period, getTodayJakarta(), [], customStartDate, customEndDate);
   const [periodBills, suppliers, products] = await Promise.all([
     getSupplierPayablesAction(period === "all" ? undefined : range.startDate, period === "all" ? undefined : range.endDate),
     getSuppliersAction(),
@@ -51,7 +53,7 @@ export default async function SupplierPayablesPage({
   return (
     <div className="space-y-6">
       <PageHeader title="Hutang Supplier" description={`Pantau tagihan pembelian dan pembayaran yang harus diselesaikan ke supplier · ${range.label}`}>
-        <ReportPeriodTabs path="/reports/supplier-payables" activePeriod={period} />
+        <ReportPeriodTabs path="/reports/supplier-payables" activePeriod={period} startDate={customStartDate} endDate={customEndDate} />
         <AddSupplierBillDialog suppliers={suppliers} products={products} />
       </PageHeader>
 

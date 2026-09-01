@@ -31,10 +31,12 @@ export default async function SalesReportPage({
   await requireRole(["OWNER", "FINANCE"]);
   const params = await searchParams;
   const period = normalizeReportPeriod(typeof params.period === "string" ? params.period : undefined);
+  const customStartDate = typeof params.startDate === "string" ? params.startDate : undefined;
+  const customEndDate = typeof params.endDate === "string" ? params.endDate : undefined;
   const sort = typeof params.sort === "string" ? params.sort : "issueDate";
   const direction = normalizeSortDirection(typeof params.direction === "string" ? params.direction : undefined);
   const [{ periodInvoices, salesData, periodLabel }, totalStockValue] = await Promise.all([
-    getDashboardDataAction(period),
+    getDashboardDataAction(period, customStartDate, customEndDate),
     getInventorySummaryAction(),
   ]);
 
@@ -60,7 +62,7 @@ export default async function SalesReportPage({
   return (
     <div className="space-y-6">
       <PageHeader title="Laporan Penjualan" description="Analisis penjualan per periode">
-        <ReportPeriodTabs path="/reports/sales" activePeriod={period} />
+        <ReportPeriodTabs path="/reports/sales" activePeriod={period} startDate={customStartDate} endDate={customEndDate} />
         <CsvExportButton filename="laporan-penjualan.csv" headers={["Nomor", "Restoran", "Tanggal", "Pendapatan", "HPP", "Biaya", "Laba", "Margin"]} rows={issuedInvoices.map((invoice) => [invoice.invoiceNumber, invoice.customerName, invoice.issueDate, invoice.total, invoice.totalProductCost, invoice.totalDirectCost, invoice.transactionProfit, invoice.transactionMargin])} />
       </PageHeader>
 

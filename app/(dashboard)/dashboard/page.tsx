@@ -33,7 +33,9 @@ export default async function DashboardPage({
   }) {
   const params = await searchParams;
   const activePeriod = normalizeReportPeriod(typeof params.period === "string" ? params.period : undefined);
-  const { periodInvoices, metrics: m, salesData, profitData, internalCosts, periodLabel, user } = await getDashboardDataAction(activePeriod);
+  const customStartDate = typeof params.startDate === "string" ? params.startDate : undefined;
+  const customEndDate = typeof params.endDate === "string" ? params.endDate : undefined;
+  const { periodInvoices, metrics: m, salesData, profitData, internalCosts, periodLabel, user, startDate, endDate } = await getDashboardDataAction(activePeriod, customStartDate, customEndDate);
   const canViewInternal = user.role !== "STAFF";
   const inventory = canViewInternal ? await getInventoryAction() : null;
   const totalStockValue = inventory?.balances
@@ -46,7 +48,7 @@ export default async function DashboardPage({
         title="Ringkasan bisnis"
         description={`Pantau order, arus pendapatan, dan kewajiban dalam ${periodLabel.toLowerCase()}.`}
       >
-        <ReportPeriodTabs path="/dashboard" activePeriod={activePeriod} />
+        <ReportPeriodTabs path="/dashboard" activePeriod={activePeriod} startDate={startDate} endDate={endDate} />
         {canViewInternal && <Link href="/reports/sales" className={buttonVariants({ variant: "outline", size: "sm" })}>
           Lihat laporan <ArrowRight className="ml-1 size-3.5" />
         </Link>}

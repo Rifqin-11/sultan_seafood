@@ -21,7 +21,9 @@ export default async function InternalCostsReportPage({
   await requireRole(["OWNER", "FINANCE"]);
   const params = await searchParams;
   const period = normalizeReportPeriod(typeof params.period === "string" ? params.period : undefined);
-  const range = getReportPeriodRange(period, getTodayJakarta());
+  const customStartDate = typeof params.startDate === "string" ? params.startDate : undefined;
+  const customEndDate = typeof params.endDate === "string" ? params.endDate : undefined;
+  const range = getReportPeriodRange(period, getTodayJakarta(), [], customStartDate, customEndDate);
   const invoices = await getInvoicesAction(period === "all" ? undefined : range.startDate, period === "all" ? undefined : range.endDate, true);
   const issuedInvoices = invoices.filter((invoice) => invoice.status !== "DRAFT" && invoice.status !== "VOID");
   const periodLabel = range.label;
@@ -48,7 +50,7 @@ export default async function InternalCostsReportPage({
         title="Biaya Internal"
         description={`Rincian biaya langsung per invoice · ${periodLabel}`}
       >
-        <ReportPeriodTabs path="/reports/internal-costs" activePeriod={period} />
+        <ReportPeriodTabs path="/reports/internal-costs" activePeriod={period} startDate={customStartDate} endDate={customEndDate} />
       </PageHeader>
 
       <MetricCard accent="blue"

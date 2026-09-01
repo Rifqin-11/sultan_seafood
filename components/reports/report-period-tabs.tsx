@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReportPeriod } from "@/lib/report-period";
+import { CustomPeriodTab } from "@/components/reports/custom-period-tab";
 
 const tabs: Array<{ value: ReportPeriod; label: string }> = [
   { value: "1d", label: "1 hari" },
@@ -12,9 +13,11 @@ interface ReportPeriodTabsProps {
   path: string;
   activePeriod: ReportPeriod;
   className?: string;
+  startDate?: string;
+  endDate?: string;
 }
 
-export function ReportPeriodTabs({ path, activePeriod, className }: ReportPeriodTabsProps) {
+export function ReportPeriodTabs({ path, activePeriod, className, startDate, endDate }: ReportPeriodTabsProps) {
   return (
     <nav className={`flex items-center rounded-xl border border-border bg-muted/40 p-1 ${className ?? ""}`} aria-label="Pilih periode laporan">
       {tabs.map((tab) => {
@@ -30,6 +33,7 @@ export function ReportPeriodTabs({ path, activePeriod, className }: ReportPeriod
           </Link>
         );
       })}
+      <CustomPeriodTab path={path} active={activePeriod === "custom"} startDate={startDate} endDate={endDate} />
     </nav>
   );
 }

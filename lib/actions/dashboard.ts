@@ -13,11 +13,11 @@ function percentChange(current: number, previous: number) {
   return ((current - previous) / previous) * 100;
 }
 
-export async function getDashboardDataAction(periodParam?: string) {
+export async function getDashboardDataAction(periodParam?: string, customStartDate?: string, customEndDate?: string) {
   const user = await requireApprovedUser();
   const today = getTodayJakarta();
   const period = normalizeReportPeriod(periodParam);
-  const periodDates = getReportPeriodRange(period, today);
+  const periodDates = getReportPeriodRange(period, today, [], customStartDate, customEndDate);
   const selectedStart = periodDates.startDate;
   const selectedEnd = periodDates.endDate;
   const dateKey = (date: Date) => {

@@ -23,7 +23,9 @@ export default async function ProfitReportPage({
   await requireRole(["OWNER", "FINANCE"]);
   const params = await searchParams;
   const period = normalizeReportPeriod(typeof params.period === "string" ? params.period : undefined);
-  const range = getReportPeriodRange(period, getTodayJakarta());
+  const customStartDate = typeof params.startDate === "string" ? params.startDate : undefined;
+  const customEndDate = typeof params.endDate === "string" ? params.endDate : undefined;
+  const range = getReportPeriodRange(period, getTodayJakarta(), [], customStartDate, customEndDate);
   const [invoices, periodExpenses] = await Promise.all([
     getInvoicesAction(period === "all" ? undefined : range.startDate, period === "all" ? undefined : range.endDate, true),
     getExpensesAction(period === "all" ? undefined : range.startDate, period === "all" ? undefined : range.endDate),
@@ -76,7 +78,7 @@ export default async function ProfitReportPage({
         title="Laporan Laba"
         description={`Omzet dikurangi HPP, biaya langsung, dan pengeluaran operasional · ${periodLabel}`}
       >
-        <ReportPeriodTabs path="/reports/profit" activePeriod={period} />
+        <ReportPeriodTabs path="/reports/profit" activePeriod={period} startDate={customStartDate} endDate={customEndDate} />
       </PageHeader>
 
       <div className="grid grid-cols-1 gap-3 min-[430px]:grid-cols-2 lg:grid-cols-3 lg:gap-4">

@@ -30,9 +30,11 @@ export default async function ReceivablesPage({
   await requireRole(["OWNER", "FINANCE"]);
   const params = await searchParams;
   const period = normalizeReportPeriod(typeof params.period === "string" ? params.period : undefined);
+  const customStartDate = typeof params.startDate === "string" ? params.startDate : undefined;
+  const customEndDate = typeof params.endDate === "string" ? params.endDate : undefined;
   const sort = typeof params.sort === "string" ? params.sort : "issueDate";
   const direction = normalizeSortDirection(typeof params.direction === "string" ? params.direction : undefined);
-  const range = getReportPeriodRange(period, getTodayJakarta());
+  const range = getReportPeriodRange(period, getTodayJakarta(), [], customStartDate, customEndDate);
   const invoices = await getInvoicesAction(period === "all" ? undefined : range.startDate, period === "all" ? undefined : range.endDate);
 
   const unpaid = invoices.filter(
@@ -65,7 +67,7 @@ export default async function ReceivablesPage({
   return (
     <div className="space-y-6">
       <PageHeader title="Piutang" description="Daftar invoice yang belum lunas">
-        <ReportPeriodTabs path="/reports/receivables" activePeriod={period} />
+        <ReportPeriodTabs path="/reports/receivables" activePeriod={period} startDate={customStartDate} endDate={customEndDate} />
       </PageHeader>
 
       <div className="grid grid-cols-1 gap-3 min-[430px]:grid-cols-2 lg:grid-cols-3 lg:gap-4">
