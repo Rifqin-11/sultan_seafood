@@ -45,16 +45,11 @@ export async function getPaymentsAction(): Promise<Payment[]> {
   const { data, error } = await supabase
     .from("payments")
     .select("id, invoice_id, payment_date, amount, method, reference_number, proof_path, notes, recorded_by")
-    .order("payment_date", { ascending: false });
+    .order("payment_date", { ascending: false })
+    .limit(500);
   if (error) throw new Error(error.message);
 
-  return Promise.all((data ?? []).map(async (payment) => {
-    let proofUrl: string | undefined;
-    if (payment.proof_path) {
-      const { data: signed } = await supabase.storage.from("payment-proofs").createSignedUrl(payment.proof_path, 900);
-      proofUrl = signed?.signedUrl;
-    }
-    return {
+  return (data ?? []).map((payment) => ({
       id: payment.id,
       invoiceId: payment.invoice_id,
       paymentDate: payment.payment_date,
@@ -62,11 +57,28 @@ export async function getPaymentsAction(): Promise<Payment[]> {
       method: payment.method as PaymentMethod,
       referenceNumber: payment.reference_number ?? undefined,
       proofPath: payment.proof_path ?? undefined,
-      proofUrl,
       notes: payment.notes ?? undefined,
       createdBy: payment.recorded_by ?? "system",
-    };
-  }));
+    }));
+}
+
+export async function getPaymentProofUrlAction(proofPath: string) {
+  if (!proofPath || proofPath.length > 1000) return { error: "Bukti pembayaran tidak valid." };
+  try {
+    await requirePermission("record_payment");
+    const supabase = await createClient();
+    const { data: payment, error: paymentError } = await supabase
+      .from("payments")
+      .select("id")
+      .eq("proof_path", proofPath)
+      .maybeSingle();
+    if (paymentError || !payment) return { error: "Bukti pembayaran tidak tersedia." };
+    const { data, error } = await supabase.storage.from("payment-proofs").createSignedUrl(proofPath, 900);
+    if (error || !data?.signedUrl) return { error: "Bukti pembayaran tidak tersedia." };
+    return { url: data.signedUrl };
+  } catch {
+    return { error: "Bukti pembayaran tidak dapat dibuka." };
+  }
 }
 
 export async function deletePaymentAction(paymentId: string) {

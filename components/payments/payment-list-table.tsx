@@ -21,7 +21,7 @@ import {
 import { EmptyState } from "@/components/ui/empty-state";
 import { Eye, FileText, Download, CreditCard, Trash2 } from "lucide-react";
 import { RecordPaymentDialog } from "@/components/payments/record-payment-dialog";
-import { deletePaymentAction } from "@/lib/actions/payments";
+import { deletePaymentAction, getPaymentProofUrlAction } from "@/lib/actions/payments";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -49,6 +49,7 @@ export function PaymentListTable({ payments, invoices }: PaymentListTableProps) 
   const router = useRouter();
   const [deletingPayment, setDeletingPayment] = useState<Payment | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [loadingProofId, setLoadingProofId] = useState<string | null>(null);
 
   const handleDeletePayment = async () => {
     if (!deletingPayment) return;
@@ -64,13 +65,20 @@ export function PaymentListTable({ payments, invoices }: PaymentListTableProps) 
     }
   };
 
-  const openProof = (payment: Payment, invoiceNumber: string) => {
-    if (!payment.proofUrl) return;
+  const openProof = async (payment: Payment, invoiceNumber: string) => {
+    if (!payment.proofPath) return;
+    setLoadingProofId(payment.id);
+    const result = await getPaymentProofUrlAction(payment.proofPath);
+    setLoadingProofId(null);
+    if (result.error || !result.url) {
+      toast.error(result.error ?? "Bukti pembayaran tidak tersedia.");
+      return;
+    }
     setSelectedProof({
-      url: payment.proofUrl,
+      url: result.url,
       invoiceNumber,
       amount: payment.amount,
-      isPdf: payment.proofPath?.toLowerCase().endsWith(".pdf") ?? false,
+      isPdf: payment.proofPath.toLowerCase().endsWith(".pdf"),
     });
   };
 
@@ -130,15 +138,16 @@ export function PaymentListTable({ payments, invoices }: PaymentListTableProps) 
                         {methodLabel[p.method] ?? p.method}
                       </TableCell>
                       <TableCell className="text-sm">
-                        {p.proofUrl ? (
+                        {p.proofPath ? (
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => openProof(p, invNum)}
+                            disabled={loadingProofId === p.id}
                             className="h-9 text-xs px-3 bg-blue-50/50 hover:bg-blue-100 text-blue-700 border-blue-200"
                           >
                             <Eye className="w-3.5 h-3.5 mr-1 text-blue-600" />
-                            Lihat Bukti
+                            {loadingProofId === p.id ? "Membuka..." : "Lihat Bukti"}
                           </Button>
                         ) : (
                           <span className="text-xs text-muted-foreground/50">— Tidak Ada —</span>
@@ -202,15 +211,16 @@ export function PaymentListTable({ payments, invoices }: PaymentListTableProps) 
                   >
                     <Trash2 className="h-3 w-3" /> Batalkan
                   </button>
-                  {payment.proofUrl && (
+                  {payment.proofPath && (
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => openProof(payment, invoiceNumber)}
+                      disabled={loadingProofId === payment.id}
                       className="h-9 w-full rounded-xl border-blue-200 bg-blue-50/60 text-blue-700 hover:bg-blue-100"
                     >
                       <Eye className="mr-1.5 h-3.5 w-3.5" />
-                      Lihat Bukti Pembayaran
+                      {loadingProofId === payment.id ? "Membuka..." : "Lihat Bukti Pembayaran"}
                     </Button>
                   )}
                 </article>

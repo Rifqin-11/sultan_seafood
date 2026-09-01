@@ -55,7 +55,7 @@ export default async function ProfitReportPage({
         <ReportPeriodTabs path="/reports/profit" activePeriod={period} />
       </PageHeader>
 
-      <div className="grid grid-cols-1 gap-3 min-[430px]:grid-cols-2 xl:grid-cols-6 xl:gap-4">
+      <div className="grid grid-cols-1 gap-3 min-[430px]:grid-cols-2 lg:grid-cols-3 lg:gap-4">
         <MetricCard accent="sky" title="Omzet" value={totalRevenue} isCurrency />
         <MetricCard accent="amber" title="HPP Produk" value={totalHPP} isCurrency internal />
         <MetricCard accent="emerald" title="Laba Kotor" value={totalRevenue - totalHPP} isCurrency internal />

@@ -34,9 +34,12 @@ export async function deleteExpenseAction(id: string) {
   catch (error) { return { error: normalizeActionError(error, "Gagal menghapus pengeluaran.") }; }
 }
 
-export async function getExpensesAction(): Promise<Expense[]> {
+export async function getExpensesAction(startDate?: string, endDate?: string, limit = 500): Promise<Expense[]> {
   await requireRole(["OWNER", "FINANCE"]); const supabase = await createClient();
-  const { data, error } = await supabase.from("expenses").select("id,category,description,amount,expense_date,recorded_by,created_at").order("expense_date", { ascending: false });
+  let query = supabase.from("expenses").select("id,category,description,amount,expense_date,recorded_by,created_at").order("expense_date", { ascending: false }).limit(Math.max(1, Math.min(limit, 5000)));
+  if (startDate) query = query.gte("expense_date", startDate);
+  if (endDate) query = query.lte("expense_date", endDate);
+  const { data, error } = await query;
   if (error) throw new Error(error.message);
   const userIds = [...new Set((data ?? []).map((expense) => expense.recorded_by).filter((id): id is string => Boolean(id)))];
   const { data: profiles, error: profileError } = userIds.length ? await supabase.from("profiles").select("id,full_name").in("id", userIds) : { data: [], error: null };

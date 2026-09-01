@@ -56,7 +56,7 @@ export async function deleteCustomerAction(id: string) {
 
 export async function getCustomersAction() {
   await requireApprovedUser(); const supabase = await createClient();
-  const { data, error } = await supabase.from("customers").select("id,name,contact_name,phone,email,billing_address,shipping_address,payment_term_days,status,created_at,updated_at").order("created_at", { ascending: false });
+  const { data, error } = await supabase.from("customers").select("id,name,contact_name,phone,email,billing_address,shipping_address,payment_term_days,status,created_at,updated_at").order("created_at", { ascending: false }).limit(5000);
   if (error) throw new Error(error.message);
   return (data ?? []).map((customer) => ({ id: customer.id, name: customer.name, contactName: customer.contact_name, phone: customer.phone, email: customer.email ?? undefined, billingAddress: customer.billing_address, shippingAddress: customer.shipping_address ?? undefined, paymentTermDays: customer.payment_term_days, status: customer.status as CustomerStatus, createdAt: customer.created_at, updatedAt: customer.updated_at }));
 }

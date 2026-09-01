@@ -29,6 +29,6 @@ export async function deleteSupplierAction(id: string) {
   catch (error) { return { error: normalizeActionError(error, "Gagal menghapus supplier.") }; }
 }
 export async function getSuppliersAction() {
-  await requireApprovedUser(); const supabase = await createClient(); const { data, error } = await supabase.from("suppliers").select("id,name,contact_name,phone,address,status,created_at,updated_at").order("created_at", { ascending: false }); if (error) throw new Error(error.message);
+  await requireApprovedUser(); const supabase = await createClient(); const { data, error } = await supabase.from("suppliers").select("id,name,contact_name,phone,address,status,created_at,updated_at").order("created_at", { ascending: false }).limit(5000); if (error) throw new Error(error.message);
   return (data ?? []).map((supplier) => ({ id: supplier.id, name: supplier.name, contactName: supplier.contact_name, phone: supplier.phone, address: supplier.address, status: supplier.status as SupplierStatus, createdAt: supplier.created_at, updatedAt: supplier.updated_at }));
 }

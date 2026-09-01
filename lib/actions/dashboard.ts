@@ -15,15 +15,17 @@ function percentChange(current: number, previous: number) {
 
 export async function getDashboardDataAction(periodParam?: string) {
   const user = await requireApprovedUser();
-  const [invoices, expenses] = await Promise.all([
-    getInvoicesAction(),
-    user.role === "STAFF" ? Promise.resolve([]) : getExpensesAction(),
-  ]);
   const today = getTodayJakarta();
   const period = normalizeReportPeriod(periodParam);
-  const periodDates = getReportPeriodRange(period, today, [...invoices.map((invoice) => invoice.issueDate), ...expenses.map((expense) => expense.expenseDate)]);
+  const periodDates = getReportPeriodRange(period, today);
   const selectedStart = periodDates.startDate;
   const selectedEnd = periodDates.endDate;
+  const dateKey = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
   const endExclusive = new Date(`${selectedEnd}T00:00:00`);
   endExclusive.setDate(endExclusive.getDate() + 1);
   const selectedStartDate = new Date(`${selectedStart}T00:00:00`);
@@ -31,17 +33,24 @@ export async function getDashboardDataAction(periodParam?: string) {
   const previousStart = new Date(selectedStartDate);
   previousStart.setDate(previousStart.getDate() - rangeLength);
   const previousEnd = new Date(selectedStartDate);
+  const previousStartKey = dateKey(previousStart);
+  const previousEndKey = dateKey(previousEnd);
+  const [invoices, previousInvoices, expenses] = await Promise.all([
+    getInvoicesAction(period === "all" ? undefined : selectedStart, period === "all" ? undefined : selectedEnd),
+    period === "all" ? Promise.resolve([]) : getInvoicesAction(previousStartKey, previousEndKey),
+    user.role === "STAFF" ? Promise.resolve([]) : getExpensesAction(period === "all" ? undefined : selectedStart, period === "all" ? undefined : selectedEnd),
+  ]);
   const issued = invoices.filter((invoice) => invoice.status !== "DRAFT" && invoice.status !== "VOID");
   const inRange = (value: string, start: Date, end: Date) => {
     const date = new Date(`${value}T00:00:00`);
     return date >= start && date < end;
   };
 
-  const selectedInvoices = issued.filter((invoice) => inRange(invoice.issueDate, selectedStartDate, endExclusive));
-  const previousInvoices = issued.filter((invoice) => inRange(invoice.issueDate, previousStart, previousEnd));
-  const selectedExpenses = expenses.filter((expense) => inRange(expense.expenseDate, selectedStartDate, endExclusive));
+  const selectedInvoices = period === "all" ? issued : issued.filter((invoice) => inRange(invoice.issueDate, selectedStartDate, endExclusive));
+  const previousIssued = previousInvoices.filter((invoice) => invoice.status !== "DRAFT" && invoice.status !== "VOID");
+  const selectedExpenses = period === "all" ? expenses : expenses.filter((expense) => inRange(expense.expenseDate, selectedStartDate, endExclusive));
   const periodRevenue = selectedInvoices.reduce((sum, invoice) => sum + invoice.total, 0);
-  const previousRevenue = previousInvoices.reduce((sum, invoice) => sum + invoice.total, 0);
+  const previousRevenue = previousIssued.reduce((sum, invoice) => sum + invoice.total, 0);
   const periodProfit = selectedInvoices.reduce((sum, invoice) => sum + invoice.transactionProfit, 0);
   const operatingExpenses = selectedExpenses.reduce((sum, expense) => sum + expense.amount, 0);
   const netProfit = periodProfit - operatingExpenses;
@@ -51,7 +60,7 @@ export async function getDashboardDataAction(periodParam?: string) {
 
   const metrics: DashboardMetrics = {
     ordersInPeriod: selectedInvoices.length,
-    ordersInPeriodChange: percentChange(selectedInvoices.length, previousInvoices.length),
+    ordersInPeriodChange: percentChange(selectedInvoices.length, previousIssued.length),
     revenueInPeriod: periodRevenue,
     revenueInPeriodChange: percentChange(periodRevenue, previousRevenue),
     transactionProfitInPeriod: periodProfit,
@@ -89,8 +98,8 @@ export async function getDashboardDataAction(periodParam?: string) {
     salesData,
     profitData,
     internalCosts,
-    invoices,
-    expenses,
+    invoices: selectedInvoices,
+    expenses: selectedExpenses,
     periodInvoices: selectedInvoices,
     periodExpenses: selectedExpenses,
     periodLabel: periodDates.label,
@@ -104,8 +113,15 @@ export async function getNotificationSummaryAction() {
   if (!user) return { total: 0, overdue: 0, pendingUsers: 0 };
   let overdue = 0;
   if (user.role !== "STAFF") {
-    const invoices = await getInvoicesAction();
-    overdue = invoices.filter((invoice) => invoice.status === "OVERDUE").length;
+    const supabase = await createClient();
+    const today = getTodayJakarta();
+    const { count, error } = await supabase
+      .from("invoices")
+      .select("id", { count: "exact", head: true })
+      .in("status", ["ISSUED", "PARTIALLY_PAID"])
+      .lt("due_date", today);
+    if (error) throw new Error(error.message);
+    overdue = count ?? 0;
   }
   let pendingUsers = 0;
   if (user.role === "OWNER") {

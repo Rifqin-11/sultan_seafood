@@ -53,10 +53,14 @@ export async function createInvoiceAction(payload: CreateInvoicePayload) {
   }
 }
 
-export async function getInvoicesAction(): Promise<Invoice[]> {
+export async function getInvoicesAction(startDate?: string, endDate?: string): Promise<Invoice[]> {
   const user = await requireApprovedUser();
   const supabase = await createClient();
-  const { data, error } = await supabase.rpc("get_invoices_secure", { p_invoice_id: null });
+  const { data, error } = await supabase.rpc("get_invoices_secure_range", {
+    p_start_date: startDate ?? null,
+    p_end_date: endDate ?? null,
+    p_limit: 5000,
+  });
   if (error) throw new Error(error.message);
   const rows = Array.isArray(data) ? data as Invoice[] : [];
   return rows.map((invoice) => sanitizeInvoiceForRole(invoice, user.role !== "STAFF"));

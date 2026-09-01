@@ -24,9 +24,12 @@ export default async function SupplierPayablesPage({
   const period = normalizeReportPeriod(typeof params.period === "string" ? params.period : undefined);
   const sort = typeof params.sort === "string" ? params.sort : "billDate";
   const direction = normalizeSortDirection(typeof params.direction === "string" ? params.direction : undefined);
-  const [bills, suppliers, products] = await Promise.all([getSupplierPayablesAction(), getSuppliersAction(), getProductsAction()]);
-  const range = getReportPeriodRange(period, getTodayJakarta(), bills.map((bill) => bill.billDate));
-  const periodBills = bills.filter((bill) => bill.billDate >= range.startDate && bill.billDate <= range.endDate);
+  const range = getReportPeriodRange(period, getTodayJakarta());
+  const [periodBills, suppliers, products] = await Promise.all([
+    getSupplierPayablesAction(period === "all" ? undefined : range.startDate, period === "all" ? undefined : range.endDate),
+    getSuppliersAction(),
+    getProductsAction(),
+  ]);
   const sortedBills = [...periodBills].sort((a, b) => {
     const values: Record<string, [string | number | undefined, string | number | undefined]> = {
       billNumber: [a.billNumber, b.billNumber],

@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/table";
 import { CsvExportButton } from "@/components/ui/csv-export-button";
 import { requireRole } from "@/lib/security/auth";
-import { getInventoryAction } from "@/lib/actions/inventory";
+import { getInventorySummaryAction } from "@/lib/actions/inventory";
 import { ReportPeriodTabs } from "@/components/reports/report-period-tabs";
 import { SortableHeader } from "@/components/reports/sortable-header";
 import { compareValues, getSortHref, normalizeSortDirection } from "@/lib/report-sort";
@@ -33,9 +33,9 @@ export default async function SalesReportPage({
   const period = normalizeReportPeriod(typeof params.period === "string" ? params.period : undefined);
   const sort = typeof params.sort === "string" ? params.sort : "issueDate";
   const direction = normalizeSortDirection(typeof params.direction === "string" ? params.direction : undefined);
-  const [{ periodInvoices, salesData, periodLabel }, { balances }] = await Promise.all([
+  const [{ periodInvoices, salesData, periodLabel }, totalStockValue] = await Promise.all([
     getDashboardDataAction(period),
-    getInventoryAction(),
+    getInventorySummaryAction(),
   ]);
 
   const issuedInvoices = periodInvoices.filter((inv) => inv.status !== "DRAFT" && inv.status !== "VOID");
@@ -56,9 +56,6 @@ export default async function SalesReportPage({
   const totalRevenue = issuedInvoices.reduce((s, i) => s + i.total, 0);
   const totalHPP = issuedInvoices.reduce((s, i) => s + i.totalProductCost, 0);
   const totalProfit = issuedInvoices.reduce((s, i) => s + i.transactionProfit, 0);
-  const totalStockValue = balances
-    .filter((balance) => balance.productStatus === "ACTIVE")
-    .reduce((sum, balance) => sum + balance.stockValue, 0);
 
   return (
     <div className="space-y-6">

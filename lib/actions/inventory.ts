@@ -12,6 +12,14 @@ export interface InventorySnapshot {
   batches: StockBatch[];
 }
 
+export async function getInventorySummaryAction(): Promise<number> {
+  await requireRole(["OWNER", "FINANCE"]);
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("get_inventory_summary");
+  if (error) throw new Error(error.message);
+  return Number(data ?? 0);
+}
+
 function relatedRow(value: unknown): Record<string, unknown> | undefined {
   if (Array.isArray(value)) return value[0] as Record<string, unknown> | undefined;
   return value as Record<string, unknown> | undefined;
@@ -21,10 +29,10 @@ export async function getInventoryAction(): Promise<InventorySnapshot> {
   await requireRole(["OWNER", "FINANCE"]);
   const supabase = await createClient();
   const [balanceResult, movementResult, receiptItemResult, batchResult] = await Promise.all([
-    supabase.from("stock_balances").select("product_id,quantity,minimum_quantity,average_unit_cost,updated_at,products(name,sku,size,category,default_unit,default_selling_price,status)").order("updated_at", { ascending: false }),
+    supabase.from("stock_balances").select("product_id,quantity,minimum_quantity,average_unit_cost,updated_at,products(name,sku,size,category,default_unit,default_selling_price,status)").order("updated_at", { ascending: false }).limit(5000),
     supabase.from("stock_movements").select("id,product_id,product_name_snapshot,unit,movement_type,quantity_delta,balance_after,supplier_id,customer_id,invoice_id,receipt_id,receipt_item_id,notes,occurred_at,suppliers(name),customers(name),invoices(invoice_number),stock_receipts(receipt_number,cancelled_at),stock_receipt_items(unit_cost)").order("occurred_at", { ascending: false }).limit(100),
-    supabase.from("stock_receipt_items").select("product_id,unit_cost,created_at,stock_receipts!inner(supplier_id,cancelled_at)").order("created_at", { ascending: false }),
-    supabase.from("stock_batches").select("id,product_id,supplier_id,quantity_received,quantity_remaining,unit_cost,received_at,expiry_date,status,notes,suppliers(name)").order("received_at", { ascending: false }),
+    supabase.from("stock_receipt_items").select("product_id,unit_cost,created_at,stock_receipts!inner(supplier_id,cancelled_at)").order("created_at", { ascending: false }).limit(5000),
+    supabase.from("stock_batches").select("id,product_id,supplier_id,quantity_received,quantity_remaining,unit_cost,received_at,expiry_date,status,notes,suppliers(name)").order("received_at", { ascending: false }).limit(5000),
   ]);
   if (balanceResult.error) throw new Error(balanceResult.error.message);
   if (movementResult.error) throw new Error(movementResult.error.message);

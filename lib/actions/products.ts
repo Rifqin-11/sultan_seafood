@@ -93,10 +93,12 @@ export async function getProductsAction(): Promise<Product[]> {
     supabase
       .from("products")
       .select("id,sku,name,category,size,default_unit,default_selling_price,status,created_at,updated_at,product_costs(unit_cost,effective_at,ended_at)")
-      .order("created_at", { ascending: false }),
+      .order("created_at", { ascending: false })
+      .limit(5000),
     supabase
       .from("stock_balances")
-      .select("product_id,quantity,minimum_quantity,average_unit_cost"),
+      .select("product_id,quantity,minimum_quantity,average_unit_cost")
+      .limit(5000),
   ]);
 
   if (error) throw new Error(error.message);

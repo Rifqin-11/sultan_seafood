@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/app-shell/page-header";
-import { getInvoicesAction } from "@/lib/actions/invoices";
+import { getDashboardDataAction } from "@/lib/actions/dashboard";
 import { formatCurrency, formatPercent, getDirectCostLabel } from "@/lib/utils";
 import { InternalCostCard } from "@/components/dashboard/internal-cost-card";
 import { MetricCard } from "@/components/dashboard/metric-card";
 import type { DirectCostCategory, InternalCostBreakdown } from "@/types";
 import { requireRole } from "@/lib/security/auth";
 import { ReportPeriodTabs } from "@/components/reports/report-period-tabs";
-import { getReportPeriodRange, getTodayJakarta, normalizeReportPeriod } from "@/lib/report-period";
+import { normalizeReportPeriod } from "@/lib/report-period";
 
 export const metadata: Metadata = {
   title: "Biaya Internal",
@@ -21,12 +21,7 @@ export default async function InternalCostsReportPage({
   await requireRole(["OWNER", "FINANCE"]);
   const params = await searchParams;
   const period = normalizeReportPeriod(typeof params.period === "string" ? params.period : undefined);
-  const invoices = await getInvoicesAction();
-  const range = getReportPeriodRange(period, getTodayJakarta(), invoices.map((invoice) => invoice.issueDate));
-
-  const issuedInvoices = invoices.filter(
-    (inv) => inv.status !== "DRAFT" && inv.status !== "VOID" && inv.issueDate >= range.startDate && inv.issueDate <= range.endDate
-  );
+  const { periodInvoices: issuedInvoices, periodLabel } = await getDashboardDataAction(period);
 
   const totalDirectCost = issuedInvoices.reduce((s, i) => s + i.totalDirectCost, 0);
 
@@ -48,7 +43,7 @@ export default async function InternalCostsReportPage({
     <div className="space-y-6">
       <PageHeader
         title="Biaya Internal"
-        description="Rincian biaya langsung per invoice"
+        description={`Rincian biaya langsung per invoice · ${periodLabel}`}
       >
         <ReportPeriodTabs path="/reports/internal-costs" activePeriod={period} />
       </PageHeader>

@@ -88,14 +88,18 @@ export async function createSupplierPaymentAction(payload: CreateSupplierPayment
   }
 }
 
-export async function getSupplierPayablesAction(): Promise<SupplierPayable[]> {
+export async function getSupplierPayablesAction(startDate?: string, endDate?: string, limit = 500): Promise<SupplierPayable[]> {
   await requireRole(["OWNER", "FINANCE"]);
   const supabase = await createClient();
-  const { data, error } = await supabase
+  let query = supabase
     .from("supplier_bills")
     .select("id,bill_number,supplier_id,supplier_reference,bill_date,due_date,status,total,total_paid,remaining_balance,notes,suppliers(name)")
     .order("due_date", { ascending: true, nullsFirst: false })
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .limit(Math.max(1, Math.min(limit, 5000)));
+  if (startDate) query = query.gte("bill_date", startDate);
+  if (endDate) query = query.lte("bill_date", endDate);
+  const { data, error } = await query;
   if (error) throw new Error(error.message);
 
   const today = new Date().toISOString().slice(0, 10);
