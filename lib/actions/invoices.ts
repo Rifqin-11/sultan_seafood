@@ -56,16 +56,22 @@ export async function createInvoiceAction(payload: CreateInvoicePayload) {
 export async function getInvoicesAction(startDate?: string, endDate?: string, includeDirectCosts = false, includeItems = false): Promise<Invoice[]> {
   const user = await requireApprovedUser();
   const supabase = await createClient();
-  const { data, error } = await supabase.rpc("get_invoices_secure_range", {
+  const optimizedResult = await supabase.rpc("get_invoices_secure_range", {
     p_start_date: startDate ?? null,
     p_end_date: endDate ?? null,
     p_limit: 5000,
     p_include_items: includeItems,
     p_include_direct_costs: includeDirectCosts,
   });
+  const isMissingOptimizedRpc = optimizedResult.error?.code === "42883" || /get_invoices_secure_range|schema cache/i.test(optimizedResult.error?.message ?? "");
+  const { data, error } = isMissingOptimizedRpc
+    ? await supabase.rpc("get_invoices_secure", { p_invoice_id: null })
+    : optimizedResult;
   if (error) throw new Error(error.message);
   const rows = Array.isArray(data) ? data as Invoice[] : [];
-  return rows.map((invoice) => sanitizeInvoiceForRole(invoice, user.role !== "STAFF"));
+  return rows
+    .filter((invoice) => (!startDate || invoice.issueDate >= startDate) && (!endDate || invoice.issueDate <= endDate))
+    .map((invoice) => sanitizeInvoiceForRole(invoice, user.role !== "STAFF"));
 }
 
 export async function getInvoiceByIdAction(id: string): Promise<(Invoice & { customerPhone?: string }) | null> {
