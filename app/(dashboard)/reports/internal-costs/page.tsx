@@ -6,17 +6,26 @@ import { InternalCostCard } from "@/components/dashboard/internal-cost-card";
 import { MetricCard } from "@/components/dashboard/metric-card";
 import type { DirectCostCategory, InternalCostBreakdown } from "@/types";
 import { requireRole } from "@/lib/security/auth";
+import { ReportPeriodTabs } from "@/components/reports/report-period-tabs";
+import { getReportPeriodRange, getTodayJakarta, normalizeReportPeriod } from "@/lib/report-period";
 
 export const metadata: Metadata = {
   title: "Biaya Internal",
 };
 
-export default async function InternalCostsReportPage() {
+export default async function InternalCostsReportPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
   await requireRole(["OWNER", "FINANCE"]);
+  const params = await searchParams;
+  const period = normalizeReportPeriod(typeof params.period === "string" ? params.period : undefined);
   const invoices = await getInvoicesAction();
+  const range = getReportPeriodRange(period, getTodayJakarta(), invoices.map((invoice) => invoice.issueDate));
 
   const issuedInvoices = invoices.filter(
-    (inv) => inv.status !== "DRAFT" && inv.status !== "VOID"
+    (inv) => inv.status !== "DRAFT" && inv.status !== "VOID" && inv.issueDate >= range.startDate && inv.issueDate <= range.endDate
   );
 
   const totalDirectCost = issuedInvoices.reduce((s, i) => s + i.totalDirectCost, 0);
@@ -40,7 +49,9 @@ export default async function InternalCostsReportPage() {
       <PageHeader
         title="Biaya Internal"
         description="Rincian biaya langsung per invoice"
-      />
+      >
+        <ReportPeriodTabs path="/reports/internal-costs" activePeriod={period} />
+      </PageHeader>
 
       <MetricCard accent="blue"
         title="Total Biaya Internal"

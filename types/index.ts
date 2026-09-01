@@ -326,20 +326,18 @@ export interface AuditLog {
 // ─── Dashboard ───
 
 export interface DashboardMetrics {
-  ordersToday: number;
-  ordersTodayChange: number;
-  ordersThisWeek: number;
-  ordersThisWeekChange: number;
-  revenueThisMonth: number;
-  revenueThisMonthChange: number;
-  transactionProfitThisMonth: number;
-  transactionMarginThisMonth: number;
-  operatingExpensesThisMonth: number;
-  netProfitThisMonth: number;
-  netMarginThisMonth: number;
+  ordersInPeriod: number;
+  ordersInPeriodChange: number;
+  revenueInPeriod: number;
+  revenueInPeriodChange: number;
+  transactionProfitInPeriod: number;
+  transactionMarginInPeriod: number;
+  operatingExpensesInPeriod: number;
+  netProfitInPeriod: number;
+  netMarginInPeriod: number;
   receivables: number;
   overdueCount: number;
-  totalDirectCostsThisMonth: number;
+  totalDirectCostsInPeriod: number;
 }
 
 export interface SalesDataPoint {

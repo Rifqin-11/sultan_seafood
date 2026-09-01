@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/app-shell/page-header";
-import { getInvoicesAction } from "@/lib/actions/invoices";
 import { formatCurrency, formatDateShort } from "@/lib/utils";
 import { MetricCard } from "@/components/dashboard/metric-card";
 import { InvoiceStatusBadge } from "@/components/invoices/invoice-status-badge";
@@ -8,20 +7,32 @@ import {
   Table,
   TableBody,
   TableCell,
-  TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
 import { AlertCircle } from "lucide-react";
 import { requireRole } from "@/lib/security/auth";
+import { getDashboardDataAction } from "@/lib/actions/dashboard";
+import { ReportPeriodTabs } from "@/components/reports/report-period-tabs";
+import { SortableHeader } from "@/components/reports/sortable-header";
+import { compareValues, getSortHref, normalizeSortDirection } from "@/lib/report-sort";
+import { normalizeReportPeriod } from "@/lib/report-period";
 
 export const metadata: Metadata = {
   title: "Piutang",
 };
 
-export default async function ReceivablesPage() {
+export default async function ReceivablesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
   await requireRole(["OWNER", "FINANCE"]);
-  const invoices = await getInvoicesAction();
+  const params = await searchParams;
+  const period = normalizeReportPeriod(typeof params.period === "string" ? params.period : undefined);
+  const sort = typeof params.sort === "string" ? params.sort : "issueDate";
+  const direction = normalizeSortDirection(typeof params.direction === "string" ? params.direction : undefined);
+  const { periodInvoices: invoices } = await getDashboardDataAction(period);
 
   const unpaid = invoices.filter(
     (inv) =>
@@ -35,10 +46,26 @@ export default async function ReceivablesPage() {
   const overdueAmount = unpaid
     .filter((i) => i.status === "OVERDUE")
     .reduce((s, i) => s + i.remainingBalance, 0);
+  const sortedUnpaid = [...unpaid].sort((a, b) => {
+    const values: Record<string, [string | number | undefined, string | number | undefined]> = {
+      number: [a.invoiceNumber, b.invoiceNumber],
+      customer: [a.customerName, b.customerName],
+      issueDate: [a.issueDate, b.issueDate],
+      dueDate: [a.dueDate, b.dueDate],
+      total: [a.total, b.total],
+      paid: [a.totalPaid, b.totalPaid],
+      remaining: [a.remainingBalance, b.remainingBalance],
+      status: [a.status, b.status],
+    };
+    const [left, right] = values[sort] ?? values.issueDate;
+    return compareValues(left, right, direction);
+  });
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Piutang" description="Daftar invoice yang belum lunas" />
+      <PageHeader title="Piutang" description="Daftar invoice yang belum lunas">
+        <ReportPeriodTabs path="/reports/receivables" activePeriod={period} />
+      </PageHeader>
 
       <div className="grid grid-cols-1 gap-3 min-[430px]:grid-cols-2 lg:grid-cols-3 lg:gap-4">
         <MetricCard accent="amber"
@@ -64,14 +91,14 @@ export default async function ReceivablesPage() {
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/30 hover:bg-muted/30">
-                <TableHead className="text-xs font-semibold">Nomor Invoice</TableHead>
-                <TableHead className="text-xs font-semibold">Restoran</TableHead>
-                <TableHead className="text-xs font-semibold">Tanggal</TableHead>
-                <TableHead className="text-xs font-semibold">Jatuh Tempo</TableHead>
-                <TableHead className="text-xs font-semibold text-right">Total</TableHead>
-                <TableHead className="text-xs font-semibold text-right">Dibayar</TableHead>
-                <TableHead className="text-xs font-semibold text-right">Sisa</TableHead>
-                <TableHead className="text-xs font-semibold">Status</TableHead>
+                <SortableHeader label="Nomor Invoice" href={getSortHref("/reports/receivables", period, "number", sort, direction)} active={sort === "number"} direction={direction} />
+                <SortableHeader label="Restoran" href={getSortHref("/reports/receivables", period, "customer", sort, direction)} active={sort === "customer"} direction={direction} />
+                <SortableHeader label="Tanggal" href={getSortHref("/reports/receivables", period, "issueDate", sort, direction)} active={sort === "issueDate"} direction={direction} />
+                <SortableHeader label="Jatuh Tempo" href={getSortHref("/reports/receivables", period, "dueDate", sort, direction)} active={sort === "dueDate"} direction={direction} />
+                <SortableHeader label="Total" href={getSortHref("/reports/receivables", period, "total", sort, direction)} active={sort === "total"} direction={direction} className="text-right" />
+                <SortableHeader label="Dibayar" href={getSortHref("/reports/receivables", period, "paid", sort, direction)} active={sort === "paid"} direction={direction} className="text-right" />
+                <SortableHeader label="Sisa" href={getSortHref("/reports/receivables", period, "remaining", sort, direction)} active={sort === "remaining"} direction={direction} className="text-right" />
+                <SortableHeader label="Status" href={getSortHref("/reports/receivables", period, "status", sort, direction)} active={sort === "status"} direction={direction} />
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -82,7 +109,7 @@ export default async function ReceivablesPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                unpaid.map((inv) => (
+                sortedUnpaid.map((inv) => (
                   <TableRow key={inv.id} className="hover:bg-muted/20">
                     <TableCell className="text-sm font-mono font-medium">
                       {inv.invoiceNumber ?? "DRAFT"}
@@ -132,7 +159,7 @@ export default async function ReceivablesPage() {
               Tidak ada piutang outstanding. Semua invoice telah lunas!
             </p>
           ) : (
-            unpaid.map((invoice) => (
+            sortedUnpaid.map((invoice) => (
               <article key={invoice.id} className="space-y-3 p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">

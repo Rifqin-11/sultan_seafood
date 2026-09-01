@@ -7,25 +7,22 @@ import { ProfitChart } from "@/components/dashboard/profit-chart";
 import { InternalCostCard } from "@/components/dashboard/internal-cost-card";
 import type { DirectCostCategory, InternalCostBreakdown } from "@/types";
 import { requireRole } from "@/lib/security/auth";
+import { ReportPeriodTabs } from "@/components/reports/report-period-tabs";
+import { normalizeReportPeriod } from "@/lib/report-period";
 
 export const metadata: Metadata = {
   title: "Laporan Laba",
 };
 
-export default async function ProfitReportPage() {
+export default async function ProfitReportPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
   await requireRole(["OWNER", "FINANCE"]);
-  const { invoices, expenses, profitData, periodLabel } = await getDashboardDataAction();
-
-  const currentMonth = new Date().toLocaleDateString("en-CA", {
-    timeZone: "Asia/Jakarta",
-    year: "numeric",
-    month: "2-digit",
-  });
-
-  const issuedInvoices = invoices.filter(
-    (inv) => inv.status !== "DRAFT" && inv.status !== "VOID" && inv.issueDate.startsWith(currentMonth)
-  );
-  const periodExpenses = expenses.filter((expense) => expense.expenseDate.startsWith(currentMonth));
+  const params = await searchParams;
+  const period = normalizeReportPeriod(typeof params.period === "string" ? params.period : undefined);
+  const { periodInvoices: issuedInvoices, periodExpenses, profitData, periodLabel } = await getDashboardDataAction(period);
 
   const totalRevenue = issuedInvoices.reduce((s, i) => s + i.total, 0);
   const totalHPP = issuedInvoices.reduce((s, i) => s + i.totalProductCost, 0);
@@ -54,7 +51,9 @@ export default async function ProfitReportPage() {
       <PageHeader
         title="Laporan Laba"
         description={`Omzet dikurangi HPP, biaya langsung, dan pengeluaran operasional · ${periodLabel}`}
-      />
+      >
+        <ReportPeriodTabs path="/reports/profit" activePeriod={period} />
+      </PageHeader>
 
       <div className="grid grid-cols-1 gap-3 min-[430px]:grid-cols-2 xl:grid-cols-6 xl:gap-4">
         <MetricCard accent="sky" title="Omzet" value={totalRevenue} isCurrency />

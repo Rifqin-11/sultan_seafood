@@ -17,20 +17,18 @@ import type {
 // ─── Empty Mock Data (Using Real Database Data Only) ───
 
 export const mockMetrics: DashboardMetrics = {
-  ordersToday: 0,
-  ordersTodayChange: 0,
-  ordersThisWeek: 0,
-  ordersThisWeekChange: 0,
-  revenueThisMonth: 0,
-  revenueThisMonthChange: 0,
-  transactionProfitThisMonth: 0,
-  transactionMarginThisMonth: 0,
-  operatingExpensesThisMonth: 0,
-  netProfitThisMonth: 0,
-  netMarginThisMonth: 0,
+  ordersInPeriod: 0,
+  ordersInPeriodChange: 0,
+  revenueInPeriod: 0,
+  revenueInPeriodChange: 0,
+  transactionProfitInPeriod: 0,
+  transactionMarginInPeriod: 0,
+  operatingExpensesInPeriod: 0,
+  netProfitInPeriod: 0,
+  netMarginInPeriod: 0,
   receivables: 0,
   overdueCount: 0,
-  totalDirectCostsThisMonth: 0,
+  totalDirectCostsInPeriod: 0,
 };
 
 export const mockSalesData: SalesDataPoint[] = [];

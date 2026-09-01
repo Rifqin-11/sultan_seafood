@@ -6,6 +6,7 @@ import {
   AlertCircle,
   ArrowRight,
   Plus,
+  WalletCards,
 } from "lucide-react";
 import Link from "next/link";
 import { PageHeader } from "@/components/app-shell/page-header";
@@ -15,16 +16,29 @@ import { SalesChart } from "@/components/dashboard/sales-chart";
 import { ProfitChart } from "@/components/dashboard/profit-chart";
 import { InternalCostCard } from "@/components/dashboard/internal-cost-card";
 import { OutstandingInvoiceCard } from "@/components/dashboard/outstanding-invoice-card";
+import { ReportPeriodTabs } from "@/components/reports/report-period-tabs";
 import { formatCurrency, formatPercent } from "@/lib/utils";
 import { getDashboardDataAction } from "@/lib/actions/dashboard";
+import { normalizeReportPeriod } from "@/lib/report-period";
+import { getInventoryAction } from "@/lib/actions/inventory";
 
 export const metadata: Metadata = {
   title: "Dashboard",
 };
 
-export default async function DashboardPage() {
-  const { invoices, metrics: m, salesData, profitData, internalCosts, periodLabel, user } = await getDashboardDataAction();
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+  }) {
+  const params = await searchParams;
+  const activePeriod = normalizeReportPeriod(typeof params.period === "string" ? params.period : undefined);
+  const { periodInvoices, metrics: m, salesData, profitData, internalCosts, periodLabel, user } = await getDashboardDataAction(activePeriod);
   const canViewInternal = user.role !== "STAFF";
+  const inventory = canViewInternal ? await getInventoryAction() : null;
+  const totalStockValue = inventory?.balances
+    .filter((balance) => balance.productStatus === "ACTIVE")
+    .reduce((sum, balance) => sum + balance.stockValue, 0) ?? 0;
 
   return (
     <div className="space-y-6">
@@ -32,6 +46,7 @@ export default async function DashboardPage() {
         title="Ringkasan bisnis"
         description={`Pantau order, arus pendapatan, dan kewajiban dalam ${periodLabel.toLowerCase()}.`}
       >
+        <ReportPeriodTabs path="/dashboard" activePeriod={activePeriod} />
         {canViewInternal && <Link href="/reports/sales" className={buttonVariants({ variant: "outline", size: "sm" })}>
           Lihat laporan <ArrowRight className="ml-1 size-3.5" />
         </Link>}
@@ -41,25 +56,26 @@ export default async function DashboardPage() {
       </PageHeader>
 
       {/* Row 1 — Metric Cards */}
-      <div className={`grid grid-cols-1 gap-3 min-[430px]:grid-cols-2 lg:gap-4 ${canViewInternal ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}>
+      <div className={`grid grid-cols-1 gap-3 min-[430px]:grid-cols-2 lg:grid-cols-3 lg:gap-4`}>
         <MetricCard
-          title="Order Hari Ini"
-          value={m.ordersToday}
+          title="Order dalam periode"
+          value={m.ordersInPeriod}
           icon={ShoppingBag}
-          change={m.ordersTodayChange}
-          changeLabel="vs kemarin"
-          href="/invoices?filter=today"
+          change={m.ordersInPeriodChange}
+          changeLabel="vs periode sebelumnya"
+          href="/invoices"
         />
         <MetricCard
-          title="Order Minggu Ini"
-          value={m.ordersThisWeek}
+          title="Pendapatan periode"
+          value={m.revenueInPeriod}
+          isCurrency
           icon={ShoppingBag}
-          change={m.ordersThisWeekChange}
-          changeLabel="vs minggu lalu"
-          href="/invoices?filter=week"
+          change={m.revenueInPeriodChange}
+          changeLabel="vs periode sebelumnya"
+          href="/reports/sales"
         />
         <MetricCard
-          title="Jumlah Piutang Berjalan"
+          title="Piutang berjalan"
           value={m.receivables}
           isCurrency
           icon={AlertCircle}
@@ -67,11 +83,26 @@ export default async function DashboardPage() {
         />
         {canViewInternal && <MetricCard
           title="Laba Bersih"
-          value={m.netProfitThisMonth}
+          value={m.netProfitInPeriod}
           isCurrency
           icon={TrendingUp}
-          change={m.netMarginThisMonth}
+          change={m.netMarginInPeriod}
           changeLabel="margin"
+          href="/reports/profit"
+          internal
+        />}
+        {canViewInternal && <MetricCard
+          title="Nilai persediaan"
+          value={totalStockValue}
+          isCurrency
+          icon={WalletCards}
+          href="/stock"
+          internal
+        />}
+        {canViewInternal && <MetricCard
+          title="Margin bersih"
+          value={formatPercent(m.netMarginInPeriod)}
+          icon={TrendingUp}
           href="/reports/profit"
           internal
         />}
@@ -87,7 +118,7 @@ export default async function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {canViewInternal && <InternalCostCard
           costs={internalCosts}
-          total={m.totalDirectCostsThisMonth}
+          total={m.totalDirectCostsInPeriod}
         />}
 
         {/* Receivables summary */}
@@ -115,7 +146,7 @@ export default async function DashboardPage() {
             </div>
             <div className="h-px bg-border" />
             <div className="space-y-2">
-              {invoices
+               {periodInvoices
                 .filter((inv) => inv.status === "OVERDUE")
                 .slice(0, 2)
                 .map((inv) => (
@@ -144,32 +175,32 @@ export default async function DashboardPage() {
             {[
               {
                 label: "Pendapatan",
-                value: formatCurrency(m.revenueThisMonth),
+                 value: formatCurrency(m.revenueInPeriod),
               },
               {
                 label: "HPP Produk",
-                value: formatCurrency(m.revenueThisMonth - m.transactionProfitThisMonth - m.totalDirectCostsThisMonth),
+                 value: formatCurrency(m.revenueInPeriod - m.transactionProfitInPeriod - m.totalDirectCostsInPeriod),
                 internal: true,
               },
               {
                 label: "Biaya Internal",
-                value: formatCurrency(m.totalDirectCostsThisMonth),
+                 value: formatCurrency(m.totalDirectCostsInPeriod),
                 internal: true,
               },
               {
                 label: "Pengeluaran Operasional",
-                value: formatCurrency(m.operatingExpensesThisMonth),
+                 value: formatCurrency(m.operatingExpensesInPeriod),
                 internal: true,
               },
               {
                 label: "Laba Bersih",
-                value: formatCurrency(m.netProfitThisMonth),
+                 value: formatCurrency(m.netProfitInPeriod),
                 highlight: true,
                 internal: true,
               },
               {
                 label: "Margin",
-                value: formatPercent(m.netMarginThisMonth),
+                 value: formatPercent(m.netMarginInPeriod),
                 highlight: true,
                 internal: true,
               },
@@ -204,7 +235,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Row 4 — Outstanding Invoices */}
-      <OutstandingInvoiceCard invoices={invoices} />
+       <OutstandingInvoiceCard invoices={periodInvoices} />
     </div>
   );
 }

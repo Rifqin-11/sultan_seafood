@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { BanknoteArrowUp, CheckCircle2, Landmark, Loader2 } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, BanknoteArrowUp, CheckCircle2, Landmark, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -12,8 +12,17 @@ import { createSupplierPaymentAction, type SupplierPayable } from "@/lib/actions
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import type { PaymentMethod } from "@/types";
+import Link from "next/link";
+import type { ReportPeriod } from "@/lib/report-period";
+import type { SortDirection } from "@/lib/report-sort";
+import { getSortHref } from "@/lib/report-sort";
 
-interface SupplierPayablesTableProps { bills: SupplierPayable[]; }
+interface SupplierPayablesTableProps {
+  bills: SupplierPayable[];
+  period: ReportPeriod;
+  sort: string;
+  direction: SortDirection;
+}
 
 const statusStyle: Record<SupplierPayable["status"], string> = {
   OPEN: "border-sky-200 bg-sky-50 text-sky-700",
@@ -25,7 +34,13 @@ const statusStyle: Record<SupplierPayable["status"], string> = {
 const statusLabel: Record<SupplierPayable["status"], string> = { OPEN: "Belum Dibayar", PARTIALLY_PAID: "Sebagian", PAID: "Lunas", OVERDUE: "Jatuh Tempo", VOID: "Dibatalkan" };
 const today = () => new Date().toISOString().slice(0, 10);
 
-export function SupplierPayablesTable({ bills }: SupplierPayablesTableProps) {
+function SupplierPayablesSortLink({ label, sortKey, period, sort, direction }: { label: string; sortKey: string; period: ReportPeriod; sort: string; direction: SortDirection }) {
+  const Icon = sort === sortKey ? (direction === "desc" ? ArrowDown : ArrowUp) : ArrowUpDown;
+  const href = getSortHref("/reports/supplier-payables", period, sortKey, sort, direction);
+  return <Link href={href} className="inline-flex items-center gap-1.5 rounded-md py-1 text-inherit transition-colors hover:text-stone-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-400"><span>{label}</span><Icon className={`size-3 ${sort === sortKey ? "text-stone-900" : "text-stone-400"}`} /><span className="sr-only">Urutkan berdasarkan {label}</span></Link>;
+}
+
+export function SupplierPayablesTable({ bills, period, sort, direction }: SupplierPayablesTableProps) {
   const router = useRouter();
   const [selectedBill, setSelectedBill] = useState<SupplierPayable | null>(null);
   const [amount, setAmount] = useState("");
@@ -63,7 +78,7 @@ export function SupplierPayablesTable({ bills }: SupplierPayablesTableProps) {
       <div className="erp-surface overflow-hidden">
         <div className="erp-table-wrap hidden lg:block">
           <table className="erp-table min-w-[780px] w-full text-sm">
-            <thead><tr className="border-b border-stone-200 bg-stone-50/80"><th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-stone-500">Tagihan</th><th className="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-stone-500">Supplier</th><th className="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-stone-500">Jatuh Tempo</th><th className="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-stone-500">Total</th><th className="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-stone-500">Sisa</th><th className="px-3 py-3 text-center text-[10px] font-semibold uppercase tracking-wider text-stone-500">Status</th><th className="px-5 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-stone-500">Aksi</th></tr></thead>
+             <thead><tr className="border-b border-stone-200 bg-stone-50/80"><th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-stone-500"><SupplierPayablesSortLink label="Tagihan" sortKey="billNumber" period={period} sort={sort} direction={direction} /></th><th className="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-stone-500"><SupplierPayablesSortLink label="Supplier" sortKey="supplier" period={period} sort={sort} direction={direction} /></th><th className="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-stone-500"><SupplierPayablesSortLink label="Jatuh Tempo" sortKey="dueDate" period={period} sort={sort} direction={direction} /></th><th className="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-stone-500"><SupplierPayablesSortLink label="Total" sortKey="total" period={period} sort={sort} direction={direction} /></th><th className="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-stone-500"><SupplierPayablesSortLink label="Sisa" sortKey="remaining" period={period} sort={sort} direction={direction} /></th><th className="px-3 py-3 text-center text-[10px] font-semibold uppercase tracking-wider text-stone-500"><SupplierPayablesSortLink label="Status" sortKey="status" period={period} sort={sort} direction={direction} /></th><th className="px-5 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-stone-500">Aksi</th></tr></thead>
             <tbody className="divide-y divide-stone-100">
               {bills.length === 0 ? <tr><td colSpan={7} className="h-52"><EmptyState icon={Landmark} title="Belum ada hutang supplier" description="Catat tagihan pembelian dari supplier untuk memantau kewajiban pembayaran." /></td></tr> : bills.map((bill) => (
                 <tr key={bill.id} className="hover:bg-stone-50/60"><td className="px-5 py-3"><p className="font-mono text-xs font-semibold text-stone-900">{bill.billNumber}</p>{bill.supplierReference && <p className="mt-1 text-xs text-muted-foreground">Ref: {bill.supplierReference}</p>}</td><td className="px-3 py-3"><p className="font-medium text-stone-900">{bill.supplierName}</p><p className="mt-1 text-xs text-muted-foreground">{formatDateShort(bill.billDate)}</p></td><td className={`px-3 py-3 text-xs ${bill.status === "OVERDUE" ? "font-semibold text-red-600" : "text-muted-foreground"}`}>{bill.dueDate ? formatDateShort(bill.dueDate) : "—"}</td><td className="px-3 py-3 text-right text-xs tabular-nums text-stone-700">{formatCurrency(bill.total)}</td><td className="px-3 py-3 text-right text-sm font-bold tabular-nums text-red-600">{formatCurrency(bill.remainingBalance)}</td><td className="px-3 py-3 text-center"><Badge variant="outline" className={statusStyle[bill.status]}>{statusLabel[bill.status]}</Badge></td><td className="px-5 py-3 text-right">{bill.remainingBalance > 0 && bill.status !== "VOID" && <Button size="sm" variant="outline" onClick={() => openPayment(bill)} className="h-8 rounded-lg border-stone-200 text-xs"><BanknoteArrowUp className="mr-1.5 h-3.5 w-3.5" /> Bayar</Button>}</td></tr>

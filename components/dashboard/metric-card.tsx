@@ -72,10 +72,10 @@ export function MetricCard({
         )}
       </div>
 
-      <div className="min-w-0">
-        <span className="block break-words text-[clamp(1.3rem,2vw,1.75rem)] font-bold leading-tight tracking-[-0.035em] text-foreground tabular-nums">
-          {displayValue}
-        </span>
+       <div className="min-w-0">
+         <span className="block max-w-full overflow-hidden text-ellipsis text-[clamp(1.05rem,1.65vw,1.5rem)] font-bold leading-tight tracking-[-0.035em] text-foreground tabular-nums whitespace-nowrap">
+           {displayValue}
+         </span>
         {suffix && (
           <span className="ml-1 text-xs font-medium text-muted-foreground sm:text-sm">
             {suffix}

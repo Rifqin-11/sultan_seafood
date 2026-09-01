@@ -5,6 +5,7 @@ import { getInvoicesAction } from "@/lib/actions/invoices";
 import { getExpensesAction } from "@/lib/actions/expenses";
 import { getApprovedUser, requireApprovedUser } from "@/lib/security/auth";
 import { getDirectCostLabel } from "@/lib/utils";
+import { getReportPeriodRange, getTodayJakarta, normalizeReportPeriod } from "@/lib/report-period";
 import type { DashboardMetrics, DirectCostCategory, InternalCostBreakdown, ProfitDataPoint, SalesDataPoint } from "@/types";
 
 function percentChange(current: number, previous: number) {
@@ -12,83 +13,90 @@ function percentChange(current: number, previous: number) {
   return ((current - previous) / previous) * 100;
 }
 
-function dateKey(date: Date) {
-  return date.toISOString().slice(0, 10);
-}
-
-export async function getDashboardDataAction() {
+export async function getDashboardDataAction(periodParam?: string) {
   const user = await requireApprovedUser();
   const [invoices, expenses] = await Promise.all([
     getInvoicesAction(),
     user.role === "STAFF" ? Promise.resolve([]) : getExpensesAction(),
   ]);
-  const now = new Date();
-  const today = dateKey(now);
-  const yesterdayDate = new Date(now); yesterdayDate.setDate(now.getDate() - 1);
-  const yesterday = dateKey(yesterdayDate);
-  const startOfWeek = new Date(now); startOfWeek.setDate(now.getDate() - ((now.getDay() + 6) % 7)); startOfWeek.setHours(0, 0, 0, 0);
-  const previousWeekStart = new Date(startOfWeek); previousWeekStart.setDate(startOfWeek.getDate() - 7);
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  const previousMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const today = getTodayJakarta();
+  const period = normalizeReportPeriod(periodParam);
+  const periodDates = getReportPeriodRange(period, today, [...invoices.map((invoice) => invoice.issueDate), ...expenses.map((expense) => expense.expenseDate)]);
+  const selectedStart = periodDates.startDate;
+  const selectedEnd = periodDates.endDate;
+  const endExclusive = new Date(`${selectedEnd}T00:00:00`);
+  endExclusive.setDate(endExclusive.getDate() + 1);
+  const selectedStartDate = new Date(`${selectedStart}T00:00:00`);
+  const rangeLength = Math.max(1, Math.round((endExclusive.getTime() - selectedStartDate.getTime()) / 86400000));
+  const previousStart = new Date(selectedStartDate);
+  previousStart.setDate(previousStart.getDate() - rangeLength);
+  const previousEnd = new Date(selectedStartDate);
   const issued = invoices.filter((invoice) => invoice.status !== "DRAFT" && invoice.status !== "VOID");
   const inRange = (value: string, start: Date, end: Date) => {
     const date = new Date(`${value}T00:00:00`);
     return date >= start && date < end;
   };
 
-  const todayOrders = issued.filter((invoice) => invoice.issueDate === today).length;
-  const yesterdayOrders = issued.filter((invoice) => invoice.issueDate === yesterday).length;
-  const weekOrders = issued.filter((invoice) => inRange(invoice.issueDate, startOfWeek, new Date(now.getTime() + 86400000))).length;
-  const previousWeekOrders = issued.filter((invoice) => inRange(invoice.issueDate, previousWeekStart, startOfWeek)).length;
-  const monthInvoices = issued.filter((invoice) => inRange(invoice.issueDate, startOfMonth, new Date(now.getFullYear(), now.getMonth() + 1, 1)));
-  const previousMonthInvoices = issued.filter((invoice) => inRange(invoice.issueDate, previousMonthStart, startOfMonth));
-  const monthRevenue = monthInvoices.reduce((sum, invoice) => sum + invoice.total, 0);
-  const previousMonthRevenue = previousMonthInvoices.reduce((sum, invoice) => sum + invoice.total, 0);
-  const monthProfit = monthInvoices.reduce((sum, invoice) => sum + invoice.transactionProfit, 0);
-  const monthExpenses = expenses.filter((expense) => inRange(expense.expenseDate, startOfMonth, new Date(now.getFullYear(), now.getMonth() + 1, 1)));
-  const operatingExpenses = monthExpenses.reduce((sum, expense) => sum + expense.amount, 0);
-  const netProfit = monthProfit - operatingExpenses;
-  const directCostTotal = monthInvoices.reduce((sum, invoice) => sum + invoice.totalDirectCost, 0);
-  const receivables = issued.filter((invoice) => invoice.status !== "PAID").reduce((sum, invoice) => sum + invoice.remainingBalance, 0);
-  const overdueCount = issued.filter((invoice) => invoice.status === "OVERDUE").length;
+  const selectedInvoices = issued.filter((invoice) => inRange(invoice.issueDate, selectedStartDate, endExclusive));
+  const previousInvoices = issued.filter((invoice) => inRange(invoice.issueDate, previousStart, previousEnd));
+  const selectedExpenses = expenses.filter((expense) => inRange(expense.expenseDate, selectedStartDate, endExclusive));
+  const periodRevenue = selectedInvoices.reduce((sum, invoice) => sum + invoice.total, 0);
+  const previousRevenue = previousInvoices.reduce((sum, invoice) => sum + invoice.total, 0);
+  const periodProfit = selectedInvoices.reduce((sum, invoice) => sum + invoice.transactionProfit, 0);
+  const operatingExpenses = selectedExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+  const netProfit = periodProfit - operatingExpenses;
+  const directCostTotal = selectedInvoices.reduce((sum, invoice) => sum + invoice.totalDirectCost, 0);
+  const receivables = selectedInvoices.filter((invoice) => invoice.status !== "PAID").reduce((sum, invoice) => sum + invoice.remainingBalance, 0);
+  const overdueInvoices = selectedInvoices.filter((invoice) => invoice.status === "OVERDUE");
 
   const metrics: DashboardMetrics = {
-    ordersToday: todayOrders,
-    ordersTodayChange: percentChange(todayOrders, yesterdayOrders),
-    ordersThisWeek: weekOrders,
-    ordersThisWeekChange: percentChange(weekOrders, previousWeekOrders),
-    revenueThisMonth: monthRevenue,
-    revenueThisMonthChange: percentChange(monthRevenue, previousMonthRevenue),
-    transactionProfitThisMonth: monthProfit,
-    transactionMarginThisMonth: monthRevenue > 0 ? (monthProfit / monthRevenue) * 100 : 0,
-    operatingExpensesThisMonth: operatingExpenses,
-    netProfitThisMonth: netProfit,
-    netMarginThisMonth: monthRevenue > 0 ? (netProfit / monthRevenue) * 100 : 0,
+    ordersInPeriod: selectedInvoices.length,
+    ordersInPeriodChange: percentChange(selectedInvoices.length, previousInvoices.length),
+    revenueInPeriod: periodRevenue,
+    revenueInPeriodChange: percentChange(periodRevenue, previousRevenue),
+    transactionProfitInPeriod: periodProfit,
+    transactionMarginInPeriod: periodRevenue > 0 ? (periodProfit / periodRevenue) * 100 : 0,
+    operatingExpensesInPeriod: operatingExpenses,
+    netProfitInPeriod: netProfit,
+    netMarginInPeriod: periodRevenue > 0 ? (netProfit / periodRevenue) * 100 : 0,
     receivables,
-    overdueCount,
-    totalDirectCostsThisMonth: directCostTotal,
+    overdueCount: overdueInvoices.length,
+    totalDirectCostsInPeriod: directCostTotal,
   };
 
   const daily = new Map<string, { revenue: number; profit: number; orders: number }>();
-  monthInvoices.forEach((invoice) => {
+  selectedInvoices.forEach((invoice) => {
     const current = daily.get(invoice.issueDate) ?? { revenue: 0, profit: 0, orders: 0 };
     current.revenue += invoice.total;
     current.profit += invoice.transactionProfit;
     current.orders += 1;
     daily.set(invoice.issueDate, current);
   });
-  monthExpenses.forEach((expense) => {
+  selectedExpenses.forEach((expense) => {
     const current = daily.get(expense.expenseDate) ?? { revenue: 0, profit: 0, orders: 0 };
     current.profit -= expense.amount;
     daily.set(expense.expenseDate, current);
   });
-  const salesData: SalesDataPoint[] = [...daily].map(([date, value]) => ({ date: new Date(`${date}T00:00:00`).toLocaleDateString("id-ID", { day: "2-digit" }), revenue: value.revenue, orders: value.orders }));
+  const salesData: SalesDataPoint[] = [...daily].sort(([a], [b]) => a.localeCompare(b)).map(([date, value]) => ({ date: new Date(`${date}T00:00:00`).toLocaleDateString("id-ID", { day: "2-digit" }), revenue: value.revenue, orders: value.orders }));
   const profitData: ProfitDataPoint[] = [...daily].sort(([a], [b]) => a.localeCompare(b)).map(([date, value]) => ({ date: new Date(`${date}T00:00:00`).toLocaleDateString("id-ID", { day: "2-digit" }), profit: value.profit, margin: value.revenue > 0 ? value.profit / value.revenue * 100 : 0 }));
   const costMap = new Map<DirectCostCategory, number>();
-  monthInvoices.flatMap((invoice) => invoice.directCosts).forEach((cost) => costMap.set(cost.category, (costMap.get(cost.category) ?? 0) + cost.amount));
+  selectedInvoices.flatMap((invoice) => invoice.directCosts).forEach((cost) => costMap.set(cost.category, (costMap.get(cost.category) ?? 0) + cost.amount));
   const internalCosts: InternalCostBreakdown[] = [...costMap].map(([category, amount]) => ({ category, label: getDirectCostLabel(category), amount }));
 
-  return { user, metrics, salesData, profitData, internalCosts, invoices, expenses, periodLabel: now.toLocaleDateString("id-ID", { month: "long", year: "numeric" }) };
+  return {
+    user,
+    metrics,
+    salesData,
+    profitData,
+    internalCosts,
+    invoices,
+    expenses,
+    periodInvoices: selectedInvoices,
+    periodExpenses: selectedExpenses,
+    periodLabel: periodDates.label,
+    startDate: selectedStart,
+    endDate: selectedEnd,
+  };
 }
 
 export async function getNotificationSummaryAction() {

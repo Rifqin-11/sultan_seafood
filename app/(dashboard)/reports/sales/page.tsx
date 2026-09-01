@@ -8,28 +8,51 @@ import {
   Table,
   TableBody,
   TableCell,
-  TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
 import { CsvExportButton } from "@/components/ui/csv-export-button";
 import { requireRole } from "@/lib/security/auth";
 import { getInventoryAction } from "@/lib/actions/inventory";
+import { ReportPeriodTabs } from "@/components/reports/report-period-tabs";
+import { SortableHeader } from "@/components/reports/sortable-header";
+import { compareValues, getSortHref, normalizeSortDirection } from "@/lib/report-sort";
+import { normalizeReportPeriod } from "@/lib/report-period";
 
 export const metadata: Metadata = {
   title: "Laporan Penjualan",
 };
 
-export default async function SalesReportPage() {
+export default async function SalesReportPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
   await requireRole(["OWNER", "FINANCE"]);
-  const [{ invoices, salesData, periodLabel }, { balances }] = await Promise.all([
-    getDashboardDataAction(),
+  const params = await searchParams;
+  const period = normalizeReportPeriod(typeof params.period === "string" ? params.period : undefined);
+  const sort = typeof params.sort === "string" ? params.sort : "issueDate";
+  const direction = normalizeSortDirection(typeof params.direction === "string" ? params.direction : undefined);
+  const [{ periodInvoices, salesData, periodLabel }, { balances }] = await Promise.all([
+    getDashboardDataAction(period),
     getInventoryAction(),
   ]);
 
-  const issuedInvoices = invoices.filter(
-    (inv) => inv.status !== "DRAFT" && inv.status !== "VOID"
-  );
+  const issuedInvoices = periodInvoices.filter((inv) => inv.status !== "DRAFT" && inv.status !== "VOID");
+  const sortedInvoices = [...issuedInvoices].sort((a, b) => {
+    const values: Record<string, [string | number | undefined, string | number | undefined]> = {
+      number: [a.invoiceNumber, b.invoiceNumber],
+      customer: [a.customerName, b.customerName],
+      issueDate: [a.issueDate, b.issueDate],
+      revenue: [a.total, b.total],
+      hpp: [a.totalProductCost, b.totalProductCost],
+      directCost: [a.totalDirectCost, b.totalDirectCost],
+      profit: [a.transactionProfit, b.transactionProfit],
+      margin: [a.transactionMargin, b.transactionMargin],
+    };
+    const [left, right] = values[sort] ?? values.issueDate;
+    return compareValues(left, right, direction);
+  });
   const totalRevenue = issuedInvoices.reduce((s, i) => s + i.total, 0);
   const totalHPP = issuedInvoices.reduce((s, i) => s + i.totalProductCost, 0);
   const totalProfit = issuedInvoices.reduce((s, i) => s + i.transactionProfit, 0);
@@ -40,25 +63,27 @@ export default async function SalesReportPage() {
   return (
     <div className="space-y-6">
       <PageHeader title="Laporan Penjualan" description="Analisis penjualan per periode">
+        <ReportPeriodTabs path="/reports/sales" activePeriod={period} />
         <CsvExportButton filename="laporan-penjualan.csv" headers={["Nomor", "Restoran", "Tanggal", "Pendapatan", "HPP", "Biaya", "Laba", "Margin"]} rows={issuedInvoices.map((invoice) => [invoice.invoiceNumber, invoice.customerName, invoice.issueDate, invoice.total, invoice.totalProductCost, invoice.totalDirectCost, invoice.transactionProfit, invoice.transactionMargin])} />
       </PageHeader>
 
-      <div className="grid grid-cols-1 gap-3 min-[430px]:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 lg:gap-4">
+      <div className="grid grid-cols-1 gap-3 min-[430px]:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 lg:gap-4">
         <MetricCard accent="emerald" title="Total Pendapatan" value={totalRevenue} isCurrency />
         <MetricCard accent="sky" title="Total Invoice" value={issuedInvoices.length} suffix="invoice" />
-        <MetricCard accent="blue"
-          title="Rata-rata Invoice"
-          value={issuedInvoices.length ? totalRevenue / issuedInvoices.length : 0}
-          isCurrency
-        />
         <MetricCard accent="blue"
           title="Laba Transaksi"
           value={totalProfit}
           isCurrency
           internal
         />
-        <MetricCard accent="amber" title="HPP Produk" value={totalHPP} isCurrency internal />
-        <MetricCard accent="violet" title="Total Nilai Persediaan" value={totalStockValue} isCurrency internal />
+        <MetricCard
+          accent="amber"
+          title="Modal"
+          value={totalHPP + totalStockValue}
+          isCurrency
+          suffix="HPP + persediaan"
+          internal
+        />
       </div>
 
       <SalesChart data={salesData} periodLabel={periodLabel} />
@@ -71,18 +96,18 @@ export default async function SalesReportPage() {
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/30 hover:bg-muted/30">
-                <TableHead className="text-xs font-semibold">Nomor</TableHead>
-                <TableHead className="text-xs font-semibold">Restoran</TableHead>
-                <TableHead className="text-xs font-semibold">Tanggal</TableHead>
-                <TableHead className="text-xs font-semibold text-right">Pendapatan</TableHead>
-                <TableHead className="text-xs font-semibold text-right">HPP</TableHead>
-                <TableHead className="text-xs font-semibold text-right">Biaya Langsung</TableHead>
-                <TableHead className="text-xs font-semibold text-right">Laba</TableHead>
-                <TableHead className="text-xs font-semibold text-right">Margin</TableHead>
+                <SortableHeader label="Nomor" href={getSortHref("/reports/sales", period, "number", sort, direction)} active={sort === "number"} direction={direction} />
+                <SortableHeader label="Restoran" href={getSortHref("/reports/sales", period, "customer", sort, direction)} active={sort === "customer"} direction={direction} />
+                <SortableHeader label="Tanggal" href={getSortHref("/reports/sales", period, "issueDate", sort, direction)} active={sort === "issueDate"} direction={direction} />
+                <SortableHeader label="Pendapatan" href={getSortHref("/reports/sales", period, "revenue", sort, direction)} active={sort === "revenue"} direction={direction} className="text-right" />
+                <SortableHeader label="HPP" href={getSortHref("/reports/sales", period, "hpp", sort, direction)} active={sort === "hpp"} direction={direction} className="text-right" />
+                <SortableHeader label="Biaya Langsung" href={getSortHref("/reports/sales", period, "directCost", sort, direction)} active={sort === "directCost"} direction={direction} className="text-right" />
+                <SortableHeader label="Laba" href={getSortHref("/reports/sales", period, "profit", sort, direction)} active={sort === "profit"} direction={direction} className="text-right" />
+                <SortableHeader label="Margin" href={getSortHref("/reports/sales", period, "margin", sort, direction)} active={sort === "margin"} direction={direction} className="text-right" />
               </TableRow>
             </TableHeader>
             <TableBody>
-              {issuedInvoices.map((inv) => (
+              {sortedInvoices.map((inv) => (
                 <TableRow key={inv.id} className="hover:bg-muted/20">
                   <TableCell className="text-xs font-mono font-medium">
                     {inv.invoiceNumber ?? "DRAFT"}
@@ -117,7 +142,7 @@ export default async function SalesReportPage() {
           {issuedInvoices.length === 0 ? (
             <p className="px-5 py-12 text-center text-sm text-muted-foreground">Belum ada invoice penjualan pada periode ini.</p>
           ) : (
-            issuedInvoices.map((invoice) => (
+            sortedInvoices.map((invoice) => (
               <article key={invoice.id} className="space-y-3 p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">

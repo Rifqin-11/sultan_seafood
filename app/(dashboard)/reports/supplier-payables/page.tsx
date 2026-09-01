@@ -8,20 +8,47 @@ import { getSupplierPayablesAction } from "@/lib/actions/supplier-payables";
 import { getSuppliersAction } from "@/lib/actions/suppliers";
 import { getProductsAction } from "@/lib/actions/products";
 import { requireRole } from "@/lib/security/auth";
+import { ReportPeriodTabs } from "@/components/reports/report-period-tabs";
+import { compareValues, normalizeSortDirection } from "@/lib/report-sort";
+import { getReportPeriodRange, getTodayJakarta, normalizeReportPeriod } from "@/lib/report-period";
 
 export const metadata: Metadata = { title: "Hutang Supplier" };
 
-export default async function SupplierPayablesPage() {
+export default async function SupplierPayablesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
   await requireRole(["OWNER", "FINANCE"]);
+  const params = await searchParams;
+  const period = normalizeReportPeriod(typeof params.period === "string" ? params.period : undefined);
+  const sort = typeof params.sort === "string" ? params.sort : "billDate";
+  const direction = normalizeSortDirection(typeof params.direction === "string" ? params.direction : undefined);
   const [bills, suppliers, products] = await Promise.all([getSupplierPayablesAction(), getSuppliersAction(), getProductsAction()]);
-  const outstanding = bills.filter((bill) => bill.status !== "PAID" && bill.status !== "VOID");
+  const range = getReportPeriodRange(period, getTodayJakarta(), bills.map((bill) => bill.billDate));
+  const periodBills = bills.filter((bill) => bill.billDate >= range.startDate && bill.billDate <= range.endDate);
+  const sortedBills = [...periodBills].sort((a, b) => {
+    const values: Record<string, [string | number | undefined, string | number | undefined]> = {
+      billNumber: [a.billNumber, b.billNumber],
+      supplier: [a.supplierName, b.supplierName],
+      billDate: [a.billDate, b.billDate],
+      dueDate: [a.dueDate, b.dueDate],
+      total: [a.total, b.total],
+      remaining: [a.remainingBalance, b.remainingBalance],
+      status: [a.status, b.status],
+    };
+    const [left, right] = values[sort] ?? values.billDate;
+    return compareValues(left, right, direction);
+  });
+  const outstanding = periodBills.filter((bill) => bill.status !== "PAID" && bill.status !== "VOID");
   const totalPayables = outstanding.reduce((sum, bill) => sum + bill.remainingBalance, 0);
   const overdue = outstanding.filter((bill) => bill.status === "OVERDUE");
   const overdueAmount = overdue.reduce((sum, bill) => sum + bill.remainingBalance, 0);
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Hutang Supplier" description="Pantau tagihan pembelian dan pembayaran yang harus diselesaikan ke supplier.">
+      <PageHeader title="Hutang Supplier" description={`Pantau tagihan pembelian dan pembayaran yang harus diselesaikan ke supplier · ${range.label}`}>
+        <ReportPeriodTabs path="/reports/supplier-payables" activePeriod={period} />
         <AddSupplierBillDialog suppliers={suppliers} products={products} />
       </PageHeader>
 
@@ -31,7 +58,7 @@ export default async function SupplierPayablesPage() {
         <MetricCard accent="orange" title="Nilai Jatuh Tempo" value={overdueAmount} isCurrency icon={ReceiptText} />
       </div>
 
-      <SupplierPayablesTable bills={bills} />
+      <SupplierPayablesTable bills={sortedBills} sort={sort} direction={direction} period={period} />
     </div>
   );
 }

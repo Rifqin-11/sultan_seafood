@@ -1,0 +1,35 @@
+import Link from "next/link";
+import type { ReportPeriod } from "@/lib/report-period";
+
+const tabs: Array<{ value: ReportPeriod; label: string }> = [
+  { value: "1d", label: "1 hari" },
+  { value: "7d", label: "7 hari" },
+  { value: "30d", label: "30 hari" },
+  { value: "all", label: "Semua" },
+];
+
+interface ReportPeriodTabsProps {
+  path: string;
+  activePeriod: ReportPeriod;
+  className?: string;
+}
+
+export function ReportPeriodTabs({ path, activePeriod, className }: ReportPeriodTabsProps) {
+  return (
+    <nav className={`flex items-center rounded-xl border border-border bg-muted/40 p-1 ${className ?? ""}`} aria-label="Pilih periode laporan">
+      {tabs.map((tab) => {
+        const isActive = activePeriod === tab.value;
+        return (
+          <Link
+            key={tab.value}
+            href={`${path}?period=${tab.value}`}
+            aria-current={isActive ? "page" : undefined}
+            className={`rounded-lg px-3 py-1.5 text-center text-xs font-semibold whitespace-nowrap transition-[background-color,color,box-shadow] duration-200 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/25 ${isActive ? "bg-white text-foreground shadow-[0_1px_5px_rgba(17,17,17,0.08)]" : "text-muted-foreground hover:text-foreground"}`}
+          >
+            {tab.label}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
