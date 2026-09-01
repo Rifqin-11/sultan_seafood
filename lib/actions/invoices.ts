@@ -53,13 +53,15 @@ export async function createInvoiceAction(payload: CreateInvoicePayload) {
   }
 }
 
-export async function getInvoicesAction(startDate?: string, endDate?: string): Promise<Invoice[]> {
+export async function getInvoicesAction(startDate?: string, endDate?: string, includeDirectCosts = false, includeItems = false): Promise<Invoice[]> {
   const user = await requireApprovedUser();
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("get_invoices_secure_range", {
     p_start_date: startDate ?? null,
     p_end_date: endDate ?? null,
     p_limit: 5000,
+    p_include_items: includeItems,
+    p_include_direct_costs: includeDirectCosts,
   });
   if (error) throw new Error(error.message);
   const rows = Array.isArray(data) ? data as Invoice[] : [];

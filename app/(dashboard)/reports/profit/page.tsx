@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/app-shell/page-header";
-import { getDashboardDataAction } from "@/lib/actions/dashboard";
+import { getExpensesAction } from "@/lib/actions/expenses";
+import { getInvoicesAction } from "@/lib/actions/invoices";
 import { formatCurrency, formatPercent, getDirectCostLabel } from "@/lib/utils";
 import { MetricCard } from "@/components/dashboard/metric-card";
 import { ProfitChart } from "@/components/dashboard/profit-chart";
@@ -8,7 +9,7 @@ import { InternalCostCard } from "@/components/dashboard/internal-cost-card";
 import type { DirectCostCategory, InternalCostBreakdown } from "@/types";
 import { requireRole } from "@/lib/security/auth";
 import { ReportPeriodTabs } from "@/components/reports/report-period-tabs";
-import { normalizeReportPeriod } from "@/lib/report-period";
+import { getReportPeriodRange, getTodayJakarta, normalizeReportPeriod } from "@/lib/report-period";
 
 export const metadata: Metadata = {
   title: "Laporan Laba",
@@ -22,7 +23,30 @@ export default async function ProfitReportPage({
   await requireRole(["OWNER", "FINANCE"]);
   const params = await searchParams;
   const period = normalizeReportPeriod(typeof params.period === "string" ? params.period : undefined);
-  const { periodInvoices: issuedInvoices, periodExpenses, profitData, periodLabel } = await getDashboardDataAction(period);
+  const range = getReportPeriodRange(period, getTodayJakarta());
+  const [invoices, periodExpenses] = await Promise.all([
+    getInvoicesAction(period === "all" ? undefined : range.startDate, period === "all" ? undefined : range.endDate, true),
+    getExpensesAction(period === "all" ? undefined : range.startDate, period === "all" ? undefined : range.endDate),
+  ]);
+  const issuedInvoices = invoices.filter((invoice) => invoice.status !== "DRAFT" && invoice.status !== "VOID");
+  const daily = new Map<string, { profit: number; revenue: number }>();
+  issuedInvoices.forEach((invoice) => {
+    const value = daily.get(invoice.issueDate) ?? { profit: 0, revenue: 0 };
+    value.profit += invoice.transactionProfit;
+    value.revenue += invoice.total;
+    daily.set(invoice.issueDate, value);
+  });
+  periodExpenses.forEach((expense) => {
+    const value = daily.get(expense.expenseDate) ?? { profit: 0, revenue: 0 };
+    value.profit -= expense.amount;
+    daily.set(expense.expenseDate, value);
+  });
+  const profitData = [...daily].sort(([a], [b]) => a.localeCompare(b)).map(([date, value]) => ({
+    date: new Date(`${date}T00:00:00`).toLocaleDateString("id-ID", { day: "2-digit" }),
+    profit: value.profit,
+    margin: value.revenue > 0 ? (value.profit / value.revenue) * 100 : 0,
+  }));
+  const periodLabel = range.label;
 
   const totalRevenue = issuedInvoices.reduce((s, i) => s + i.total, 0);
   const totalHPP = issuedInvoices.reduce((s, i) => s + i.totalProductCost, 0);

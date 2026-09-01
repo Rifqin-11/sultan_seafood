@@ -12,11 +12,11 @@ import {
 } from "@/components/ui/table";
 import { AlertCircle } from "lucide-react";
 import { requireRole } from "@/lib/security/auth";
-import { getDashboardDataAction } from "@/lib/actions/dashboard";
+import { getInvoicesAction } from "@/lib/actions/invoices";
 import { ReportPeriodTabs } from "@/components/reports/report-period-tabs";
 import { SortableHeader } from "@/components/reports/sortable-header";
 import { compareValues, getSortHref, normalizeSortDirection } from "@/lib/report-sort";
-import { normalizeReportPeriod } from "@/lib/report-period";
+import { getReportPeriodRange, getTodayJakarta, normalizeReportPeriod } from "@/lib/report-period";
 
 export const metadata: Metadata = {
   title: "Piutang",
@@ -32,7 +32,8 @@ export default async function ReceivablesPage({
   const period = normalizeReportPeriod(typeof params.period === "string" ? params.period : undefined);
   const sort = typeof params.sort === "string" ? params.sort : "issueDate";
   const direction = normalizeSortDirection(typeof params.direction === "string" ? params.direction : undefined);
-  const { periodInvoices: invoices } = await getDashboardDataAction(period);
+  const range = getReportPeriodRange(period, getTodayJakarta());
+  const invoices = await getInvoicesAction(period === "all" ? undefined : range.startDate, period === "all" ? undefined : range.endDate);
 
   const unpaid = invoices.filter(
     (inv) =>

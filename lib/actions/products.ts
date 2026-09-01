@@ -5,6 +5,14 @@ import { createClient } from "@/lib/supabase/server";
 import { normalizeActionError, requireApprovedUser, requireRole } from "@/lib/security/auth";
 import type { Product, ProductStatus } from "@/types";
 
+export interface ProductOption {
+  id: string;
+  name: string;
+  size?: string;
+  defaultUnit: string;
+  status: ProductStatus;
+}
+
 export interface CreateProductPayload { sku?: string; name: string; category: string; size?: string; defaultUnit: string; defaultSellingPrice?: number; activeCost?: number }
 export interface UpdateProductPayload {
   id: string;
@@ -138,4 +146,21 @@ export async function getProductsAction(): Promise<Product[]> {
       updatedAt: String(product.updated_at),
     };
   });
+}
+
+export async function getProductOptionsAction(): Promise<ProductOption[]> {
+  await requireApprovedUser();
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("products")
+    .select("id,name,size,default_unit,status")
+    .order("name", { ascending: true })
+    .limit(5000);
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((product) => ({
+    id: product.id,
+    name: product.name,
+    size: product.size ?? undefined,
+    defaultUnit: product.default_unit,
+    status: product.status as ProductStatus,
+  }));
 }

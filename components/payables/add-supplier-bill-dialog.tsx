@@ -8,14 +8,15 @@ import { CurrencyInput } from "@/components/ui/currency-input";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { createSupplierBillAction } from "@/lib/actions/supplier-payables";
 import { createStockReceiptAction } from "@/lib/actions/inventory";
-import type { Product, Supplier } from "@/types";
+import type { Supplier } from "@/types";
+import type { ProductOption } from "@/lib/actions/products";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { formatCurrency } from "@/lib/utils";
 
 interface AddSupplierBillDialogProps {
   suppliers: Supplier[];
-  products: Product[];
+  products: ProductOption[];
 }
 
 const today = () => new Date().toISOString().slice(0, 10);

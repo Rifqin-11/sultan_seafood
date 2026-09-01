@@ -36,7 +36,7 @@ export async function getDashboardDataAction(periodParam?: string) {
   const previousStartKey = dateKey(previousStart);
   const previousEndKey = dateKey(previousEnd);
   const [invoices, previousInvoices, expenses] = await Promise.all([
-    getInvoicesAction(period === "all" ? undefined : selectedStart, period === "all" ? undefined : selectedEnd),
+    getInvoicesAction(period === "all" ? undefined : selectedStart, period === "all" ? undefined : selectedEnd, true),
     period === "all" ? Promise.resolve([]) : getInvoicesAction(previousStartKey, previousEndKey),
     user.role === "STAFF" ? Promise.resolve([]) : getExpensesAction(period === "all" ? undefined : selectedStart, period === "all" ? undefined : selectedEnd),
   ]);

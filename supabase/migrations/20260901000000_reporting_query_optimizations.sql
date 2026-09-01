@@ -3,7 +3,9 @@
 CREATE OR REPLACE FUNCTION public.get_invoices_secure_range(
   p_start_date DATE DEFAULT NULL,
   p_end_date DATE DEFAULT NULL,
-  p_limit INTEGER DEFAULT 5000
+  p_limit INTEGER DEFAULT 5000,
+  p_include_items BOOLEAN DEFAULT FALSE,
+  p_include_direct_costs BOOLEAN DEFAULT FALSE
 )
 RETURNS JSONB
 LANGUAGE plpgsql STABLE SECURITY DEFINER
@@ -32,15 +34,15 @@ BEGIN
       'transactionProfit', CASE WHEN role_value IN ('OWNER','FINANCE') THEN i.transaction_profit ELSE 0 END,
       'transactionMargin', CASE WHEN role_value IN ('OWNER','FINANCE') THEN i.transaction_margin ELSE 0 END,
       'notes', i.notes, 'createdBy', i.created_by, 'createdAt', i.created_at, 'updatedAt', i.updated_at,
-      'items', COALESCE((SELECT jsonb_agg(jsonb_build_object(
+      'items', CASE WHEN p_include_items THEN COALESCE((SELECT jsonb_agg(jsonb_build_object(
         'id', ii.id, 'productId', ii.product_id, 'descriptionSnapshot', ii.description_snapshot,
         'quantity', ii.quantity, 'marginQuantity', ii.margin_quantity, 'billingQuantity', ii.quantity + ii.margin_quantity,
         'unit', ii.unit, 'sellingPriceSnapshot', ii.selling_price_snapshot,
         'purchasePriceSnapshot', CASE WHEN role_value IN ('OWNER','FINANCE') THEN ii.purchase_price_snapshot ELSE 0 END,
         'subtotal', ii.subtotal, 'totalPurchaseCost', CASE WHEN role_value IN ('OWNER','FINANCE') THEN ii.product_cost_total ELSE 0 END,
         'productProfit', CASE WHEN role_value IN ('OWNER','FINANCE') THEN ii.profit ELSE 0 END
-      ) ORDER BY ii.created_at) FROM public.invoice_items ii WHERE ii.invoice_id = i.id), '[]'::jsonb),
-      'directCosts', CASE WHEN role_value IN ('OWNER','FINANCE') THEN COALESCE((SELECT jsonb_agg(jsonb_build_object(
+      ) ORDER BY ii.created_at) FROM public.invoice_items ii WHERE ii.invoice_id = i.id), '[]'::jsonb) ELSE '[]'::jsonb END,
+      'directCosts', CASE WHEN p_include_direct_costs AND role_value IN ('OWNER','FINANCE') THEN COALESCE((SELECT jsonb_agg(jsonb_build_object(
         'id', dc.id, 'category', dc.category, 'name', dc.name, 'amount', dc.amount, 'notes', dc.notes
       ) ORDER BY dc.created_at) FROM public.invoice_direct_costs dc WHERE dc.invoice_id = i.id), '[]'::jsonb) ELSE '[]'::jsonb END
     ) AS row_data
@@ -79,5 +81,5 @@ CREATE INDEX IF NOT EXISTS idx_supplier_bills_bill_date
 CREATE INDEX IF NOT EXISTS idx_stock_movements_occurred_at
   ON public.stock_movements(occurred_at DESC);
 
-GRANT EXECUTE ON FUNCTION public.get_invoices_secure_range(DATE, DATE, INTEGER) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.get_invoices_secure_range(DATE, DATE, INTEGER, BOOLEAN, BOOLEAN) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.get_inventory_summary() TO authenticated;

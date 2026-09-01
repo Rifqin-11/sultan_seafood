@@ -1,5 +1,6 @@
 import "server-only";
 
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { ROLE_PERMISSIONS, type Permission, type ProfileStatus, type Role } from "@/types";
 import { AuthorizationError } from "@/lib/security/errors";
@@ -18,7 +19,7 @@ function isRole(value: unknown): value is Role {
   return value === "OWNER" || value === "FINANCE" || value === "STAFF";
 }
 
-export async function getApprovedUser(): Promise<ApprovedUser | null> {
+async function getApprovedUserUncached(): Promise<ApprovedUser | null> {
   const supabase = await createClient();
   const { data: authData, error: authError } = await supabase.auth.getUser();
 
@@ -42,6 +43,10 @@ export async function getApprovedUser(): Promise<ApprovedUser | null> {
     status: "APPROVED",
   };
 }
+
+// Keep auth/profile lookup request-scoped when several server actions run
+// during the same page render.
+export const getApprovedUser = cache(getApprovedUserUncached);
 
 export async function requireApprovedUser(): Promise<ApprovedUser> {
   const user = await getApprovedUser();

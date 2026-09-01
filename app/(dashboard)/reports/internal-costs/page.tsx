@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/app-shell/page-header";
-import { getDashboardDataAction } from "@/lib/actions/dashboard";
+import { getInvoicesAction } from "@/lib/actions/invoices";
 import { formatCurrency, formatPercent, getDirectCostLabel } from "@/lib/utils";
 import { InternalCostCard } from "@/components/dashboard/internal-cost-card";
 import { MetricCard } from "@/components/dashboard/metric-card";
 import type { DirectCostCategory, InternalCostBreakdown } from "@/types";
 import { requireRole } from "@/lib/security/auth";
 import { ReportPeriodTabs } from "@/components/reports/report-period-tabs";
-import { normalizeReportPeriod } from "@/lib/report-period";
+import { getReportPeriodRange, getTodayJakarta, normalizeReportPeriod } from "@/lib/report-period";
 
 export const metadata: Metadata = {
   title: "Biaya Internal",
@@ -21,7 +21,10 @@ export default async function InternalCostsReportPage({
   await requireRole(["OWNER", "FINANCE"]);
   const params = await searchParams;
   const period = normalizeReportPeriod(typeof params.period === "string" ? params.period : undefined);
-  const { periodInvoices: issuedInvoices, periodLabel } = await getDashboardDataAction(period);
+  const range = getReportPeriodRange(period, getTodayJakarta());
+  const invoices = await getInvoicesAction(period === "all" ? undefined : range.startDate, period === "all" ? undefined : range.endDate, true);
+  const issuedInvoices = invoices.filter((invoice) => invoice.status !== "DRAFT" && invoice.status !== "VOID");
+  const periodLabel = range.label;
 
   const totalDirectCost = issuedInvoices.reduce((s, i) => s + i.totalDirectCost, 0);
 

@@ -6,7 +6,7 @@ import { AddSupplierBillDialog } from "@/components/payables/add-supplier-bill-d
 import { SupplierPayablesTable } from "@/components/payables/supplier-payables-table";
 import { getSupplierPayablesAction } from "@/lib/actions/supplier-payables";
 import { getSuppliersAction } from "@/lib/actions/suppliers";
-import { getProductsAction } from "@/lib/actions/products";
+import { getProductOptionsAction } from "@/lib/actions/products";
 import { requireRole } from "@/lib/security/auth";
 import { ReportPeriodTabs } from "@/components/reports/report-period-tabs";
 import { compareValues, normalizeSortDirection } from "@/lib/report-sort";
@@ -28,7 +28,7 @@ export default async function SupplierPayablesPage({
   const [periodBills, suppliers, products] = await Promise.all([
     getSupplierPayablesAction(period === "all" ? undefined : range.startDate, period === "all" ? undefined : range.endDate),
     getSuppliersAction(),
-    getProductsAction(),
+    getProductOptionsAction(),
   ]);
   const sortedBills = [...periodBills].sort((a, b) => {
     const values: Record<string, [string | number | undefined, string | number | undefined]> = {
