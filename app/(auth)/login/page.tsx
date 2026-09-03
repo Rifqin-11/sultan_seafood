@@ -67,7 +67,7 @@ export default function LoginPage() {
               <h2 className="max-w-[11ch] text-4xl font-semibold leading-[0.98] tracking-[-0.06em] xl:text-5xl">Kelola seafood lebih mudah.</h2>
               <p className="mt-4 max-w-sm text-sm leading-6 text-white/75">Pantau muatan, invoice, pembayaran, dan alur operasional Sultan Seafood dari satu workspace.</p>
             </div>
-            <div className="flex items-end justify-between gap-4 text-xs text-white/65"><span>Ruang kerja internal Sultan Seafood</span><Fish className="size-4" /></div>
+            <div className="flex items-end justify-between gap-4 text-xs text-white/65"><span>Designed &amp; Developed by <a href="https://github.com/Rifqin-11" target="_blank" rel="noreferrer" className="font-semibold text-white underline decoration-white/40 underline-offset-4 transition-colors hover:text-white hover:decoration-white">Rifqin11</a></span><Fish className="size-4" /></div>
           </div>
         </section>
 

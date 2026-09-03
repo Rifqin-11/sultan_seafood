@@ -159,10 +159,17 @@ export function InvoiceListTable({ initialInvoices = [], role, company }: Invoic
         )}
         {inv.status !== "DRAFT" && (
           <DropdownMenuItem>
-            <Link href={`/preview/invoices/${inv.id}`} target="_blank" rel="noopener noreferrer" className="flex w-full items-center">
-              <FileText className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
-              Lihat Invoice Digital
-            </Link>
+            {inv.publicToken ? (
+              <Link href={`/preview/invoices/${inv.publicToken}`} target="_blank" rel="noopener noreferrer" className="flex w-full items-center">
+                <FileText className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
+                Lihat Invoice Digital
+              </Link>
+            ) : (
+              <span className="flex w-full cursor-not-allowed items-center text-muted-foreground/50" title="Token publik invoice belum tersedia">
+                <FileText className="mr-2 h-3.5 w-3.5" />
+                Invoice Digital Belum Tersedia
+              </span>
+            )}
           </DropdownMenuItem>
         )}
         <DropdownMenuItem onClick={() => handleDownload(inv)} disabled={downloadingId === inv.id} className="cursor-pointer">

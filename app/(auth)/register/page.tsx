@@ -83,7 +83,7 @@ export default function RegisterPage() {
           <div className="relative flex h-full min-h-0 flex-col justify-between p-7 text-white xl:p-9">
             <div className="flex items-center gap-3"><span className="flex size-10 items-center justify-center rounded-xl border border-white/25 bg-white/15 backdrop-blur-sm"><Fish className="size-5" /></span><div><p className="text-sm font-semibold tracking-[-0.02em]">Sultan Seafood</p><p className="text-[10px] uppercase tracking-[0.18em] text-white/65">Workspace operasional</p></div></div>
             <div className="max-w-md"><p className="mb-3 text-xs font-medium text-white/75">Ruang kerja untuk tim</p><h2 className="max-w-[11ch] text-4xl font-semibold leading-[0.98] tracking-[-0.06em] xl:text-5xl">Mulai kelola seafood dengan rapi.</h2><p className="mt-4 max-w-sm text-sm leading-6 text-white/75">Buat akun untuk mencatat muatan, invoice, pembayaran, dan aktivitas Sultan Seafood.</p></div>
-            <div className="flex items-end justify-between gap-4 text-xs text-white/65"><span>Akun baru dimulai sebagai Staff</span><UserPlus className="size-4" /></div>
+            <div className="flex items-end justify-between gap-4 text-xs text-white/65"><span>Designed &amp; Developed by <a href="https://github.com/Rifqin-11" target="_blank" rel="noreferrer" className="font-semibold text-white underline decoration-white/40 underline-offset-4 transition-colors hover:text-white hover:decoration-white">Rifqin11</a></span><UserPlus className="size-4" /></div>
           </div>
         </section>
 
