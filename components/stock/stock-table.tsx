@@ -143,10 +143,14 @@ export function StockTable({ balances, movements, batches = [], products = [], v
               {filteredBalances.map((balance) => (
                 <article key={balance.productId} className="space-y-3 p-4">
                   <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="truncate font-semibold text-stone-900">{balance.productName}</p>
+                     <div className="min-w-0">
+                       <p className="truncate font-semibold text-stone-900">{balance.productName}</p>
                         <p className="mt-1 text-xs text-stone-500">{balance.sku || "Tanpa SKU"}</p>
-                    </div>
+                        <p className="mt-2 text-xs text-stone-600">
+                          <span className="font-medium text-stone-400">Ukuran</span>{" "}
+                          {balance.size || "—"}
+                        </p>
+                     </div>
                     {lowStock(balance) && <Badge variant="outline" className="shrink-0 border-red-200 bg-red-50 text-[10px] text-red-700">Menipis</Badge>}
                   </div>
                    <div className="grid grid-cols-2 gap-2 rounded-xl bg-stone-50 p-3">
