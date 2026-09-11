@@ -1,15 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { Boxes, History, Tags } from "lucide-react";
+import { Boxes, History, Scale, Tags } from "lucide-react";
 import { AddCustomerPriceDialog } from "@/components/pricing/add-customer-price-dialog";
 import { AddProductDialog } from "@/components/products/add-product-dialog";
 import { AddStockReceiptDialog } from "@/components/stock/add-stock-receipt-dialog";
 import { SellingPriceTable } from "@/components/pricing/selling-price-table";
 import { StockTable } from "@/components/stock/stock-table";
-import type { Customer, CustomerPrice, Product, StockBalance, StockBatch, StockMovement, Supplier } from "@/types";
+import { StockWeightDifferenceTable } from "@/components/stock/stock-weight-difference-table";
+import type { Customer, CustomerPrice, Product, StockBalance, StockBatch, StockMovement, StockWeightDifference, Supplier } from "@/types";
 
-type StockTab = "stock" | "movements" | "selling-prices";
+type StockTab = "stock" | "movements" | "weight-differences" | "selling-prices";
 
 interface StockTabsProps {
   balances: StockBalance[];
@@ -19,15 +20,17 @@ interface StockTabsProps {
   products: Product[];
   customers: Customer[];
   suppliers: Supplier[];
+  weightDifferences: StockWeightDifference[];
 }
 
 const tabs: Array<{ id: StockTab; label: string; icon: typeof Boxes }> = [
   { id: "stock", label: "Produk & Stok", icon: Boxes },
   { id: "movements", label: "Mutasi Stok", icon: History },
+  { id: "weight-differences", label: "Selisih Timbangan", icon: Scale },
   { id: "selling-prices", label: "Harga Jual", icon: Tags },
 ];
 
-export function StockTabs({ balances, movements, batches, customerPrices, products, customers, suppliers }: StockTabsProps) {
+export function StockTabs({ balances, movements, batches, customerPrices, products, customers, suppliers, weightDifferences }: StockTabsProps) {
   const [activeTab, setActiveTab] = useState<StockTab>("stock");
   const activeProducts = products.filter((product) => product.status === "ACTIVE");
   const activeCustomers = customers.filter((customer) => customer.status === "ACTIVE");
@@ -60,6 +63,7 @@ export function StockTabs({ balances, movements, batches, customerPrices, produc
       <div role="tabpanel" aria-label={active.label}>
         {activeTab === "stock" && <><div className="mb-4 flex flex-wrap justify-end gap-2"><AddProductDialog /><AddStockReceiptDialog products={products} suppliers={suppliers} /></div><StockTable balances={balances} movements={movements} batches={batches} products={products} view="balances" /></>}
         {activeTab === "movements" && <StockTable balances={balances} movements={movements} view="movements" />}
+        {activeTab === "weight-differences" && <StockWeightDifferenceTable rows={weightDifferences} />}
         {activeTab === "selling-prices" && <><div className="mb-4 flex justify-end"><AddCustomerPriceDialog products={activeProducts} customers={activeCustomers} /></div><SellingPriceTable products={activeProducts} customers={activeCustomers} customPrices={customerPrices} /></>}
       </div>
     </section>

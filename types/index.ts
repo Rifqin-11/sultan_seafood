@@ -116,6 +116,22 @@ export interface StockMovement {
   occurredAt: string;
 }
 
+export interface StockWeightDifference {
+  id: string;
+  productId: string;
+  productName: string;
+  unit: string;
+  supplierName?: string;
+  receiptNumber?: string;
+  receivedDate: string;
+  manualQuantity: number;
+  digitalQuantity: number;
+  difference: number;
+  unitCost: number;
+  sellingPrice: number;
+  estimatedProfit: number;
+}
+
 export interface ProductCost {
   id: string;
   productId: string;

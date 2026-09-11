@@ -4,7 +4,7 @@ import { calculateInvoice, formatCurrency } from "../lib/utils.ts";
 import { createCsv } from "../lib/csv.ts";
 import { getEffectiveInvoiceStatus, isPublicInvoice, sanitizeInvoiceForRole } from "../lib/domain/invoices.ts";
 import { ROLE_PERMISSIONS, type Invoice } from "../types/index.ts";
-import { calculateMargin, calculateWeightDifference, calculateWeightedAverageCost, getStockMovementLabel, getStockStatus, resolveReceiptQuantities, validateStockAdjustment, validateStockReceiptCancellation, validateStockReceiptPayload, validateStockSettings } from "../lib/domain/inventory.ts";
+import { calculateMargin, calculateWeightDifference, calculateWeightDifferenceProfit, calculateWeightedAverageCost, getStockMovementLabel, getStockStatus, resolveReceiptQuantities, validateStockAdjustment, validateStockReceiptCancellation, validateStockReceiptPayload, validateStockSettings } from "../lib/domain/inventory.ts";
 import { normalizeActionError } from "../lib/security/errors.ts";
 
 const invoice: Invoice = {
@@ -67,6 +67,8 @@ test("stock receipt validation accepts numeric formatted-currency values", () =>
     receivedDate: "2026-08-03",
     items: [{ productId: "p1", quantity: 2, unitCost: 85000 }],
   }), null);
+  assert.equal(calculateWeightDifferenceProfit(2, 100_000), 200_000);
+  assert.equal(calculateWeightDifferenceProfit(-2, 100_000), 0);
 });
 
 test("stock receipt separates payment weight from digital inventory weight", () => {

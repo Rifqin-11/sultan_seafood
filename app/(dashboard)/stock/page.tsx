@@ -15,7 +15,7 @@ export const metadata: Metadata = { title: "Stok, Harga & Modal" };
 
 export default async function StockPage() {
   await requireRole(["OWNER", "FINANCE"]);
-  const [{ balances, movements, batches }, products, suppliers, customers, customerPrices] = await Promise.all([
+   const [{ balances, movements, batches, weightDifferences }, products, suppliers, customers, customerPrices] = await Promise.all([
     getInventoryAction(),
     getProductsAction(),
     getSuppliersAction(),
@@ -43,6 +43,7 @@ export default async function StockPage() {
       products={products}
       customers={customers}
       suppliers={suppliers}
+      weightDifferences={weightDifferences}
     />
   </div>;
 }
