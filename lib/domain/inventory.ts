@@ -1,6 +1,11 @@
 export interface StockReceiptItemInput {
   productId: string;
-  quantity: number;
+  /** Berat yang menjadi dasar pembayaran ke supplier (timbangan pasar/manual). */
+  manualQuantity?: number;
+  /** Berat aktual yang masuk ke gudang (timbangan digital). */
+  digitalQuantity?: number;
+  /** Backward-compatible alias for older callers. */
+  quantity?: number;
   unitCost: number;
 }
 
@@ -32,6 +37,17 @@ export function calculateWeightedAverageCost(
   return ((currentQuantity * currentAverageCost) + (incomingQuantity * incomingUnitCost)) / quantityAfter;
 }
 
+export function calculateWeightDifference(manualQuantity: number, digitalQuantity: number) {
+  return Math.round((digitalQuantity - manualQuantity) * 1000) / 1000;
+}
+
+export function resolveReceiptQuantities(item: Pick<StockReceiptItemInput, "manualQuantity" | "digitalQuantity" | "quantity">) {
+  const fallback = item.quantity;
+  const manualQuantity = item.manualQuantity ?? fallback ?? 0;
+  const digitalQuantity = item.digitalQuantity ?? fallback ?? manualQuantity;
+  return { manualQuantity, digitalQuantity, difference: calculateWeightDifference(manualQuantity, digitalQuantity) };
+}
+
 export function calculateMargin(sellingPrice: number, averageCost: number) {
   const nominal = sellingPrice - averageCost;
   return { nominal, percentage: sellingPrice > 0 ? (nominal / sellingPrice) * 100 : 0 };
@@ -50,7 +66,14 @@ export function validateStockReceiptPayload(payload: StockReceiptInput): string 
   if (payload.dueDate && payload.dueDate < payload.receivedDate) {
     return "Jatuh tempo tidak boleh sebelum tanggal penerimaan.";
   }
-  if (payload.items.some((item) => !item || !item.productId || !Number.isFinite(item.quantity) || item.quantity <= 0 || !Number.isFinite(item.unitCost) || item.unitCost <= 0)) {
+  if (payload.items.some((item) => {
+    if (!item) return true;
+    const quantities = resolveReceiptQuantities(item);
+    return !item || !item.productId
+      || !Number.isFinite(quantities.manualQuantity) || quantities.manualQuantity <= 0
+      || !Number.isFinite(quantities.digitalQuantity) || quantities.digitalQuantity <= 0
+      || !Number.isFinite(item.unitCost) || item.unitCost <= 0;
+  })) {
     return "Semua produk harus memiliki jumlah dan harga beli yang valid.";
   }
   if (new Set(payload.items.map((item) => item.productId)).size !== payload.items.length) {

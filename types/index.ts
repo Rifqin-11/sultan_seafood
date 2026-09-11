@@ -109,6 +109,9 @@ export interface StockMovement {
   receiptNumber?: string;
   receiptCancelledAt?: string;
   purchaseUnitCost?: number;
+  manualQuantity?: number;
+  digitalQuantity?: number;
+  weightDifference?: number;
   notes?: string;
   occurredAt: string;
 }

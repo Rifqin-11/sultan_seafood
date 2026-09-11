@@ -205,7 +205,10 @@ export function StockTable({ balances, movements, batches = [], products = [], v
                         {movement.supplierName ? `Supplier: ${movement.supplierName}` : movement.customerName ? `Restoran: ${movement.customerName}` : movement.notes || "Penyesuaian stok"}
                         {movement.purchaseUnitCost ? ` · harga beli ${formatCurrency(movement.purchaseUnitCost)}/${movement.unit}` : ""}
                         {movement.invoiceNumber ? ` · ${movement.invoiceNumber}` : ""}
-                        {movement.receiptNumber ? ` · ${movement.receiptNumber}` : ""}
+                         {movement.receiptNumber ? ` · ${movement.receiptNumber}` : ""}
+                         {movement.movementType === "PURCHASE_IN" && movement.manualQuantity !== undefined && movement.digitalQuantity !== undefined && movement.manualQuantity !== movement.digitalQuantity
+                           ? ` · manual ${movement.manualQuantity.toFixed(1)} ${movement.unit}, digital ${movement.digitalQuantity.toFixed(1)} ${movement.unit} (selisih ${Math.abs(movement.weightDifference!).toFixed(1)} ${movement.unit})`
+                           : ""}
                       </p>
                     </div>
                   </div>

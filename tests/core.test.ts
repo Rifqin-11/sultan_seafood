@@ -4,7 +4,7 @@ import { calculateInvoice, formatCurrency } from "../lib/utils.ts";
 import { createCsv } from "../lib/csv.ts";
 import { getEffectiveInvoiceStatus, isPublicInvoice, sanitizeInvoiceForRole } from "../lib/domain/invoices.ts";
 import { ROLE_PERMISSIONS, type Invoice } from "../types/index.ts";
-import { calculateMargin, calculateWeightedAverageCost, getStockMovementLabel, getStockStatus, validateStockAdjustment, validateStockReceiptCancellation, validateStockReceiptPayload, validateStockSettings } from "../lib/domain/inventory.ts";
+import { calculateMargin, calculateWeightDifference, calculateWeightedAverageCost, getStockMovementLabel, getStockStatus, resolveReceiptQuantities, validateStockAdjustment, validateStockReceiptCancellation, validateStockReceiptPayload, validateStockSettings } from "../lib/domain/inventory.ts";
 import { normalizeActionError } from "../lib/security/errors.ts";
 
 const invoice: Invoice = {
@@ -66,6 +66,17 @@ test("stock receipt validation accepts numeric formatted-currency values", () =>
     supplierId: "supplier",
     receivedDate: "2026-08-03",
     items: [{ productId: "p1", quantity: 2, unitCost: 85000 }],
+  }), null);
+});
+
+test("stock receipt separates payment weight from digital inventory weight", () => {
+  const quantities = resolveReceiptQuantities({ manualQuantity: 6.5, digitalQuantity: 6.9 });
+  assert.deepEqual(quantities, { manualQuantity: 6.5, digitalQuantity: 6.9, difference: 0.4 });
+  assert.equal(calculateWeightDifference(6.5, 6.9), 0.4);
+  assert.equal(validateStockReceiptPayload({
+    supplierId: "supplier",
+    receivedDate: "2026-08-03",
+    items: [{ productId: "p1", manualQuantity: 6.5, digitalQuantity: 6.9, unitCost: 85000 }],
   }), null);
 });
 
