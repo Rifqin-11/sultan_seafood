@@ -41,8 +41,8 @@ export function calculateWeightDifference(manualQuantity: number, digitalQuantit
   return Math.round((digitalQuantity - manualQuantity) * 1000) / 1000;
 }
 
-export function calculateWeightDifferenceProfit(difference: number, sellingPrice: number) {
-  return Math.round(Math.max(difference, 0) * Math.max(sellingPrice, 0));
+export function calculateWeightDifferenceProfit(difference: number, purchasePrice: number) {
+  return Math.round(Math.max(difference, 0) * Math.max(purchasePrice, 0));
 }
 
 export function resolveReceiptQuantities(item: Pick<StockReceiptItemInput, "manualQuantity" | "digitalQuantity" | "quantity">) {

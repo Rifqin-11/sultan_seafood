@@ -128,7 +128,6 @@ export interface StockWeightDifference {
   digitalQuantity: number;
   difference: number;
   unitCost: number;
-  sellingPrice: number;
   estimatedProfit: number;
 }
 

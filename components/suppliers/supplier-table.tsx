@@ -34,7 +34,6 @@ interface SupplierTableProps {
 
 export function SupplierTable({ suppliers, canManage = false }: SupplierTableProps) {
   const router = useRouter();
-  const [suppliersList, setSuppliersList] = useState<Supplier[]>(suppliers);
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
   const [deletingSupplier, setDeletingSupplier] = useState<Supplier | null>(null);
   const [loadingId, setLoadingId] = useState<string | null>(null);
@@ -57,7 +56,6 @@ export function SupplierTable({ suppliers, canManage = false }: SupplierTablePro
     setLoadingId(idToDelete);
 
     // Optimistic update
-    setSuppliersList((prev) => prev.filter((s) => s.id !== idToDelete));
     setDeletingSupplier(null);
 
     const res = await deleteSupplierAction(idToDelete);
@@ -65,7 +63,6 @@ export function SupplierTable({ suppliers, canManage = false }: SupplierTablePro
     if (res.error) {
       toast.error(`Gagal menghapus: ${res.error}`);
       // Revert optimistic update
-      setSuppliersList(suppliers);
     } else {
       toast.success(res.message || "Supplier berhasil dihapus");
       if (res.isWarning) {
@@ -136,7 +133,7 @@ export function SupplierTable({ suppliers, canManage = false }: SupplierTablePro
               </TableRow>
             </TableHeader>
             <TableBody>
-              {suppliersList.length === 0 ? (
+              {suppliers.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="h-48">
                     <EmptyState
@@ -147,7 +144,7 @@ export function SupplierTable({ suppliers, canManage = false }: SupplierTablePro
                   </TableCell>
                 </TableRow>
               ) : (
-                suppliersList.map((s) => (
+                suppliers.map((s) => (
                   <TableRow key={s.id} className="hover:bg-muted/20">
                     <TableCell className="text-sm font-medium">{s.name}</TableCell>
                     <TableCell className="text-sm">{s.contactName}</TableCell>
@@ -173,7 +170,7 @@ export function SupplierTable({ suppliers, canManage = false }: SupplierTablePro
           </Table>
         </div>
         <div className="divide-y divide-border lg:hidden">
-          {suppliersList.length === 0 ? (
+          {suppliers.length === 0 ? (
             <div className="py-12">
               <EmptyState
                 icon={Users}
@@ -182,7 +179,7 @@ export function SupplierTable({ suppliers, canManage = false }: SupplierTablePro
               />
             </div>
           ) : (
-            suppliersList.map((supplier) => (
+            suppliers.map((supplier) => (
               <article key={supplier.id} className="space-y-4 p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
@@ -212,7 +209,7 @@ export function SupplierTable({ suppliers, canManage = false }: SupplierTablePro
         </div>
         <div className="px-4 py-3 border-t border-border">
           <p className="text-xs text-muted-foreground">
-            {suppliersList.length} supplier
+            {suppliers.length} supplier
           </p>
         </div>
       </div>

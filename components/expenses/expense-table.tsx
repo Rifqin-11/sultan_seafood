@@ -33,7 +33,6 @@ interface ExpenseTableProps {
 
 export function ExpenseTable({ expenses, totalExpenses }: ExpenseTableProps) {
   const router = useRouter();
-  const [expensesList, setExpensesList] = useState<Expense[]>(expenses);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [deletingExpense, setDeletingExpense] = useState<Expense | null>(null);
   const [loadingId, setLoadingId] = useState<string | null>(null);
@@ -44,15 +43,12 @@ export function ExpenseTable({ expenses, totalExpenses }: ExpenseTableProps) {
     setLoadingId(idToDelete);
     
     // Optimistic update
-    setExpensesList((prev) => prev.filter((e) => e.id !== idToDelete));
     setDeletingExpense(null);
 
     const res = await deleteExpenseAction(idToDelete);
     setLoadingId(null);
     if (res.error) {
       toast.error(`Gagal menghapus: ${res.error}`);
-      // Revert optimistic update
-      setExpensesList(expenses);
     } else {
       toast.success(res.message || "Pengeluaran berhasil dihapus");
       router.refresh();
@@ -99,7 +95,7 @@ export function ExpenseTable({ expenses, totalExpenses }: ExpenseTableProps) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {expensesList.length === 0 ? (
+            {expenses.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="h-48">
                   <EmptyState
@@ -110,7 +106,7 @@ export function ExpenseTable({ expenses, totalExpenses }: ExpenseTableProps) {
                 </TableCell>
               </TableRow>
             ) : (
-              expensesList.map((e) => (
+              expenses.map((e) => (
                 <TableRow key={e.id} className="hover:bg-muted/20">
                   <TableCell className="text-sm text-muted-foreground">
                     {formatDate(e.expenseDate)}
@@ -137,12 +133,12 @@ export function ExpenseTable({ expenses, totalExpenses }: ExpenseTableProps) {
         </Table>
       </div>
       <div className="divide-y divide-border lg:hidden">
-        {expensesList.length === 0 ? (
+          {expenses.length === 0 ? (
           <div className="py-12">
             <EmptyState icon={Receipt} title="Tidak ada pengeluaran" description="Belum ada data pengeluaran yang terdaftar." />
           </div>
         ) : (
-          expensesList.map((expense) => (
+          expenses.map((expense) => (
             <article key={expense.id} className="space-y-3 p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
@@ -172,10 +168,10 @@ export function ExpenseTable({ expenses, totalExpenses }: ExpenseTableProps) {
       </div>
       <div className="flex items-center justify-between px-4 py-3 border-t border-border">
         <p className="text-xs text-muted-foreground">
-          {expensesList.length} pengeluaran
+           {expenses.length} pengeluaran
         </p>
         <div className="text-sm font-bold">
-          Total: {formatCurrency(totalExpenses)}
+           Total: {formatCurrency(totalExpenses)}
         </div>
       </div>
 

@@ -52,7 +52,6 @@ interface CustomerTableProps {
 
 export function CustomerTable({ customers, canManage = false }: CustomerTableProps) {
   const router = useRouter();
-  const [customersList, setCustomersList] = useState<Customer[]>(customers);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [deletingCustomer, setDeletingCustomer] = useState<Customer | null>(null);
   const [loadingId, setLoadingId] = useState<string | null>(null);
@@ -62,16 +61,16 @@ export function CustomerTable({ customers, canManage = false }: CustomerTablePro
   const [statusFilter, setStatusFilter] = useState<"ALL" | "ACTIVE" | "INACTIVE">("ALL");
 
   // Stats calculation
-  const totalCount = customersList.length;
-  const activeCount = customersList.filter((c) => c.status === "ACTIVE").length;
-  const inactiveCount = customersList.filter((c) => c.status === "INACTIVE").length;
+  const totalCount = customers.length;
+  const activeCount = customers.filter((c) => c.status === "ACTIVE").length;
+  const inactiveCount = customers.filter((c) => c.status === "INACTIVE").length;
   const avgTermDays = totalCount > 0
-    ? Math.round(customersList.reduce((acc, c) => acc + (c.paymentTermDays || 7), 0) / totalCount)
+    ? Math.round(customers.reduce((acc, c) => acc + (c.paymentTermDays || 7), 0) / totalCount)
     : 7;
 
   // Filtered customer list
   const filteredCustomers = useMemo(() => {
-    return customersList.filter((c) => {
+    return customers.filter((c) => {
       const matchSearch =
         c.name.toLowerCase().includes(search.toLowerCase()) ||
         c.contactName.toLowerCase().includes(search.toLowerCase()) ||
@@ -85,7 +84,7 @@ export function CustomerTable({ customers, canManage = false }: CustomerTablePro
 
       return matchSearch && matchStatus;
     });
-  }, [customersList, search, statusFilter]);
+  }, [customers, search, statusFilter]);
 
   const handleToggleStatus = async (customer: Customer) => {
     setLoadingId(customer.id);
@@ -105,15 +104,12 @@ export function CustomerTable({ customers, canManage = false }: CustomerTablePro
     setLoadingId(idToDelete);
 
     // Optimistic update
-    setCustomersList((prev) => prev.filter((c) => c.id !== idToDelete));
     setDeletingCustomer(null);
 
     const res = await deleteCustomerAction(idToDelete);
     setLoadingId(null);
     if (res.error) {
       toast.error(`Gagal menghapus: ${res.error}`);
-      // Revert optimistic update
-      setCustomersList(customers);
     } else {
       if (res.isWarning) {
         toast.warning(res.message);

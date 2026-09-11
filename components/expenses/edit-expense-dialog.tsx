@@ -22,6 +22,8 @@ import {
 } from "@/components/ui/dialog";
 import { updateExpenseAction } from "@/lib/actions/expenses";
 import type { Expense } from "@/types";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 interface EditExpenseDialogProps {
   expense: Expense;
@@ -30,6 +32,7 @@ interface EditExpenseDialogProps {
 }
 
 export function EditExpenseDialog({ expense, open, onOpenChange }: EditExpenseDialogProps) {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -64,7 +67,9 @@ export function EditExpenseDialog({ expense, open, onOpenChange }: EditExpenseDi
     if (res.error) {
       setError(res.error);
     } else {
+      toast.success(res.message || "Pengeluaran berhasil diperbarui.");
       onOpenChange(false);
+      router.refresh();
     }
   };
 

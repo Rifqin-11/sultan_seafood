@@ -135,7 +135,7 @@ export async function getInventoryAction(): Promise<InventorySnapshot> {
     const manualQuantity = Number(value.manual_quantity ?? value.quantity ?? 0);
     const digitalQuantity = Number(value.digital_quantity ?? value.quantity ?? 0);
     const difference = calculateWeightDifference(manualQuantity, digitalQuantity);
-    const sellingPrice = Number(product?.default_selling_price ?? 0);
+    const unitCost = Number(value.unit_cost ?? 0);
     return [{
       id: String(value.id),
       productId: String(value.product_id),
@@ -147,9 +147,8 @@ export async function getInventoryAction(): Promise<InventorySnapshot> {
       manualQuantity,
       digitalQuantity,
       difference,
-      unitCost: Number(value.unit_cost ?? 0),
-      sellingPrice,
-      estimatedProfit: calculateWeightDifferenceProfit(difference, sellingPrice),
+      unitCost,
+      estimatedProfit: calculateWeightDifferenceProfit(difference, unitCost),
     } satisfies StockWeightDifference];
   });
   return { balances, movements, batches, weightDifferences };

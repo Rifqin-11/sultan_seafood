@@ -21,8 +21,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { createExpenseAction } from "@/lib/actions/expenses";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export function AddExpenseDialog() {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -64,8 +67,10 @@ export function AddExpenseDialog() {
     if (res.error) {
       setError(res.error);
     } else {
+      toast.success(res.message || "Pengeluaran berhasil dicatat.");
       resetForm();
       setOpen(false);
+      router.refresh();
     }
   };
 

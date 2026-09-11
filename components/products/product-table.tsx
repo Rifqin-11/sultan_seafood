@@ -40,8 +40,8 @@ interface ProductTableProps {
 }
 
 export function ProductTable({ initialProducts = [], canManage = false }: ProductTableProps) {
-  const productsList = initialProducts;
   const router = useRouter();
+  const productsList = initialProducts;
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"ALL" | "ACTIVE" | "INACTIVE">("ALL");
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -62,10 +62,11 @@ export function ProductTable({ initialProducts = [], canManage = false }: Produc
 
   const handleConfirmDelete = async () => {
     if (!deletingProduct) return;
-    setLoadingId(deletingProduct.id);
-    const res = await deleteProductAction(deletingProduct.id);
-    setLoadingId(null);
+    const productToDelete = deletingProduct;
+    setLoadingId(productToDelete.id);
     setDeletingProduct(null);
+    const res = await deleteProductAction(productToDelete.id);
+    setLoadingId(null);
     if (res.error) {
       toast.error(`Gagal menghapus: ${res.error}`);
     } else {
