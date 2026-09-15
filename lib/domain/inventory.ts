@@ -43,6 +43,11 @@ export function calculateEffectiveReceiptCost(manualQuantity: number, digitalQua
   return Math.round((manualQuantity * supplierUnitCost / digitalQuantity) * 100) / 100;
 }
 
+export function calculateReceiptHppReduction(manualQuantity: number, digitalQuantity: number, supplierUnitCost: number) {
+  const effectiveCost = calculateEffectiveReceiptCost(manualQuantity, digitalQuantity, supplierUnitCost);
+  return Math.round(Math.max(supplierUnitCost - effectiveCost, 0) * 100) / 100;
+}
+
 /** Moving-average HPP for a receipt paid by manual weight and stocked by digital weight. */
 export function calculateReceiptWeightedAverageCost(
   currentQuantity: number,

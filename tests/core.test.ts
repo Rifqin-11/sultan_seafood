@@ -4,7 +4,7 @@ import { calculateInvoice, formatCurrency } from "../lib/utils.ts";
 import { createCsv } from "../lib/csv.ts";
 import { getEffectiveInvoiceStatus, isPublicInvoice, sanitizeInvoiceForRole } from "../lib/domain/invoices.ts";
 import { ROLE_PERMISSIONS, type Invoice } from "../types/index.ts";
-import { calculateEffectiveReceiptCost, calculateInventoryValueFromBatches, calculateMargin, calculateReceiptWeightedAverageCost, calculateWeightDifference, calculateWeightDifferenceValue, calculateWeightedAverageCost, getStockMovementLabel, getStockStatus, resolveReceiptQuantities, validateStockAdjustment, validateStockReceiptCancellation, validateStockReceiptPayload, validateStockSettings } from "../lib/domain/inventory.ts";
+import { calculateEffectiveReceiptCost, calculateInventoryValueFromBatches, calculateMargin, calculateReceiptHppReduction, calculateReceiptWeightedAverageCost, calculateWeightDifference, calculateWeightDifferenceValue, calculateWeightedAverageCost, getStockMovementLabel, getStockStatus, resolveReceiptQuantities, validateStockAdjustment, validateStockReceiptCancellation, validateStockReceiptPayload, validateStockSettings } from "../lib/domain/inventory.ts";
 import { normalizeActionError } from "../lib/security/errors.ts";
 
 const invoice: Invoice = {
@@ -84,6 +84,7 @@ test("stock receipt separates payment weight from digital inventory weight", () 
 
 test("receipt HPP allocates the paid amount across the digital weight", () => {
   assert.equal(calculateEffectiveReceiptCost(5, 5.5, 125_000), 113_636.36);
+  assert.equal(calculateReceiptHppReduction(5, 5.5, 125_000), 11_363.64);
   assert.equal(calculateReceiptWeightedAverageCost(0, 0, 5, 5.5, 125_000), (5 * 125_000) / 5.5);
   assert.equal(calculateReceiptWeightedAverageCost(10, 100_000, 5, 5.5, 125_000), ((10 * 100_000) + (5 * 125_000)) / 15.5);
 });
