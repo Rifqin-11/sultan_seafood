@@ -21,6 +21,7 @@ import { formatCurrency, formatPercent } from "@/lib/utils";
 import { getDashboardDataAction } from "@/lib/actions/dashboard";
 import { normalizeReportPeriod } from "@/lib/report-period";
 import { getInventoryAction } from "@/lib/actions/inventory";
+import { calculateInventoryValueFromBatches } from "@/lib/domain/inventory";
 
 export const metadata: Metadata = {
   title: "Dashboard",
@@ -38,9 +39,7 @@ export default async function DashboardPage({
   const { periodInvoices, metrics: m, salesData, profitData, internalCosts, periodLabel, user, startDate, endDate } = await getDashboardDataAction(activePeriod, customStartDate, customEndDate);
   const canViewInternal = user.role !== "STAFF";
   const inventory = canViewInternal ? await getInventoryAction() : null;
-  const totalStockValue = inventory?.balances
-    .filter((balance) => balance.productStatus === "ACTIVE")
-    .reduce((sum, balance) => sum + balance.stockValue, 0) ?? 0;
+  const totalStockValue = inventory ? calculateInventoryValueFromBatches(inventory.balances, inventory.batches) : 0;
 
   return (
     <div className="space-y-6">

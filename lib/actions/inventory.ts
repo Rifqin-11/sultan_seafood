@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { normalizeActionError, requireRole } from "@/lib/security/auth";
-import { calculateMargin, calculateWeightDifference, calculateWeightDifferenceProfit, getStockStatus, validateStockAdjustment, validateStockReceiptCancellation, validateStockReceiptPayload, validateStockSettings, type StockReceiptInput, type StockSettingsInput } from "@/lib/domain/inventory";
+import { calculateMargin, calculateWeightDifference, calculateWeightDifferenceValue, getStockStatus, validateStockAdjustment, validateStockReceiptCancellation, validateStockReceiptPayload, validateStockSettings, type StockReceiptInput, type StockSettingsInput } from "@/lib/domain/inventory";
 import type { StockBalance, StockBatch, StockMovement, StockMovementType, StockWeightDifference } from "@/types";
 
 export interface InventorySnapshot {
@@ -148,7 +148,7 @@ export async function getInventoryAction(): Promise<InventorySnapshot> {
       digitalQuantity,
       difference,
       unitCost,
-      estimatedProfit: calculateWeightDifferenceProfit(difference, unitCost),
+       estimatedStockValue: calculateWeightDifferenceValue(difference, unitCost),
     } satisfies StockWeightDifference];
   });
   return { balances, movements, batches, weightDifferences };

@@ -9,6 +9,7 @@ import { getCustomerPricesAction } from "@/lib/actions/pricing";
 import { getProductsAction } from "@/lib/actions/products";
 import { getSuppliersAction } from "@/lib/actions/suppliers";
 import { requireRole } from "@/lib/security/auth";
+import { calculateInventoryValueFromBatches } from "@/lib/domain/inventory";
 import { formatNumber } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Stok, Harga & Modal" };
@@ -26,7 +27,7 @@ export default async function StockPage() {
   const lowStock = activeBalances.filter((balance) => balance.minimumQuantity > 0 && balance.quantity <= balance.minimumQuantity);
   const outOfStock = activeBalances.filter((balance) => balance.quantity <= 0);
   const totalUnits = activeBalances.reduce((sum, balance) => sum + balance.quantity, 0);
-  const totalStockValue = activeBalances.reduce((sum, balance) => sum + balance.stockValue, 0);
+   const totalStockValue = calculateInventoryValueFromBatches(activeBalances, batches);
   const risingPurchases = activeBalances.filter((balance) => (balance.latestPurchaseCost ?? 0) > balance.averageUnitCost * 1.1);
 
   return <div className="space-y-6">

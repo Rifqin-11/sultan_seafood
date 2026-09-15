@@ -30,8 +30,9 @@ export function ProductSupplierPurchasesSheet({ balance, movements, batches, tri
     const name = purchase.supplierName || "Supplier lama";
     const entry = suppliers.get(name) ?? { name, quantity: 0, total: 0, latestCost: purchase.purchaseUnitCost ?? 0, latestAt: purchase.occurredAt, remaining: 0 };
     const cost = purchase.purchaseUnitCost ?? 0;
-    entry.quantity += purchase.quantityDelta;
-    entry.total += purchase.quantityDelta * cost;
+    const paidQuantity = purchase.manualQuantity ?? purchase.quantityDelta;
+    entry.quantity += paidQuantity;
+    entry.total += paidQuantity * cost;
     if (new Date(purchase.occurredAt) > new Date(entry.latestAt)) { entry.latestAt = purchase.occurredAt; entry.latestCost = cost; }
     suppliers.set(name, entry);
   }

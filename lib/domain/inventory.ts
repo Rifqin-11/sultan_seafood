@@ -37,11 +37,51 @@ export function calculateWeightedAverageCost(
   return ((currentQuantity * currentAverageCost) + (incomingQuantity * incomingUnitCost)) / quantityAfter;
 }
 
+/** Allocates the amount actually paid across the weight that entered stock. */
+export function calculateEffectiveReceiptCost(manualQuantity: number, digitalQuantity: number, supplierUnitCost: number) {
+  if (digitalQuantity <= 0) return 0;
+  return Math.round((manualQuantity * supplierUnitCost / digitalQuantity) * 100) / 100;
+}
+
+/** Moving-average HPP for a receipt paid by manual weight and stocked by digital weight. */
+export function calculateReceiptWeightedAverageCost(
+  currentQuantity: number,
+  currentAverageCost: number,
+  manualQuantity: number,
+  digitalQuantity: number,
+  supplierUnitCost: number,
+) {
+  const quantityAfter = currentQuantity + digitalQuantity;
+  if (quantityAfter <= 0) return 0;
+  return ((currentQuantity * currentAverageCost) + (manualQuantity * supplierUnitCost)) / quantityAfter;
+}
+
+/** Values stock from effective batch costs so free scale differences add no capital. */
+export function calculateInventoryValueFromBatches(balances: StockBalance[], batches: StockBatch[]) {
+  const batchValues = new Map<string, { quantity: number; value: number }>();
+  for (const batch of batches) {
+    if (batch.status !== "OPEN" || batch.quantityRemaining <= 0) continue;
+    const entry = batchValues.get(batch.productId) ?? { quantity: 0, value: 0 };
+    entry.quantity += batch.quantityRemaining;
+    entry.value += batch.quantityRemaining * batch.unitCost;
+    batchValues.set(batch.productId, entry);
+  }
+
+  return balances
+    .filter((balance) => balance.productStatus === "ACTIVE")
+    .reduce((total, balance) => {
+      const batchValue = batchValues.get(balance.productId);
+      if (!batchValue) return total + balance.stockValue;
+      const missingQuantity = Math.max(0, balance.quantity - batchValue.quantity);
+      return total + batchValue.value + (missingQuantity * balance.averageUnitCost);
+    }, 0);
+}
+
 export function calculateWeightDifference(manualQuantity: number, digitalQuantity: number) {
   return Math.round((digitalQuantity - manualQuantity) * 1000) / 1000;
 }
 
-export function calculateWeightDifferenceProfit(difference: number, purchasePrice: number) {
+export function calculateWeightDifferenceValue(difference: number, purchasePrice: number) {
   return Math.round(Math.max(difference, 0) * Math.max(purchasePrice, 0));
 }
 
@@ -121,3 +161,4 @@ export function getStockMovementLabel(type: string) {
   };
   return labels[type] ?? type;
 }
+import type { StockBalance, StockBatch } from "@/types";

@@ -4,7 +4,7 @@ import { calculateInvoice, formatCurrency } from "../lib/utils.ts";
 import { createCsv } from "../lib/csv.ts";
 import { getEffectiveInvoiceStatus, isPublicInvoice, sanitizeInvoiceForRole } from "../lib/domain/invoices.ts";
 import { ROLE_PERMISSIONS, type Invoice } from "../types/index.ts";
-import { calculateMargin, calculateWeightDifference, calculateWeightDifferenceProfit, calculateWeightedAverageCost, getStockMovementLabel, getStockStatus, resolveReceiptQuantities, validateStockAdjustment, validateStockReceiptCancellation, validateStockReceiptPayload, validateStockSettings } from "../lib/domain/inventory.ts";
+import { calculateEffectiveReceiptCost, calculateInventoryValueFromBatches, calculateMargin, calculateReceiptWeightedAverageCost, calculateWeightDifference, calculateWeightDifferenceValue, calculateWeightedAverageCost, getStockMovementLabel, getStockStatus, resolveReceiptQuantities, validateStockAdjustment, validateStockReceiptCancellation, validateStockReceiptPayload, validateStockSettings } from "../lib/domain/inventory.ts";
 import { normalizeActionError } from "../lib/security/errors.ts";
 
 const invoice: Invoice = {
@@ -67,8 +67,8 @@ test("stock receipt validation accepts numeric formatted-currency values", () =>
     receivedDate: "2026-08-03",
     items: [{ productId: "p1", quantity: 2, unitCost: 85000 }],
   }), null);
-  assert.equal(calculateWeightDifferenceProfit(2, 50_000), 100_000);
-  assert.equal(calculateWeightDifferenceProfit(-2, 50_000), 0);
+  assert.equal(calculateWeightDifferenceValue(2, 50_000), 100_000);
+  assert.equal(calculateWeightDifferenceValue(-2, 50_000), 0);
 });
 
 test("stock receipt separates payment weight from digital inventory weight", () => {
@@ -80,6 +80,28 @@ test("stock receipt separates payment weight from digital inventory weight", () 
     receivedDate: "2026-08-03",
     items: [{ productId: "p1", manualQuantity: 6.5, digitalQuantity: 6.9, unitCost: 85000 }],
   }), null);
+});
+
+test("receipt HPP allocates the paid amount across the digital weight", () => {
+  assert.equal(calculateEffectiveReceiptCost(5, 5.5, 125_000), 113_636.36);
+  assert.equal(calculateReceiptWeightedAverageCost(0, 0, 5, 5.5, 125_000), (5 * 125_000) / 5.5);
+  assert.equal(calculateReceiptWeightedAverageCost(10, 100_000, 5, 5.5, 125_000), ((10 * 100_000) + (5 * 125_000)) / 15.5);
+});
+
+test("inventory value uses effective batch cost instead of valuing free scale differences", () => {
+  assert.equal(calculateInventoryValueFromBatches([
+    { productId: "p1", productName: "Ikan", unit: "kg", quantity: 5.5, minimumQuantity: 0, averageUnitCost: 113_636.36, defaultSellingPrice: 0, stockValue: 625_000, updatedAt: "2026-08-03", productStatus: "ACTIVE" },
+  ], [
+    { id: "b1", productId: "p1", quantityReceived: 5.5, quantityRemaining: 5.5, unitCost: 113_636.36, receivedAt: "2026-08-03", status: "OPEN" },
+  ]), 5.5 * 113_636.36);
+});
+
+test("inventory value preserves unrepresented legacy stock at its average cost", () => {
+  assert.equal(calculateInventoryValueFromBatches([
+    { productId: "p1", productName: "Ikan", unit: "kg", quantity: 10, minimumQuantity: 0, averageUnitCost: 100_000, defaultSellingPrice: 0, stockValue: 1_000_000, updatedAt: "2026-08-03", productStatus: "ACTIVE" },
+  ], [
+    { id: "b1", productId: "p1", quantityReceived: 5.5, quantityRemaining: 5.5, unitCost: 113_636.36, receivedAt: "2026-08-03", status: "OPEN" },
+  ]), (5.5 * 113_636.36) + (4.5 * 100_000));
 });
 
 test("stock adjustment requires a reason and movement labels stay readable", () => {

@@ -128,7 +128,7 @@ export interface StockWeightDifference {
   digitalQuantity: number;
   difference: number;
   unitCost: number;
-  estimatedProfit: number;
+  estimatedStockValue: number;
 }
 
 export interface ProductCost {
