@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { InvoiceStatusBadge } from "./invoice-status-badge";
 import { EmptyState } from "@/components/ui/empty-state";
+import { calculateInvoiceMarginValue } from "@/lib/domain/invoices";
 import Link from "next/link";
 import { handleDownloadInvoicePdf } from "./invoice-pdf-download";
 
@@ -257,6 +258,7 @@ export function InvoiceListTable({ initialInvoices = [], role, company }: Invoic
                 <TableHead className="text-xs font-semibold">Tanggal</TableHead>
                 <TableHead className="text-xs font-semibold">Jatuh Tempo</TableHead>
                 <TableHead className="text-xs font-semibold text-right">Total</TableHead>
+                <TableHead className="text-xs font-semibold text-right">Margin</TableHead>
                 <TableHead className="text-xs font-semibold text-right">Dibayar</TableHead>
                 <TableHead className="text-xs font-semibold text-right">Sisa</TableHead>
                 <TableHead className="text-xs font-semibold">Status</TableHead>
@@ -264,7 +266,9 @@ export function InvoiceListTable({ initialInvoices = [], role, company }: Invoic
               </TableRow>
             </TableHeader>
             <TableBody>
-              {pageRows.map((inv) => (
+              {pageRows.map((inv) => {
+                const marginValue = calculateInvoiceMarginValue(inv.items);
+                return (
                 <TableRow key={inv.id} className="hover:bg-muted/20">
                   <TableCell>
                     <Link
@@ -300,6 +304,9 @@ export function InvoiceListTable({ initialInvoices = [], role, company }: Invoic
                   <TableCell className="text-right text-sm font-semibold tabular-nums">
                     {formatCurrency(inv.total)}
                   </TableCell>
+                  <TableCell className="text-right text-sm font-semibold tabular-nums text-emerald-600">
+                    {marginValue > 0 ? formatCurrency(marginValue) : "—"}
+                  </TableCell>
                   <TableCell className="text-right text-sm text-muted-foreground tabular-nums">
                     {inv.totalPaid > 0 ? formatCurrency(inv.totalPaid) : "—"}
                   </TableCell>
@@ -325,12 +332,15 @@ export function InvoiceListTable({ initialInvoices = [], role, company }: Invoic
                   </TableCell>
                   <TableCell>{renderInvoiceActions(inv)}</TableCell>
                 </TableRow>
-              ))}
+                );
+              })}
             </TableBody>
           </Table>
         </div>
         <div className="divide-y divide-border lg:hidden">
-          {pageRows.map((inv) => (
+          {pageRows.map((inv) => {
+            const marginValue = calculateInvoiceMarginValue(inv.items);
+            return (
             <article key={inv.id} className="space-y-3 p-4 sm:p-5">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
@@ -347,10 +357,12 @@ export function InvoiceListTable({ initialInvoices = [], role, company }: Invoic
               <div className="grid grid-cols-2 gap-2 rounded-xl bg-muted/55 p-3 text-xs">
                 <div className="min-w-0"><p className="text-muted-foreground">Total invoice</p><p className="mt-1 break-words font-bold text-foreground tabular-nums">{formatCurrency(inv.total)}</p></div>
                 <div className="min-w-0 border-l border-border pl-3"><p className="text-muted-foreground">Sisa tagihan</p><p className={`mt-1 break-words font-bold tabular-nums ${inv.status === "OVERDUE" ? "text-red-600" : "text-foreground"}`}>{inv.status === "VOID" ? "—" : inv.remainingBalance > 0 ? formatCurrency(inv.remainingBalance) : "Lunas"}</p></div>
+                <div className="col-span-2 min-w-0 border-t border-border pt-2"><p className="text-muted-foreground">Margin timbangan</p><p className="mt-1 break-words font-bold tabular-nums text-emerald-600">{marginValue > 0 ? formatCurrency(marginValue) : "—"}</p></div>
               </div>
               <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground"><span>Terbit {formatDateShort(inv.issueDate)}</span><span>{inv.dueDate ? `Jatuh tempo ${formatDateShort(inv.dueDate)}` : "Tanpa jatuh tempo"}</span></div>
             </article>
-          ))}
+            );
+          })}
         </div>
         </>
       )}

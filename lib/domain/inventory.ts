@@ -90,16 +90,6 @@ export function calculateWeightDifferenceValue(difference: number, purchasePrice
   return Math.round(Math.max(difference, 0) * Math.max(purchasePrice, 0));
 }
 
-export function calculateInvoiceMarginAdjustment(quantity: number, marginQuantity: number, sellingPrice: number) {
-  const difference = Math.round(Math.max(marginQuantity, 0) * 1000) / 1000;
-  return {
-    baseQuantity: quantity,
-    billingQuantity: Math.round((quantity + difference) * 1000) / 1000,
-    difference,
-    additionalInvoiceValue: difference * Math.max(sellingPrice, 0),
-  };
-}
-
 export function resolveReceiptQuantities(item: Pick<StockReceiptItemInput, "manualQuantity" | "digitalQuantity" | "quantity">) {
   const fallback = item.quantity;
   const manualQuantity = item.manualQuantity ?? fallback ?? 0;

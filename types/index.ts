@@ -116,18 +116,13 @@ export interface StockMovement {
   occurredAt: string;
 }
 
-export type StockWeightDifferenceSource = "SUPPLIER_RECEIPT" | "INVOICE_MARGIN";
-
 export interface StockWeightDifference {
   id: string;
-  source: StockWeightDifferenceSource;
   productId: string;
   productName: string;
   unit: string;
   supplierName?: string;
-  customerName?: string;
   receiptNumber?: string;
-  invoiceNumber?: string;
   receivedDate: string;
   manualQuantity: number;
   digitalQuantity: number;
@@ -136,7 +131,6 @@ export interface StockWeightDifference {
   effectiveUnitCost: number;
   hppReduction: number;
   estimatedStockValue: number;
-  additionalInvoiceValue: number;
 }
 
 export interface ProductCost {

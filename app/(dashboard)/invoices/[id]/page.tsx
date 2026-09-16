@@ -7,12 +7,12 @@ import {
   formatPercent,
   getDirectCostLabel,
   formatQuantity,
-  getBillingQuantity,
   parseProductDescription,
 } from "@/lib/utils";
 import { InvoiceStatusBadge } from "@/components/invoices/invoice-status-badge";
 import { InvoicePdfDownload } from "@/components/invoices/invoice-pdf-download";
 import { WhatsAppButton } from "@/components/invoices/whatsapp-button";
+import { calculateInvoiceMarginValue } from "@/lib/domain/invoices";
 import { RecordPaymentDialog } from "@/components/payments/record-payment-dialog";
 import { buttonVariants } from "@/components/ui/button";
 import {
@@ -50,6 +50,8 @@ export default async function InvoiceDetailPage(props: PageProps<"/invoices/[id]
     : 0;
   const marginProgress = Math.min(100, Math.max(0, invoice.transactionMargin));
   const isPaid = invoice.remainingBalance <= 0;
+  const marginValue = calculateInvoiceMarginValue(invoice.items);
+  const totalMarginQuantity = invoice.items.reduce((sum, item) => sum + Math.max(item.marginQuantity ?? 0, 0), 0);
 
   return (
     <div className="w-full space-y-6">
@@ -184,7 +186,10 @@ export default async function InvoiceDetailPage(props: PageProps<"/invoices/[id]
                       Ukuran / Size
                     </th>
                     <th className="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-stone-500">
-                      Qty
+                      Qty Stok
+                    </th>
+                    <th className="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-sky-600">
+                      Margin
                     </th>
                     <th className="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-stone-500">
                       Satuan
@@ -218,7 +223,17 @@ export default async function InvoiceDetailPage(props: PageProps<"/invoices/[id]
                           )}
                         </td>
                         <td className="px-3 py-3.5 text-right font-medium tabular-nums text-stone-700">
-                           {formatQuantity(getBillingQuantity(item.quantity, item.marginQuantity))}
+                          {formatQuantity(item.quantity)}
+                        </td>
+                        <td className="px-3 py-3.5 text-right tabular-nums">
+                          {(item.marginQuantity ?? 0) > 0 ? (
+                            <span className="inline-flex flex-col items-end">
+                              <span className="font-semibold text-sky-700">+{formatQuantity(item.marginQuantity ?? 0)}</span>
+                              <span className="text-[10px] text-sky-600/80">{formatCurrency((item.marginQuantity ?? 0) * item.sellingPriceSnapshot)}</span>
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground/40 font-mono">—</span>
+                          )}
                         </td>
                         <td className="px-3 py-3.5 text-muted-foreground">
                           {item.unit}
@@ -237,7 +252,7 @@ export default async function InvoiceDetailPage(props: PageProps<"/invoices/[id]
                   {invoice.discount > 0 && (
                     <tr>
                       <td
-                        colSpan={5}
+                        colSpan={6}
                         className="px-5 py-2.5 text-right text-xs font-medium text-muted-foreground"
                       >
                         Diskon
@@ -247,9 +262,22 @@ export default async function InvoiceDetailPage(props: PageProps<"/invoices/[id]
                       </td>
                     </tr>
                   )}
+                  {marginValue > 0 && (
+                    <tr>
+                      <td
+                        colSpan={6}
+                        className="px-5 py-2.5 text-right text-xs font-medium text-sky-700"
+                      >
+                        Nilai margin tagihan
+                      </td>
+                      <td className="px-5 py-2.5 text-right text-sm font-semibold tabular-nums text-sky-700">
+                        {formatCurrency(marginValue)}
+                      </td>
+                    </tr>
+                  )}
                   <tr>
                     <td
-                      colSpan={5}
+                      colSpan={6}
                       className="px-5 py-3.5 text-right text-xs font-semibold uppercase tracking-wider text-stone-500"
                     >
                       Total
@@ -281,8 +309,8 @@ export default async function InvoiceDetailPage(props: PageProps<"/invoices/[id]
                     </div>
                     <div className="grid grid-cols-3 gap-2 rounded-xl bg-stone-50 p-3">
                       <div>
-                        <p className="text-[10px] font-semibold uppercase tracking-wider text-stone-400">Qty</p>
-                         <p className="mt-1 text-sm font-semibold tabular-nums text-stone-700">{formatQuantity(getBillingQuantity(item.quantity, item.marginQuantity))}</p>
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-stone-400">Qty Stok</p>
+                        <p className="mt-1 text-sm font-semibold tabular-nums text-stone-700">{formatQuantity(item.quantity)}</p>
                       </div>
                       <div>
                         <p className="text-[10px] font-semibold uppercase tracking-wider text-stone-400">Satuan</p>
@@ -293,6 +321,15 @@ export default async function InvoiceDetailPage(props: PageProps<"/invoices/[id]
                         <p className="mt-1 text-sm font-semibold tabular-nums text-stone-700">{formatCurrency(item.sellingPriceSnapshot)}</p>
                       </div>
                     </div>
+                    {(item.marginQuantity ?? 0) > 0 && (
+                      <div className="flex items-center justify-between rounded-xl border border-sky-200 bg-sky-50/70 px-3 py-2.5">
+                        <div>
+                          <p className="text-[10px] font-semibold uppercase tracking-wider text-sky-700">Margin tagihan</p>
+                          <p className="mt-0.5 text-xs font-medium text-sky-700/80">+{formatQuantity(item.marginQuantity ?? 0)} {item.unit} · tidak mengurangi stok</p>
+                        </div>
+                        <p className="text-sm font-bold tabular-nums text-sky-700">{formatCurrency((item.marginQuantity ?? 0) * item.sellingPriceSnapshot)}</p>
+                      </div>
+                    )}
                     <div className="flex items-end justify-between border-t border-dashed border-stone-200 pt-3">
                       <span className="text-xs font-medium text-muted-foreground">Subtotal</span>
                       <span className="text-base font-bold tracking-[-0.02em] tabular-nums text-stone-900">{formatCurrency(item.subtotal)}</span>
@@ -305,6 +342,12 @@ export default async function InvoiceDetailPage(props: PageProps<"/invoices/[id]
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Diskon</span>
                     <span className="font-semibold tabular-nums text-red-600">-{formatCurrency(invoice.discount)}</span>
+                  </div>
+                )}
+                {marginValue > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-sky-700">Nilai margin tagihan</span>
+                    <span className="font-semibold tabular-nums text-sky-700">{formatCurrency(marginValue)}</span>
                   </div>
                 )}
                 <div className="flex items-end justify-between border-t border-stone-200 pt-3">
@@ -454,6 +497,18 @@ export default async function InvoiceDetailPage(props: PageProps<"/invoices/[id]
                   </span>
                 </div>
               </div>
+
+              {marginValue > 0 && (
+                <div className="rounded-xl border border-sky-200 bg-sky-50/70 p-3.5">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <p className="text-xs font-semibold text-sky-800">Margin Tagihan</p>
+                      <p className="mt-0.5 text-[10px] text-sky-700/80">+{formatQuantity(totalMarginQuantity)} unit dari selisih timbangan</p>
+                    </div>
+                    <p className="text-base font-bold tabular-nums text-sky-800">{formatCurrency(marginValue)}</p>
+                  </div>
+                </div>
+              )}
 
               <div className="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4">
                 <div className="mb-3 flex items-center justify-between gap-4 text-emerald-800">

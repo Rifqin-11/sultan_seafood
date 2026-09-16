@@ -2,9 +2,9 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { calculateInvoice, formatCurrency } from "../lib/utils.ts";
 import { createCsv } from "../lib/csv.ts";
-import { getEffectiveInvoiceStatus, isPublicInvoice, sanitizeInvoiceForRole } from "../lib/domain/invoices.ts";
+import { getEffectiveInvoiceStatus, calculateInvoiceMarginValue, isPublicInvoice, sanitizeInvoiceForRole } from "../lib/domain/invoices.ts";
 import { ROLE_PERMISSIONS, type Invoice } from "../types/index.ts";
-import { calculateEffectiveReceiptCost, calculateInvoiceMarginAdjustment, calculateInventoryValueFromBatches, calculateMargin, calculateReceiptHppReduction, calculateReceiptWeightedAverageCost, calculateWeightDifference, calculateWeightDifferenceValue, calculateWeightedAverageCost, getStockMovementLabel, getStockStatus, resolveReceiptQuantities, validateStockAdjustment, validateStockReceiptCancellation, validateStockReceiptPayload, validateStockSettings } from "../lib/domain/inventory.ts";
+import { calculateEffectiveReceiptCost, calculateInventoryValueFromBatches, calculateMargin, calculateReceiptHppReduction, calculateReceiptWeightedAverageCost, calculateWeightDifference, calculateWeightDifferenceValue, calculateWeightedAverageCost, getStockMovementLabel, getStockStatus, resolveReceiptQuantities, validateStockAdjustment, validateStockReceiptCancellation, validateStockReceiptPayload, validateStockSettings } from "../lib/domain/inventory.ts";
 import { normalizeActionError } from "../lib/security/errors.ts";
 
 const invoice: Invoice = {
@@ -20,6 +20,15 @@ const invoice: Invoice = {
 test("invoice calculations include discounts and direct costs", () => {
   const result = calculateInvoice([{ quantity: 2, sellingPrice: 50_000, purchasePrice: 30_000 }], [{ amount: 5_000 }], 10_000);
   assert.deepEqual(result, { subtotal: 100_000, revenue: 90_000, totalProductCost: 60_000, totalDirectCost: 5_000, productProfit: 30_000, transactionProfit: 25_000, transactionMargin: 25_000 / 90_000 * 100 });
+});
+
+test("invoice margin value sums only billed margin weight", () => {
+  const items: Invoice["items"] = [
+    { id: "1", productId: "p", descriptionSnapshot: "Ikan", unit: "kg", quantity: 10, marginQuantity: 0.5, sellingPriceSnapshot: 80_000, purchasePriceSnapshot: 60_000, subtotal: 840_000, totalPurchaseCost: 600_000, productProfit: 240_000 },
+    { id: "2", productId: "q", descriptionSnapshot: "Udang", unit: "kg", quantity: 4, sellingPriceSnapshot: 90_000, purchasePriceSnapshot: 70_000, subtotal: 360_000, totalPurchaseCost: 280_000, productProfit: 80_000 },
+  ];
+  assert.equal(calculateInvoiceMarginValue(items), 40_000);
+  assert.equal(calculateInvoiceMarginValue([]), 0);
 });
 
 test("overdue status is derived without mutating database state", () => {
@@ -80,16 +89,6 @@ test("stock receipt separates payment weight from digital inventory weight", () 
     receivedDate: "2026-08-03",
     items: [{ productId: "p1", manualQuantity: 6.5, digitalQuantity: 6.9, unitCost: 85000 }],
   }), null);
-});
-
-test("invoice margin separates billed weight from physical stock weight", () => {
-  assert.deepEqual(calculateInvoiceMarginAdjustment(10, 0.5, 80_000), {
-    baseQuantity: 10,
-    billingQuantity: 10.5,
-    difference: 0.5,
-    additionalInvoiceValue: 40_000,
-  });
-  assert.equal(calculateInvoiceMarginAdjustment(10, -1, 80_000).difference, 0);
 });
 
 test("receipt HPP allocates the paid amount across the digital weight", () => {

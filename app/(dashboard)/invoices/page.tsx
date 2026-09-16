@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 };
 
 export default async function InvoicesPage() {
-  const [invoices, user, company] = await Promise.all([getInvoicesAction(), requireApprovedUser(), getCompanyProfileAction()]);
+  const [invoices, user, company] = await Promise.all([getInvoicesAction(undefined, undefined, false, true), requireApprovedUser(), getCompanyProfileAction()]);
 
   // Filter out VOID (Dibatalkan) invoices from total active billings calculation
   const activeInvoices = invoices.filter((inv) => inv.status !== "VOID");

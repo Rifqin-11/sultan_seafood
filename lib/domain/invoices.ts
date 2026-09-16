@@ -8,6 +8,13 @@ export function getEffectiveInvoiceStatus(status: InvoiceStatus, dueDate?: strin
   return status;
 }
 
+export function calculateInvoiceMarginValue(items: Invoice["items"]): number {
+  return items.reduce(
+    (sum, item) => sum + Math.max(item.marginQuantity ?? 0, 0) * Math.max(item.sellingPriceSnapshot, 0),
+    0,
+  );
+}
+
 export function isPublicInvoice(value: unknown): value is PublicInvoice {
   if (!value || typeof value !== "object") return false;
   const row = value as Record<string, unknown>;
