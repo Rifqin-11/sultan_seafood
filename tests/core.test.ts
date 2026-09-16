@@ -4,7 +4,7 @@ import { calculateInvoice, formatCurrency } from "../lib/utils.ts";
 import { createCsv } from "../lib/csv.ts";
 import { getEffectiveInvoiceStatus, isPublicInvoice, sanitizeInvoiceForRole } from "../lib/domain/invoices.ts";
 import { ROLE_PERMISSIONS, type Invoice } from "../types/index.ts";
-import { calculateEffectiveReceiptCost, calculateInventoryValueFromBatches, calculateMargin, calculateReceiptHppReduction, calculateReceiptWeightedAverageCost, calculateWeightDifference, calculateWeightDifferenceValue, calculateWeightedAverageCost, getStockMovementLabel, getStockStatus, resolveReceiptQuantities, validateStockAdjustment, validateStockReceiptCancellation, validateStockReceiptPayload, validateStockSettings } from "../lib/domain/inventory.ts";
+import { calculateEffectiveReceiptCost, calculateInvoiceMarginAdjustment, calculateInventoryValueFromBatches, calculateMargin, calculateReceiptHppReduction, calculateReceiptWeightedAverageCost, calculateWeightDifference, calculateWeightDifferenceValue, calculateWeightedAverageCost, getStockMovementLabel, getStockStatus, resolveReceiptQuantities, validateStockAdjustment, validateStockReceiptCancellation, validateStockReceiptPayload, validateStockSettings } from "../lib/domain/inventory.ts";
 import { normalizeActionError } from "../lib/security/errors.ts";
 
 const invoice: Invoice = {
@@ -80,6 +80,16 @@ test("stock receipt separates payment weight from digital inventory weight", () 
     receivedDate: "2026-08-03",
     items: [{ productId: "p1", manualQuantity: 6.5, digitalQuantity: 6.9, unitCost: 85000 }],
   }), null);
+});
+
+test("invoice margin separates billed weight from physical stock weight", () => {
+  assert.deepEqual(calculateInvoiceMarginAdjustment(10, 0.5, 80_000), {
+    baseQuantity: 10,
+    billingQuantity: 10.5,
+    difference: 0.5,
+    additionalInvoiceValue: 40_000,
+  });
+  assert.equal(calculateInvoiceMarginAdjustment(10, -1, 80_000).difference, 0);
 });
 
 test("receipt HPP allocates the paid amount across the digital weight", () => {
