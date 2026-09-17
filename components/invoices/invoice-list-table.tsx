@@ -328,7 +328,7 @@ export function InvoiceListTable({
           description="Coba ubah filter atau kata kunci pencarian."
         />
       ) : (
-        <>
+        <div className={`transition-opacity duration-200 ${isNavigating ? "pointer-events-none opacity-50" : "opacity-100"}`} aria-busy={isNavigating}>
         <div className="hidden overflow-x-auto lg:block">
           <Table>
             <TableHeader>
@@ -444,7 +444,7 @@ export function InvoiceListTable({
             );
           })}
         </div>
-        </>
+        </div>
       )}
 
       {/* Footer */}

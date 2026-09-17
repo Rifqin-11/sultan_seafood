@@ -1,12 +1,14 @@
 "use client";
 
-import Link from "next/link";
-import { Boxes, History, Scale, Tags } from "lucide-react";
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { Boxes, History, Loader2, Scale, Tags } from "lucide-react";
 import { AddCustomerPriceDialog } from "@/components/pricing/add-customer-price-dialog";
 import { AddProductDialog } from "@/components/products/add-product-dialog";
 import { AddStockReceiptDialog } from "@/components/stock/add-stock-receipt-dialog";
 import { SellingPriceTable } from "@/components/pricing/selling-price-table";
 import { StockTable } from "@/components/stock/stock-table";
+import { StockContentSkeleton } from "@/components/stock/stock-content-skeleton";
 import { StockWeightDifferenceTable } from "@/components/stock/stock-weight-difference-table";
 import type { Customer, CustomerPrice, Product, StockBalance, StockMovement, StockWeightDifference, Supplier } from "@/types";
 
@@ -44,9 +46,21 @@ interface StockTabsProps {
 
 export function StockTabs(props: StockTabsProps) {
   const { activeTab } = props;
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  // Which tab the user just clicked; drives the per-tab spinner while pending.
+  const [pendingTab, setPendingTab] = useState<StockTab | null>(null);
+
   const activeProducts = (props.products ?? []).filter((product) => product.status === "ACTIVE");
   const activeCustomers = (props.customers ?? []).filter((customer) => customer.status === "ACTIVE");
   const active = tabs.find((tab) => tab.id === activeTab) ?? tabs[0];
+  const showSkeleton = isPending && pendingTab !== null;
+
+  const goToTab = (tab: StockTab) => {
+    if (tab === activeTab) return;
+    setPendingTab(tab);
+    startTransition(() => router.push(`/stock?tab=${tab}`, { scroll: false }));
+  };
 
   return (
     <section className="space-y-4">
@@ -55,61 +69,66 @@ export function StockTabs(props: StockTabsProps) {
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const selected = activeTab === tab.id;
+            const showSpinner = isPending && pendingTab === tab.id;
             return (
-              <Link
+              <button
                 key={tab.id}
-                href={`/stock?tab=${tab.id}`}
+                type="button"
                 role="tab"
                 aria-selected={selected}
-                scroll={false}
+                onClick={() => goToTab(tab.id)}
                 className={`flex min-w-max items-center gap-2 rounded-xl px-3 py-2.5 text-left text-xs font-semibold transition-colors sm:px-4 ${selected ? "bg-stone-900 text-white shadow-sm" : "text-stone-600 hover:bg-stone-100 hover:text-stone-900"}`}
               >
-                <Icon className="size-4" />
+                {showSpinner ? <Loader2 className="size-4 animate-spin" /> : <Icon className="size-4" />}
                 <span>{tab.label}</span>
-              </Link>
+              </button>
             );
           })}
         </div>
       </div>
 
-      <div role="tabpanel" aria-label={active.label}>
-        {activeTab === "stock" && (
+      <div role="tabpanel" aria-label={active.label} aria-busy={showSkeleton}>
+        {showSkeleton ? <StockContentSkeleton /> : (
           <>
-            <div className="mb-4 flex flex-wrap justify-end gap-2"><AddProductDialog /><AddStockReceiptDialog products={props.products ?? []} suppliers={props.suppliers ?? []} /></div>
-            <StockTable
-              key={`balances|${props.query}|${props.stockStatus}|${props.productStatus}|${props.sortKey}|${props.sortDir}`}
-              view="balances"
-              balances={props.balances ?? []}
-              products={props.products ?? []}
-              total={props.balancesTotal ?? 0}
-              page={props.page}
-              pageSize={props.pageSize}
-              tab={activeTab}
-              search={props.query}
-              stockStatus={props.stockStatus}
-              productStatus={props.productStatus}
-              sortKey={props.sortKey}
-              sortDir={props.sortDir}
-            />
-          </>
-        )}
-        {activeTab === "movements" && (
-          <StockTable view="movements" movements={props.movements ?? []} total={props.movementsTotal ?? 0} page={props.page} pageSize={props.pageSize} tab={activeTab} />
-        )}
-        {activeTab === "weight-differences" && (
-          <StockWeightDifferenceTable
-            rows={props.weightDifferences ?? []}
-            total={props.weightDifferencesTotal ?? 0}
-            totalDifference={props.weightDifferencesTotalDifference ?? 0}
-            totalEstimatedStockValue={props.weightDifferencesTotalValue ?? 0}
-            page={props.page}
-            pageSize={props.pageSize}
-          />
-        )}
-        {activeTab === "selling-prices" && (
-          <>
-            <div className="mb-4 flex justify-end"><AddCustomerPriceDialog products={activeProducts} customers={activeCustomers} /></div>
-            <SellingPriceTable products={activeProducts} customers={activeCustomers} customPrices={props.customerPrices ?? []} />
+            {activeTab === "stock" && (
+              <>
+                <div className="mb-4 flex flex-wrap justify-end gap-2"><AddProductDialog /><AddStockReceiptDialog products={props.products ?? []} suppliers={props.suppliers ?? []} /></div>
+                <StockTable
+                  key={`balances|${props.query}|${props.stockStatus}|${props.productStatus}|${props.sortKey}|${props.sortDir}`}
+                  view="balances"
+                  balances={props.balances ?? []}
+                  products={props.products ?? []}
+                  total={props.balancesTotal ?? 0}
+                  page={props.page}
+                  pageSize={props.pageSize}
+                  tab={activeTab}
+                  search={props.query}
+                  stockStatus={props.stockStatus}
+                  productStatus={props.productStatus}
+                  sortKey={props.sortKey}
+                  sortDir={props.sortDir}
+                />
+              </>
+            )}
+            {activeTab === "movements" && (
+              <StockTable view="movements" movements={props.movements ?? []} total={props.movementsTotal ?? 0} page={props.page} pageSize={props.pageSize} tab={activeTab} />
+            )}
+            {activeTab === "weight-differences" && (
+              <StockWeightDifferenceTable
+                rows={props.weightDifferences ?? []}
+                total={props.weightDifferencesTotal ?? 0}
+                totalDifference={props.weightDifferencesTotalDifference ?? 0}
+                totalEstimatedStockValue={props.weightDifferencesTotalValue ?? 0}
+                page={props.page}
+                pageSize={props.pageSize}
+              />
+            )}
+            {activeTab === "selling-prices" && (
+              <>
+                <div className="mb-4 flex justify-end"><AddCustomerPriceDialog products={activeProducts} customers={activeCustomers} /></div>
+                <SellingPriceTable products={activeProducts} customers={activeCustomers} customPrices={props.customerPrices ?? []} />
+              </>
+            )}
           </>
         )}
       </div>

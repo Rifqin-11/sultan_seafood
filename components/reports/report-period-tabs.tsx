@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReportPeriod } from "@/lib/report-period";
 import { CustomPeriodTab } from "@/components/reports/custom-period-tab";
+import { LinkPendingIndicator } from "@/components/ui/link-pending";
 
 const tabs: Array<{ value: ReportPeriod; label: string }> = [
   { value: "1d", label: "1 hari" },
@@ -27,9 +28,10 @@ export function ReportPeriodTabs({ path, activePeriod, className, startDate, end
             key={tab.value}
             href={`${path}?period=${tab.value}`}
             aria-current={isActive ? "page" : undefined}
-            className={`rounded-lg px-3 py-1.5 text-center text-xs font-semibold whitespace-nowrap transition-[background-color,color,box-shadow] duration-200 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/25 ${isActive ? "bg-white text-foreground shadow-[0_1px_5px_rgba(17,17,17,0.08)]" : "text-muted-foreground hover:text-foreground"}`}
+            className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-center text-xs font-semibold whitespace-nowrap transition-[background-color,color,box-shadow] duration-200 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/25 ${isActive ? "bg-white text-foreground shadow-[0_1px_5px_rgba(17,17,17,0.08)]" : "text-muted-foreground hover:text-foreground"}`}
           >
             {tab.label}
+            {!isActive && <LinkPendingIndicator />}
           </Link>
         );
       })}

@@ -49,7 +49,7 @@ export function StockWeightDifferenceTable({ rows, total, totalDifference, total
         </div>
       </div>
       {rows.length === 0 ? <EmptyState icon={Scale} title="Belum ada selisih timbangan" description="Penerimaan dengan berat digital lebih besar dari berat manual akan tercatat di sini." /> : (
-        <>
+        <div className={`transition-opacity duration-200 ${isNavigating ? "pointer-events-none opacity-50" : "opacity-100"}`} aria-busy={isNavigating}>
           <div className="erp-table-wrap overflow-x-auto">
             <table className="erp-table w-full min-w-[920px] text-sm">
               <thead><tr className="border-b border-stone-200 bg-stone-50/80"><th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-stone-500">Tanggal / penerimaan</th><th className="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-stone-500">Produk</th><th className="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-stone-500">Supplier</th><th className="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-stone-500">Manual</th><th className="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-stone-500">Digital / stok</th><th className="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-stone-500">Selisih</th><th className="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-stone-500">Dampak ke HPP</th><th className="px-5 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-stone-500">Nilai tambahan stok</th></tr></thead>
@@ -65,7 +65,7 @@ export function StockWeightDifferenceTable({ rows, total, totalDifference, total
               <Button variant="outline" size="sm" className="px-2.5 sm:px-3" disabled={page >= pageCount || isNavigating} onClick={() => goToPage(page + 1)} aria-label="Halaman berikutnya"><span className="hidden sm:inline">Berikutnya</span><ChevronRight className="size-4 sm:ml-1" /></Button>
             </div>
           </div>
-        </>
+        </div>
       )}
       <div className="flex items-start gap-2 border-t border-stone-200 bg-stone-50/60 px-5 py-3 text-[11px] leading-5 text-stone-500"><TrendingUp className="mt-0.5 size-3.5 shrink-0 text-emerald-600" /><p>Nilai selisih menjadi bagian dari stok, bukan laba final invoice. Invoice tetap memakai snapshot HPP saat diterbitkan.</p></div>
     </section>

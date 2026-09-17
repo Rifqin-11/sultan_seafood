@@ -144,7 +144,7 @@ function BalancesView({ balances, products, total, page, pageSize, search, stock
           <EmptyState icon={PackageSearch} title="Belum ada produk" description="Tambahkan produk terlebih dahulu untuk mulai mengelola stok." />
         </div>
       ) : (
-        <>
+        <div className={`transition-opacity duration-200 ${isNavigating ? "pointer-events-none opacity-50" : "opacity-100"}`} aria-busy={isNavigating}>
           <div className="erp-table-wrap hidden md:block">
             <table className="erp-table w-full min-w-[1040px] text-sm">
               <thead>
@@ -224,7 +224,7 @@ function BalancesView({ balances, products, total, page, pageSize, search, stock
             ))}
           </div>
           <Pagination page={page} pageCount={pageCount} total={total} pageSize={pageSize} onPage={(next) => navigate({ page: next })} disabled={isNavigating} />
-        </>
+        </div>
       )}
     </section>
   );
@@ -241,7 +241,7 @@ function MovementsView({ movements, total, page, pageSize, navigate, isNavigatin
       {movements.length === 0 ? (
         <div className="py-12"><EmptyState icon={History} title="Belum ada mutasi stok" description="Invoice yang diterbitkan dan penyesuaian stok akan muncul di sini." /></div>
       ) : (
-        <>
+        <div className={`transition-opacity duration-200 ${isNavigating ? "pointer-events-none opacity-50" : "opacity-100"}`} aria-busy={isNavigating}>
           <div className="divide-y divide-stone-100">
             {movements.map((movement) => {
               const incoming = movement.quantityDelta > 0;
@@ -279,7 +279,7 @@ function MovementsView({ movements, total, page, pageSize, navigate, isNavigatin
             })}
           </div>
           <Pagination page={page} pageCount={pageCount} total={total} pageSize={pageSize} onPage={(next) => navigate({ page: next })} disabled={isNavigating} />
-        </>
+        </div>
       )}
     </section>
   );
