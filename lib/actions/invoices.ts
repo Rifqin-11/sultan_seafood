@@ -74,6 +74,90 @@ export async function getInvoicesAction(startDate?: string, endDate?: string, in
     .map((invoice) => sanitizeInvoiceForRole(invoice, user.role !== "STAFF"));
 }
 
+export interface InvoiceSummary {
+  totalInvoiceCount: number;
+  totalInvoiceAmount: number;
+  paidCount: number;
+  totalPaidAmount: number;
+  unpaidCount: number;
+  totalUnpaidAmount: number;
+  overdueCount: number;
+  totalOverdueAmount: number;
+  statusCounts: Record<string, number>;
+}
+
+export interface InvoiceListParams {
+  startDate?: string;
+  endDate?: string;
+  search?: string;
+  status?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface InvoiceListPage {
+  total: number;
+  invoices: Invoice[];
+}
+
+/**
+ * KPI summary computed in the database over ALL matching invoices, so card
+ * values stay accurate regardless of how many rows exist.
+ */
+export async function getInvoiceSummaryAction(params: InvoiceListParams = {}): Promise<InvoiceSummary> {
+  const user = await requireApprovedUser();
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("get_invoice_summary", {
+    p_start_date: params.startDate ?? null,
+    p_end_date: params.endDate ?? null,
+    p_search: params.search?.trim() || null,
+    p_status: params.status && params.status !== "ALL" ? params.status : null,
+  });
+  if (error) throw new Error(error.message);
+  const row = (data ?? {}) as Record<string, unknown>;
+  const internal = user.role !== "STAFF";
+  const counts = (row.statusCounts ?? {}) as Record<string, unknown>;
+  const statusCounts: Record<string, number> = {};
+  for (const [key, value] of Object.entries(counts)) statusCounts[key] = Number(value ?? 0);
+  return {
+    totalInvoiceCount: Number(row.totalInvoiceCount ?? 0),
+    totalInvoiceAmount: Number(row.totalInvoiceAmount ?? 0),
+    paidCount: Number(row.paidCount ?? 0),
+    totalPaidAmount: Number(row.totalPaidAmount ?? 0),
+    unpaidCount: Number(row.unpaidCount ?? 0),
+    totalUnpaidAmount: Number(row.totalUnpaidAmount ?? 0),
+    overdueCount: Number(row.overdueCount ?? 0),
+    totalOverdueAmount: internal ? Number(row.totalOverdueAmount ?? 0) : 0,
+    statusCounts,
+  };
+}
+
+/**
+ * One page of invoice list rows. Never includes invoice items or direct costs,
+ * so the payload stays small. Full detail is fetched on demand by the caller.
+ */
+export async function getInvoicesPageAction(params: InvoiceListParams = {}): Promise<InvoiceListPage> {
+  const user = await requireApprovedUser();
+  const supabase = await createClient();
+  const pageSize = Math.min(Math.max(params.pageSize ?? 20, 1), 100);
+  const page = Math.max(params.page ?? 1, 1);
+  const { data, error } = await supabase.rpc("get_invoices_page", {
+    p_start_date: params.startDate ?? null,
+    p_end_date: params.endDate ?? null,
+    p_search: params.search?.trim() || null,
+    p_status: params.status && params.status !== "ALL" ? params.status : null,
+    p_limit: pageSize,
+    p_offset: (page - 1) * pageSize,
+  });
+  if (error) throw new Error(error.message);
+  const payload = (data ?? {}) as { total?: number; rows?: unknown };
+  const rows = Array.isArray(payload.rows) ? (payload.rows as Invoice[]) : [];
+  return {
+    total: Number(payload.total ?? 0),
+    invoices: rows.map((invoice) => sanitizeInvoiceForRole(invoice, user.role !== "STAFF")),
+  };
+}
+
 export async function getInvoiceByIdAction(id: string): Promise<(Invoice & { customerPhone?: string }) | null> {
   const user = await requireApprovedUser();
   if (!/^[0-9a-f-]{36}$/i.test(id)) return null;

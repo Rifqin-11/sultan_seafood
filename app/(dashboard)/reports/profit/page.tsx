@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/app-shell/page-header";
-import { getExpensesAction } from "@/lib/actions/expenses";
+import { getExpenseDailyTotalsAction } from "@/lib/actions/expenses";
 import { getInvoicesAction } from "@/lib/actions/invoices";
 import { formatCurrency, formatPercent, getDirectCostLabel } from "@/lib/utils";
 import { MetricCard } from "@/components/dashboard/metric-card";
@@ -28,7 +28,7 @@ export default async function ProfitReportPage({
   const range = getReportPeriodRange(period, getTodayJakarta(), [], customStartDate, customEndDate);
   const [invoices, periodExpenses] = await Promise.all([
     getInvoicesAction(period === "all" ? undefined : range.startDate, period === "all" ? undefined : range.endDate, true),
-    getExpensesAction(period === "all" ? undefined : range.startDate, period === "all" ? undefined : range.endDate),
+    getExpenseDailyTotalsAction(period === "all" ? undefined : range.startDate, period === "all" ? undefined : range.endDate),
   ]);
   const issuedInvoices = invoices.filter((invoice) => invoice.status !== "DRAFT" && invoice.status !== "VOID");
   const daily = new Map<string, { profit: number; revenue: number }>();
@@ -40,7 +40,7 @@ export default async function ProfitReportPage({
   });
   periodExpenses.forEach((expense) => {
     const value = daily.get(expense.expenseDate) ?? { profit: 0, revenue: 0 };
-    value.profit -= expense.amount;
+    value.profit -= expense.total;
     daily.set(expense.expenseDate, value);
   });
   const profitData = [...daily].sort(([a], [b]) => a.localeCompare(b)).map(([date, value]) => ({
@@ -54,7 +54,7 @@ export default async function ProfitReportPage({
   const totalHPP = issuedInvoices.reduce((s, i) => s + i.totalProductCost, 0);
   const totalDirectCost = issuedInvoices.reduce((s, i) => s + i.totalDirectCost, 0);
   const totalProfit = issuedInvoices.reduce((s, i) => s + i.transactionProfit, 0);
-  const totalOperatingExpenses = periodExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+  const totalOperatingExpenses = periodExpenses.reduce((sum, expense) => sum + expense.total, 0);
   const netProfit = totalProfit - totalOperatingExpenses;
   const avgMargin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
 

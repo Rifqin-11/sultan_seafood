@@ -1,18 +1,37 @@
 "use client";
 
-import { Scale, TrendingUp } from "lucide-react";
+import { usePathname, useRouter, useSearchParams, } from "next/navigation";
+import { useTransition } from "react";
+import { ChevronLeft, ChevronRight, Loader2, Scale, TrendingUp } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { formatCurrency, formatDateShort } from "@/lib/utils";
 import type { StockWeightDifference } from "@/types";
 
 interface StockWeightDifferenceTableProps {
   rows: StockWeightDifference[];
+  total: number;
+  totalDifference: number;
+  totalEstimatedStockValue: number;
+  page: number;
+  pageSize: number;
 }
 
-export function StockWeightDifferenceTable({ rows }: StockWeightDifferenceTableProps) {
-  const positiveRows = rows.filter((row) => row.difference > 0);
-  const totalDifference = positiveRows.reduce((sum, row) => sum + row.difference, 0);
-  const totalEstimatedStockValue = positiveRows.reduce((sum, row) => sum + row.estimatedStockValue, 0);
+export function StockWeightDifferenceTable({ rows, total, totalDifference, totalEstimatedStockValue, page, pageSize }: StockWeightDifferenceTableProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [isNavigating, startTransition] = useTransition();
+  const pageCount = Math.max(1, Math.ceil(total / pageSize));
+  const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
+  const to = Math.min(page * pageSize, total);
+
+  const goToPage = (next: number) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (next > 1) params.set("page", String(next));
+    else params.delete("page");
+    startTransition(() => router.replace(`${pathname}?${params.toString()}`, { scroll: false }));
+  };
 
   return (
     <section className="erp-surface overflow-hidden">
@@ -29,13 +48,24 @@ export function StockWeightDifferenceTable({ rows }: StockWeightDifferenceTableP
           <div className="rounded-xl bg-emerald-50/70 px-3 py-2"><p className="text-[10px] font-medium uppercase tracking-wide text-emerald-700">Nilai tambahan stok</p><p className="mt-1 text-sm font-bold tabular-nums text-emerald-950">{formatCurrency(totalEstimatedStockValue)}</p></div>
         </div>
       </div>
-      {positiveRows.length === 0 ? <EmptyState icon={Scale} title="Belum ada selisih timbangan" description="Penerimaan dengan berat digital lebih besar dari berat manual akan tercatat di sini." /> : (
-        <div className="erp-table-wrap overflow-x-auto">
-          <table className="erp-table w-full min-w-[920px] text-sm">
-            <thead><tr className="border-b border-stone-200 bg-stone-50/80"><th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-stone-500">Tanggal / penerimaan</th><th className="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-stone-500">Produk</th><th className="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-stone-500">Supplier</th><th className="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-stone-500">Manual</th><th className="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-stone-500">Digital / stok</th><th className="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-stone-500">Selisih</th><th className="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-stone-500">Dampak ke HPP</th><th className="px-5 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-stone-500">Nilai tambahan stok</th></tr></thead>
-            <tbody className="divide-y divide-stone-100">{positiveRows.map((row) => <tr key={row.id} className="hover:bg-stone-50/60"><td className="px-5 py-3"><p className="font-medium text-stone-800">{formatDateShort(row.receivedDate)}</p><p className="mt-1 text-xs text-stone-400">{row.receiptNumber || "Penerimaan stok"}</p></td><td className="px-3 py-3"><p className="font-semibold text-stone-900">{row.productName}</p><p className="mt-1 text-xs text-stone-500">Harga supplier {formatCurrency(row.unitCost)}/{row.unit}</p></td><td className="px-3 py-3 text-stone-600">{row.supplierName || "—"}</td><td className="px-3 py-3 text-right tabular-nums text-stone-600">{row.manualQuantity.toFixed(1)} {row.unit}</td><td className="px-3 py-3 text-right font-semibold tabular-nums text-stone-900">{row.digitalQuantity.toFixed(1)} {row.unit}</td><td className="px-3 py-3 text-right font-semibold tabular-nums text-emerald-700">+{row.difference.toFixed(1)} {row.unit}</td><td className="px-3 py-3 text-right"><p className="font-semibold tabular-nums text-emerald-700">Turun {formatCurrency(row.hppReduction)}/{row.unit}</p><p className="mt-1 text-[11px] tabular-nums text-stone-500">HPP menjadi {formatCurrency(row.effectiveUnitCost)}/{row.unit}</p></td><td className="px-5 py-3 text-right font-semibold tabular-nums text-emerald-700">{formatCurrency(row.estimatedStockValue)}</td></tr>)}</tbody>
-          </table>
-        </div>
+      {rows.length === 0 ? <EmptyState icon={Scale} title="Belum ada selisih timbangan" description="Penerimaan dengan berat digital lebih besar dari berat manual akan tercatat di sini." /> : (
+        <>
+          <div className="erp-table-wrap overflow-x-auto">
+            <table className="erp-table w-full min-w-[920px] text-sm">
+              <thead><tr className="border-b border-stone-200 bg-stone-50/80"><th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-stone-500">Tanggal / penerimaan</th><th className="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-stone-500">Produk</th><th className="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-stone-500">Supplier</th><th className="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-stone-500">Manual</th><th className="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-stone-500">Digital / stok</th><th className="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-stone-500">Selisih</th><th className="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-stone-500">Dampak ke HPP</th><th className="px-5 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-stone-500">Nilai tambahan stok</th></tr></thead>
+              <tbody className="divide-y divide-stone-100">{rows.map((row) => <tr key={row.id} className="hover:bg-stone-50/60"><td className="px-5 py-3"><p className="font-medium text-stone-800">{formatDateShort(row.receivedDate)}</p><p className="mt-1 text-xs text-stone-400">{row.receiptNumber || "Penerimaan stok"}</p></td><td className="px-3 py-3"><p className="font-semibold text-stone-900">{row.productName}</p><p className="mt-1 text-xs text-stone-500">Harga supplier {formatCurrency(row.unitCost)}/{row.unit}</p></td><td className="px-3 py-3 text-stone-600">{row.supplierName || "—"}</td><td className="px-3 py-3 text-right tabular-nums text-stone-600">{row.manualQuantity.toFixed(1)} {row.unit}</td><td className="px-3 py-3 text-right font-semibold tabular-nums text-stone-900">{row.digitalQuantity.toFixed(1)} {row.unit}</td><td className="px-3 py-3 text-right font-semibold tabular-nums text-emerald-700">+{row.difference.toFixed(1)} {row.unit}</td><td className="px-3 py-3 text-right"><p className="font-semibold tabular-nums text-emerald-700">Turun {formatCurrency(row.hppReduction)}/{row.unit}</p><p className="mt-1 text-[11px] tabular-nums text-stone-500">HPP menjadi {formatCurrency(row.effectiveUnitCost)}/{row.unit}</p></td><td className="px-5 py-3 text-right font-semibold tabular-nums text-emerald-700">{formatCurrency(row.estimatedStockValue)}</td></tr>)}</tbody>
+            </table>
+          </div>
+          <div className="flex items-center justify-between gap-3 border-t border-stone-200 px-5 py-3">
+            <p className="text-xs text-stone-500">{from}–{to} dari {total}</p>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" className="px-2.5 sm:px-3" disabled={page <= 1 || isNavigating} onClick={() => goToPage(page - 1)} aria-label="Halaman sebelumnya"><ChevronLeft className="size-4 sm:mr-1" /><span className="hidden sm:inline">Sebelumnya</span></Button>
+              {isNavigating && <Loader2 className="size-4 animate-spin text-stone-400" />}
+              <span className="text-xs text-stone-500">{page}/{pageCount}</span>
+              <Button variant="outline" size="sm" className="px-2.5 sm:px-3" disabled={page >= pageCount || isNavigating} onClick={() => goToPage(page + 1)} aria-label="Halaman berikutnya"><span className="hidden sm:inline">Berikutnya</span><ChevronRight className="size-4 sm:ml-1" /></Button>
+            </div>
+          </div>
+        </>
       )}
       <div className="flex items-start gap-2 border-t border-stone-200 bg-stone-50/60 px-5 py-3 text-[11px] leading-5 text-stone-500"><TrendingUp className="mt-0.5 size-3.5 shrink-0 text-emerald-600" /><p>Nilai selisih menjadi bagian dari stok, bukan laba final invoice. Invoice tetap memakai snapshot HPP saat diterbitkan.</p></div>
     </section>

@@ -7,7 +7,7 @@ import { AdjustProductCostDialog } from "@/components/stock/adjust-product-cost-
 import { ProductSupplierPurchasesSheet } from "@/components/stock/product-supplier-purchases-sheet";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import type { StockBalance, StockBatch, StockMovement } from "@/types";
+import type { StockBalance } from "@/types";
 import type { Product } from "@/types";
 import { EditProductDialog } from "@/components/products/edit-product-dialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -15,7 +15,7 @@ import { deleteProductAction, toggleProductStatusAction } from "@/lib/actions/pr
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
-export function StockRowActions({ balance, product, movements, batches }: { balance: StockBalance; product?: Product; movements: StockMovement[]; batches: StockBatch[] }) {
+export function StockRowActions({ balance, product }: { balance: StockBalance; product?: Product }) {
   const router = useRouter();
   const [purchasesOpen, setPurchasesOpen] = useState(false);
   const [adjustmentOpen, setAdjustmentOpen] = useState(false);
@@ -49,7 +49,7 @@ export function StockRowActions({ balance, product, movements, batches }: { bala
       {product && <><DropdownMenuItem onClick={() => setEditing(true)} className="min-h-11 gap-3 px-3 py-2 text-[15px] font-medium"><Edit className="size-[18px]" /> Edit produk</DropdownMenuItem><DropdownMenuItem onClick={toggleStatus} disabled={loading} className="min-h-11 gap-3 px-3 py-2 text-[15px] font-medium"><Power className="size-[18px]" /> {product.status === "ACTIVE" ? "Nonaktifkan produk" : "Aktifkan produk"}</DropdownMenuItem><DropdownMenuItem onClick={() => setDeleting(true)} className="min-h-11 gap-3 px-3 py-2 text-[15px] font-medium text-red-700 focus:text-red-700"><Trash2 className="size-[18px]" /> Hapus produk</DropdownMenuItem></>}
     </DropdownMenuContent>
     </DropdownMenu>
-    <ProductSupplierPurchasesSheet balance={balance} movements={movements} batches={batches} open={purchasesOpen} onOpenChange={setPurchasesOpen} />
+    {purchasesOpen && <ProductSupplierPurchasesSheet balance={balance} open={purchasesOpen} onOpenChange={setPurchasesOpen} />}
     <AdjustStockDialog balance={balance} open={adjustmentOpen} onOpenChange={setAdjustmentOpen} />
     <AdjustProductCostDialog balance={balance} controlledOpen={costOpen} onOpenChange={setCostOpen} />
     {product && <EditProductDialog product={product} open={editing} onOpenChange={setEditing} />}

@@ -3,15 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { normalizeActionError, requireRole } from "@/lib/security/auth";
-import { calculateMargin, calculateReceiptHppReduction, calculateEffectiveReceiptCost, calculateWeightDifference, calculateWeightDifferenceValue, getStockStatus, validateStockAdjustment, validateStockReceiptCancellation, validateStockReceiptPayload, validateStockSettings, type StockReceiptInput, type StockSettingsInput } from "@/lib/domain/inventory";
+import { validateStockAdjustment, validateStockReceiptCancellation, validateStockReceiptPayload, validateStockSettings, type StockReceiptInput, type StockSettingsInput } from "@/lib/domain/inventory";
 import type { StockBalance, StockBatch, StockMovement, StockMovementType, StockWeightDifference } from "@/types";
-
-export interface InventorySnapshot {
-  balances: StockBalance[];
-  movements: StockMovement[];
-  batches: StockBatch[];
-  weightDifferences: StockWeightDifference[];
-}
 
 export async function getInventorySummaryAction(): Promise<number> {
   await requireRole(["OWNER", "FINANCE"]);
@@ -21,139 +14,238 @@ export async function getInventorySummaryAction(): Promise<number> {
   return Number(data ?? 0);
 }
 
-function relatedRow(value: unknown): Record<string, unknown> | undefined {
-  if (Array.isArray(value)) return value[0] as Record<string, unknown> | undefined;
-  return value as Record<string, unknown> | undefined;
+export interface DashboardStockSummary {
+  totalStockValue: number;
+  activeProductCount: number;
+  totalQuantity: number;
 }
 
-export async function getInventoryAction(): Promise<InventorySnapshot> {
+/**
+ * Small aggregate for dashboard KPI cards. Computed over ALL active products in
+ * the database, so the value stays accurate without loading inventory rows.
+ */
+export async function getDashboardStockSummaryAction(): Promise<DashboardStockSummary> {
   await requireRole(["OWNER", "FINANCE"]);
   const supabase = await createClient();
-  const [balanceResult, movementResult, receiptItemResult, batchResult, weightDifferenceResult] = await Promise.all([
-    supabase.from("stock_balances").select("product_id,quantity,minimum_quantity,average_unit_cost,updated_at,products(name,sku,size,category,default_unit,default_selling_price,status)").order("updated_at", { ascending: false }).limit(5000),
-    supabase.from("stock_movements").select("id,product_id,product_name_snapshot,unit,movement_type,quantity_delta,balance_after,supplier_id,customer_id,invoice_id,receipt_id,receipt_item_id,notes,occurred_at,suppliers(name),customers(name),invoices(invoice_number),stock_receipts(receipt_number,cancelled_at),stock_receipt_items(unit_cost,manual_quantity,digital_quantity)").order("occurred_at", { ascending: false }).limit(100),
-    supabase.from("stock_receipt_items").select("product_id,unit_cost,created_at,stock_receipts!inner(supplier_id,cancelled_at)").order("created_at", { ascending: false }).limit(5000),
-    supabase.from("stock_batches").select("id,product_id,supplier_id,quantity_received,quantity_remaining,unit_cost,received_at,expiry_date,status,notes,suppliers(name)").order("received_at", { ascending: false }).limit(5000),
-    supabase.from("stock_receipt_items").select("id,product_id,unit,manual_quantity,digital_quantity,unit_cost,subtotal,created_at,products(name,default_unit,default_selling_price),stock_receipts(receipt_number,received_date,cancelled_at,suppliers(name))").order("created_at", { ascending: false }).limit(5000),
-  ]);
-  if (balanceResult.error) throw new Error(balanceResult.error.message);
-  if (movementResult.error) throw new Error(movementResult.error.message);
-  if (receiptItemResult.error) throw new Error(receiptItemResult.error.message);
-  if (batchResult.error) throw new Error(batchResult.error.message);
-  if (weightDifferenceResult.error) throw new Error(weightDifferenceResult.error.message);
+  const { data, error } = await supabase.rpc("get_dashboard_stock_summary");
+  if (error) throw new Error(error.message);
+  const row = (data ?? {}) as Record<string, unknown>;
+  return {
+    totalStockValue: Number(row.totalStockValue ?? 0),
+    activeProductCount: Number(row.activeProductCount ?? 0),
+    totalQuantity: Number(row.totalQuantity ?? 0),
+  };
+}
 
-  const purchaseFacts = new Map<string, { latestCost?: number; suppliers: Set<string> }>();
-  for (const row of receiptItemResult.data ?? []) {
-    const value = row as Record<string, unknown>;
-    const receipt = relatedRow(value.stock_receipts);
-    if (receipt?.cancelled_at) continue;
-    const productId = String(value.product_id);
-    const fact = purchaseFacts.get(productId) ?? { suppliers: new Set<string>() };
-    if (fact.latestCost === undefined) fact.latestCost = Number(value.unit_cost ?? 0);
-    if (receipt?.supplier_id) fact.suppliers.add(String(receipt.supplier_id));
-    purchaseFacts.set(productId, fact);
-  }
+export interface StockPageSummary {
+  activeProductCount: number;
+  totalQuantity: number;
+  totalStockValue: number;
+  lowStockCount: number;
+  outOfStockCount: number;
+}
 
-  const balances = (balanceResult.data ?? []).map((row) => {
-    const value = row as Record<string, unknown>;
-    const product = relatedRow(value.products) ?? {};
-    const quantity = Number(value.quantity ?? 0);
-    const averageUnitCost = Number(value.average_unit_cost ?? 0);
-    const defaultSellingPrice = Number(product.default_selling_price ?? 0);
-    const purchaseFact = purchaseFacts.get(String(value.product_id));
-    const margin = calculateMargin(defaultSellingPrice, averageUnitCost);
-    return {
-      productId: String(value.product_id),
-      productName: String(product.name ?? "Produk tidak tersedia"),
-      sku: product.sku ? String(product.sku) : undefined,
-      size: product.size ? String(product.size) : undefined,
-      unit: String(product.default_unit ?? "unit"),
-      category: product.category ? String(product.category) : "Tanpa kategori",
-      productStatus: product.status === "INACTIVE" ? "INACTIVE" : "ACTIVE",
-      quantity,
-      minimumQuantity: Number(value.minimum_quantity ?? 0),
-      averageUnitCost,
-      defaultSellingPrice,
-      stockValue: quantity * averageUnitCost,
-      latestPurchaseCost: purchaseFact?.latestCost,
-      supplierCount: purchaseFact?.suppliers.size ?? 0,
-      marginNominal: margin.nominal,
-      marginPercentage: margin.percentage,
-      stockStatus: getStockStatus(quantity, Number(value.minimum_quantity ?? 0)),
-      updatedAt: String(value.updated_at),
-    } satisfies StockBalance;
-  });
+export interface StockListParams {
+  search?: string;
+  category?: string;
+  stockStatus?: string;
+  productStatus?: string;
+  type?: string;
+  sortKey?: string;
+  sortDir?: "asc" | "desc";
+  page?: number;
+  pageSize?: number;
+}
 
-  const movements = (movementResult.data ?? []).map((row) => {
-    const value = row as Record<string, unknown>;
-    const supplier = relatedRow(value.suppliers);
-    const customer = relatedRow(value.customers);
-    const invoice = relatedRow(value.invoices);
-    const receipt = relatedRow(value.stock_receipts);
-    const receiptItem = relatedRow(value.stock_receipt_items);
-    return {
-      id: String(value.id),
-      productId: String(value.product_id),
-      productName: String(value.product_name_snapshot),
-      unit: String(value.unit),
-      movementType: value.movement_type as StockMovementType,
-      quantityDelta: Number(value.quantity_delta ?? 0),
-      balanceAfter: Number(value.balance_after ?? 0),
-      supplierName: supplier?.name ? String(supplier.name) : undefined,
-      customerName: customer?.name ? String(customer.name) : undefined,
-      invoiceNumber: invoice?.invoice_number ? String(invoice.invoice_number) : undefined,
-      receiptId: value.receipt_id ? String(value.receipt_id) : undefined,
-      receiptNumber: receipt?.receipt_number ? String(receipt.receipt_number) : undefined,
-      receiptCancelledAt: receipt?.cancelled_at ? String(receipt.cancelled_at) : undefined,
-       purchaseUnitCost: receiptItem?.unit_cost ? Number(receiptItem.unit_cost) : undefined,
-       manualQuantity: receiptItem?.manual_quantity ? Number(receiptItem.manual_quantity) : undefined,
-       digitalQuantity: receiptItem?.digital_quantity ? Number(receiptItem.digital_quantity) : undefined,
-       weightDifference: receiptItem?.manual_quantity && receiptItem?.digital_quantity
-         ? Number(receiptItem.digital_quantity) - Number(receiptItem.manual_quantity)
-         : undefined,
-      notes: value.notes ? String(value.notes) : undefined,
-      occurredAt: String(value.occurred_at),
-    } satisfies StockMovement;
+export interface StockListPage<T> {
+  total: number;
+  rows: T[];
+}
+
+export interface WeightDifferencePage extends StockListPage<StockWeightDifference> {
+  totalDifference: number;
+  totalEstimatedStockValue: number;
+}
+
+function toNumber(value: unknown): number {
+  const parsed = Number(value ?? 0);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+export async function getStockPageSummaryAction(): Promise<StockPageSummary> {
+  await requireRole(["OWNER", "FINANCE"]);
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("get_stock_page_summary");
+  if (error) throw new Error(error.message);
+  const row = (data ?? {}) as Record<string, unknown>;
+  return {
+    activeProductCount: toNumber(row.activeProductCount),
+    totalQuantity: toNumber(row.totalQuantity),
+    totalStockValue: toNumber(row.totalStockValue),
+    lowStockCount: toNumber(row.lowStockCount),
+    outOfStockCount: toNumber(row.outOfStockCount),
+  };
+}
+
+/** One page of stock balances; summary cards use getStockPageSummaryAction. */
+export async function getStockBalancesPageAction(params: StockListParams = {}): Promise<StockListPage<StockBalance>> {
+  await requireRole(["OWNER", "FINANCE"]);
+  const supabase = await createClient();
+  const pageSize = Math.min(Math.max(params.pageSize ?? 25, 1), 200);
+  const page = Math.max(params.page ?? 1, 1);
+  const { data, error } = await supabase.rpc("get_stock_balances_page", {
+    p_search: params.search?.trim() || null,
+    p_category: params.category && params.category !== "all" ? params.category : null,
+    p_stock_status: params.stockStatus && params.stockStatus !== "all" ? params.stockStatus : null,
+    p_product_status: params.productStatus && params.productStatus !== "all" ? params.productStatus : null,
+    p_sort_key: params.sortKey ?? "productName",
+    p_sort_dir: params.sortDir ?? "asc",
+    p_limit: pageSize,
+    p_offset: (page - 1) * pageSize,
   });
-  const batches = (batchResult.data ?? []).map((row) => {
-    const value = row as Record<string, unknown>;
-    const supplier = relatedRow(value.suppliers);
-    return {
-      id: String(value.id), productId: String(value.product_id), supplierId: value.supplier_id ? String(value.supplier_id) : undefined,
-      supplierName: supplier?.name ? String(supplier.name) : undefined,
-      quantityReceived: Number(value.quantity_received ?? 0), quantityRemaining: Number(value.quantity_remaining ?? 0),
-      unitCost: Number(value.unit_cost ?? 0), receivedAt: String(value.received_at), expiryDate: value.expiry_date ? String(value.expiry_date) : undefined,
-      status: String(value.status), notes: value.notes ? String(value.notes) : undefined,
-    } satisfies StockBatch;
+  if (error) throw new Error(error.message);
+  const payload = (data ?? {}) as { total?: number; rows?: Array<Record<string, unknown>> };
+  return {
+    total: toNumber(payload.total),
+    rows: (payload.rows ?? []).map((row) => ({
+      productId: String(row.productId),
+      productName: String(row.productName ?? "Produk tidak tersedia"),
+      sku: row.sku ? String(row.sku) : undefined,
+      size: row.size ? String(row.size) : undefined,
+      unit: String(row.unit ?? "unit"),
+      category: row.category ? String(row.category) : "Tanpa kategori",
+      productStatus: row.productStatus === "INACTIVE" ? "INACTIVE" : "ACTIVE",
+      quantity: toNumber(row.quantity),
+      minimumQuantity: toNumber(row.minimumQuantity),
+      averageUnitCost: toNumber(row.averageUnitCost),
+      defaultSellingPrice: toNumber(row.defaultSellingPrice),
+      stockValue: toNumber(row.stockValue),
+      latestPurchaseCost: row.latestPurchaseCost === null || row.latestPurchaseCost === undefined ? undefined : toNumber(row.latestPurchaseCost),
+      supplierCount: toNumber(row.supplierCount),
+      marginNominal: toNumber(row.marginNominal),
+      marginPercentage: toNumber(row.marginPercentage),
+      stockStatus: (row.stockStatus as StockBalance["stockStatus"]) ?? "Aman",
+      openBatchCount: toNumber(row.openBatchCount),
+      updatedAt: String(row.updatedAt ?? ""),
+    })),
+  };
+}
+
+export async function getStockMovementsPageAction(params: StockListParams = {}): Promise<StockListPage<StockMovement>> {
+  await requireRole(["OWNER", "FINANCE"]);
+  const supabase = await createClient();
+  const pageSize = Math.min(Math.max(params.pageSize ?? 25, 1), 200);
+  const page = Math.max(params.page ?? 1, 1);
+  const { data, error } = await supabase.rpc("get_stock_movements_page", {
+    p_search: params.search?.trim() || null,
+    p_type: params.type && params.type !== "all" ? params.type : null,
+    p_limit: pageSize,
+    p_offset: (page - 1) * pageSize,
   });
-  const weightDifferences = (weightDifferenceResult.data ?? []).flatMap((row) => {
-    const value = row as Record<string, unknown>;
-    const receipt = relatedRow(value.stock_receipts);
-    const product = relatedRow(value.products);
-    const supplier = relatedRow(receipt?.suppliers);
-    if (!receipt || receipt.cancelled_at) return [];
-    const manualQuantity = Number(value.manual_quantity ?? value.quantity ?? 0);
-    const digitalQuantity = Number(value.digital_quantity ?? value.quantity ?? 0);
-    const difference = calculateWeightDifference(manualQuantity, digitalQuantity);
-    const unitCost = Number(value.unit_cost ?? 0);
-    return [{
-      id: String(value.id),
-      productId: String(value.product_id),
-      productName: String(product?.name ?? "Produk tidak tersedia"),
-      unit: String(value.unit ?? product?.default_unit ?? "unit"),
-      supplierName: supplier?.name ? String(supplier.name) : undefined,
-      receiptNumber: receipt.receipt_number ? String(receipt.receipt_number) : undefined,
-      receivedDate: String(receipt.received_date ?? value.created_at),
-      manualQuantity,
-      digitalQuantity,
-       difference,
-       unitCost,
-       effectiveUnitCost: calculateEffectiveReceiptCost(manualQuantity, digitalQuantity, unitCost),
-       hppReduction: calculateReceiptHppReduction(manualQuantity, digitalQuantity, unitCost),
-       estimatedStockValue: calculateWeightDifferenceValue(difference, unitCost),
-    } satisfies StockWeightDifference];
+  if (error) throw new Error(error.message);
+  const payload = (data ?? {}) as { total?: number; rows?: Array<Record<string, unknown>> };
+  return {
+    total: toNumber(payload.total),
+    rows: (payload.rows ?? []).map((row) => ({
+      id: String(row.id),
+      productId: String(row.productId),
+      productName: String(row.productName),
+      unit: String(row.unit),
+      movementType: row.movementType as StockMovementType,
+      quantityDelta: toNumber(row.quantityDelta),
+      balanceAfter: toNumber(row.balanceAfter),
+      supplierName: row.supplierName ? String(row.supplierName) : undefined,
+      customerName: row.customerName ? String(row.customerName) : undefined,
+      invoiceNumber: row.invoiceNumber ? String(row.invoiceNumber) : undefined,
+      receiptNumber: row.receiptNumber ? String(row.receiptNumber) : undefined,
+      receiptCancelledAt: row.receiptCancelledAt ? String(row.receiptCancelledAt) : undefined,
+      purchaseUnitCost: row.purchaseUnitCost === null || row.purchaseUnitCost === undefined ? undefined : toNumber(row.purchaseUnitCost),
+      manualQuantity: row.manualQuantity === null || row.manualQuantity === undefined ? undefined : toNumber(row.manualQuantity),
+      digitalQuantity: row.digitalQuantity === null || row.digitalQuantity === undefined ? undefined : toNumber(row.digitalQuantity),
+      weightDifference: row.weightDifference === null || row.weightDifference === undefined ? undefined : toNumber(row.weightDifference),
+      notes: row.notes ? String(row.notes) : undefined,
+      occurredAt: String(row.occurredAt),
+    })),
+  };
+}
+
+export async function getWeightDifferencesPageAction(params: StockListParams = {}): Promise<WeightDifferencePage> {
+  await requireRole(["OWNER", "FINANCE"]);
+  const supabase = await createClient();
+  const pageSize = Math.min(Math.max(params.pageSize ?? 25, 1), 200);
+  const page = Math.max(params.page ?? 1, 1);
+  const { data, error } = await supabase.rpc("get_weight_differences_page", {
+    p_limit: pageSize,
+    p_offset: (page - 1) * pageSize,
   });
-  return { balances, movements, batches, weightDifferences };
+  if (error) throw new Error(error.message);
+  const payload = (data ?? {}) as { total?: number; totalDifference?: number; totalEstimatedStockValue?: number; rows?: Array<Record<string, unknown>> };
+  return {
+    total: toNumber(payload.total),
+    totalDifference: toNumber(payload.totalDifference),
+    totalEstimatedStockValue: toNumber(payload.totalEstimatedStockValue),
+    rows: (payload.rows ?? []).map((row) => ({
+      id: String(row.id),
+      productId: String(row.productId),
+      productName: String(row.productName ?? "Produk tidak tersedia"),
+      unit: String(row.unit ?? "unit"),
+      supplierName: row.supplierName ? String(row.supplierName) : undefined,
+      receiptNumber: row.receiptNumber ? String(row.receiptNumber) : undefined,
+      receivedDate: String(row.receivedDate),
+      manualQuantity: toNumber(row.manualQuantity),
+      digitalQuantity: toNumber(row.digitalQuantity),
+      difference: toNumber(row.difference),
+      unitCost: toNumber(row.unitCost),
+      effectiveUnitCost: toNumber(row.effectiveUnitCost),
+      hppReduction: toNumber(row.hppReduction),
+      estimatedStockValue: toNumber(row.estimatedStockValue),
+    })),
+  };
+}
+
+export interface ProductSupplierPurchases {
+  purchases: StockMovement[];
+  batches: StockBatch[];
+}
+
+/** Loaded only when the supplier-purchases sheet is opened for one product. */
+export async function getProductSupplierPurchasesAction(productId: string): Promise<ProductSupplierPurchases> {
+  await requireRole(["OWNER", "FINANCE"]);
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("get_product_supplier_purchases", { p_product_id: productId });
+  if (error) throw new Error(error.message);
+  const payload = (data ?? {}) as { purchases?: Array<Record<string, unknown>>; batches?: Array<Record<string, unknown>> };
+  return {
+    purchases: (payload.purchases ?? []).map((row) => ({
+      id: String(row.id),
+      productId,
+      productName: "",
+      unit: String(row.unit ?? "unit"),
+      movementType: "PURCHASE_IN" as StockMovementType,
+      quantityDelta: toNumber(row.quantityDelta),
+      balanceAfter: 0,
+      supplierName: row.supplierName ? String(row.supplierName) : undefined,
+      receiptId: row.receiptId ? String(row.receiptId) : undefined,
+      receiptNumber: row.receiptNumber ? String(row.receiptNumber) : undefined,
+      purchaseUnitCost: toNumber(row.purchaseUnitCost),
+      manualQuantity: row.manualQuantity === null || row.manualQuantity === undefined ? undefined : toNumber(row.manualQuantity),
+      digitalQuantity: row.digitalQuantity === null || row.digitalQuantity === undefined ? undefined : toNumber(row.digitalQuantity),
+      occurredAt: String(row.occurredAt),
+    })),
+    batches: (payload.batches ?? []).map((row) => ({
+      id: String(row.id),
+      productId,
+      supplierId: row.supplierId ? String(row.supplierId) : undefined,
+      supplierName: row.supplierName ? String(row.supplierName) : undefined,
+      quantityReceived: toNumber(row.quantityReceived),
+      quantityRemaining: toNumber(row.quantityRemaining),
+      unitCost: toNumber(row.unitCost),
+      receivedAt: String(row.receivedAt),
+      expiryDate: row.expiryDate ? String(row.expiryDate) : undefined,
+      status: String(row.status),
+      notes: row.notes ? String(row.notes) : undefined,
+    })),
+  };
 }
 
 export async function createStockReceiptAction(payload: StockReceiptInput) {

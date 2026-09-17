@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { getInvoicesAction } from "@/lib/actions/invoices";
-import { getExpensesAction } from "@/lib/actions/expenses";
+import { getExpenseDailyTotalsAction } from "@/lib/actions/expenses";
 import { getApprovedUser, requireApprovedUser } from "@/lib/security/auth";
 import { getDirectCostLabel } from "@/lib/utils";
 import { getReportPeriodRange, getTodayJakarta, normalizeReportPeriod } from "@/lib/report-period";
@@ -35,10 +35,12 @@ export async function getDashboardDataAction(periodParam?: string, customStartDa
   const previousEnd = new Date(selectedStartDate);
   const previousStartKey = dateKey(previousStart);
   const previousEndKey = dateKey(previousEnd);
-  const [invoices, previousInvoices, expenses] = await Promise.all([
+  const [invoices, previousInvoices, expenseDailyTotals] = await Promise.all([
     getInvoicesAction(period === "all" ? undefined : selectedStart, period === "all" ? undefined : selectedEnd, true),
     period === "all" ? Promise.resolve([]) : getInvoicesAction(previousStartKey, previousEndKey),
-    user.role === "STAFF" ? Promise.resolve([]) : getExpensesAction(period === "all" ? undefined : selectedStart, period === "all" ? undefined : selectedEnd),
+    user.role === "STAFF"
+      ? Promise.resolve([])
+      : getExpenseDailyTotalsAction(period === "all" ? undefined : selectedStart, period === "all" ? undefined : selectedEnd),
   ]);
   const issued = invoices.filter((invoice) => invoice.status !== "DRAFT" && invoice.status !== "VOID");
   const inRange = (value: string, start: Date, end: Date) => {
@@ -48,11 +50,15 @@ export async function getDashboardDataAction(periodParam?: string, customStartDa
 
   const selectedInvoices = period === "all" ? issued : issued.filter((invoice) => inRange(invoice.issueDate, selectedStartDate, endExclusive));
   const previousIssued = previousInvoices.filter((invoice) => invoice.status !== "DRAFT" && invoice.status !== "VOID");
-  const selectedExpenses = period === "all" ? expenses : expenses.filter((expense) => inRange(expense.expenseDate, selectedStartDate, endExclusive));
+  // Expense totals are aggregated in the database over all matching rows, so
+  // summary values are never truncated by a row limit.
+  const selectedExpenses = period === "all"
+    ? expenseDailyTotals
+    : expenseDailyTotals.filter((expense) => inRange(expense.expenseDate, selectedStartDate, endExclusive));
   const periodRevenue = selectedInvoices.reduce((sum, invoice) => sum + invoice.total, 0);
   const previousRevenue = previousIssued.reduce((sum, invoice) => sum + invoice.total, 0);
   const periodProfit = selectedInvoices.reduce((sum, invoice) => sum + invoice.transactionProfit, 0);
-  const operatingExpenses = selectedExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+  const operatingExpenses = selectedExpenses.reduce((sum, expense) => sum + expense.total, 0);
   const netProfit = periodProfit - operatingExpenses;
   const directCostTotal = selectedInvoices.reduce((sum, invoice) => sum + invoice.totalDirectCost, 0);
   const receivables = selectedInvoices.filter((invoice) => invoice.status !== "PAID").reduce((sum, invoice) => sum + invoice.remainingBalance, 0);
@@ -83,7 +89,7 @@ export async function getDashboardDataAction(periodParam?: string, customStartDa
   });
   selectedExpenses.forEach((expense) => {
     const current = daily.get(expense.expenseDate) ?? { revenue: 0, profit: 0, orders: 0 };
-    current.profit -= expense.amount;
+    current.profit -= expense.total;
     daily.set(expense.expenseDate, current);
   });
   const salesData: SalesDataPoint[] = [...daily].sort(([a], [b]) => a.localeCompare(b)).map(([date, value]) => ({ date: new Date(`${date}T00:00:00`).toLocaleDateString("id-ID", { day: "2-digit" }), revenue: value.revenue, orders: value.orders }));

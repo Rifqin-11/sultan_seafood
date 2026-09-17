@@ -78,6 +78,7 @@ export interface StockBalance {
   marginNominal?: number;
   marginPercentage?: number;
   stockStatus?: "Aman" | "Menipis" | "Habis";
+  openBatchCount?: number;
 }
 
 export interface StockBatch {
@@ -258,6 +259,8 @@ export interface Invoice {
   createdBy: string;
   createdAt: string;
   updatedAt: string;
+  /** Precomputed margin-billed value for list views (items stay empty there). */
+  marginValue?: number;
 }
 
 export interface CompanyProfilePublic {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import {
   formatCurrency,
   formatDateShort,
@@ -40,11 +40,17 @@ import { InvoiceStatusBadge } from "./invoice-status-badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { calculateInvoiceMarginValue } from "@/lib/domain/invoices";
 import Link from "next/link";
-import { handleDownloadInvoicePdf } from "./invoice-pdf-download";
+import dynamic from "next/dynamic";
 
-import { RecordPaymentDialog } from "@/components/payments/record-payment-dialog";
-import { deleteInvoiceAction, voidInvoiceAction } from "@/lib/actions/invoices";
-import { useRouter } from "next/navigation";
+// Loaded only when the user opens the payment dialog, keeping the PDF renderer
+// and payment/upload stack out of the initial invoice-list bundle.
+const RecordPaymentDialog = dynamic(
+  () => import("@/components/payments/record-payment-dialog").then((mod) => mod.RecordPaymentDialog),
+  { ssr: false }
+);
+
+import { deleteInvoiceAction, getInvoiceByIdAction, voidInvoiceAction } from "@/lib/actions/invoices";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Trash2, Ban } from "lucide-react";
 
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -60,37 +66,105 @@ const STATUS_FILTERS: { label: string; value: InvoiceStatus | "ALL" }[] = [
 ];
 
 interface InvoiceListTableProps {
-  initialInvoices?: Invoice[];
+  invoices: Invoice[];
   role: Role;
   company: CompanyProfile;
+  total: number;
+  page: number;
+  pageSize: number;
+  statusCounts?: Record<string, number>;
+  search?: string;
+  status?: string;
 }
 
-export function InvoiceListTable({ initialInvoices = [], role, company }: InvoiceListTableProps) {
+export function InvoiceListTable({
+  invoices,
+  role,
+  company,
+  total,
+  page,
+  pageSize,
+  statusCounts = {},
+  search: initialSearch = "",
+  status: initialStatus = "ALL",
+}: InvoiceListTableProps) {
   const router = useRouter();
-  const [invoicesList, setInvoicesList] = useState<Invoice[]>(
-    initialInvoices
-  );
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [isNavigating, startTransition] = useTransition();
 
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<InvoiceStatus | "ALL">(
-    "ALL"
-  );
+  // URL search params are the source of truth for status/page; the parent
+  // remounts this component when they change so local input state stays fresh.
+  const statusFilter = (initialStatus as InvoiceStatus | "ALL") || "ALL";
+  const [search, setSearch] = useState(initialSearch);
+  const [optimisticRemoved, setOptimisticRemoved] = useState<Set<string>>(new Set());
+  const [optimisticVoided, setOptimisticVoided] = useState<Set<string>>(new Set());
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [deletingInvoice, setDeletingInvoice] = useState<Invoice | null>(null);
   const [voidingInvoice, setVoidingInvoice] = useState<Invoice | null>(null);
   const [selectedPaymentInvoiceId, setSelectedPaymentInvoiceId] = useState<string | null>(null);
-  const [page, setPage] = useState(1);
-  const pageSize = 10;
+  const pageCount = Math.max(1, Math.ceil(total / pageSize));
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const rows = invoices
+    .filter((inv) => !optimisticRemoved.has(inv.id))
+    .map((inv) => (optimisticVoided.has(inv.id) ? { ...inv, status: "VOID" as InvoiceStatus, remainingBalance: 0 } : inv));
+
+  const buildHref = useCallback(
+    (next: { page?: number; search?: string; status?: string }) => {
+      const params = new URLSearchParams(searchParams.toString());
+      const nextSearch = next.search ?? search;
+      const nextStatus = next.status ?? statusFilter;
+      const nextPage = next.page ?? page;
+      if (nextSearch.trim()) params.set("q", nextSearch.trim());
+      else params.delete("q");
+      if (nextStatus && nextStatus !== "ALL") params.set("status", nextStatus);
+      else params.delete("status");
+      if (nextPage > 1) params.set("page", String(nextPage));
+      else params.delete("page");
+      const query = params.toString();
+      return query ? `${pathname}?${query}` : pathname;
+    },
+    [pathname, page, search, searchParams, statusFilter]
+  );
+
+  const navigate = useCallback(
+    (next: { page?: number; search?: string; status?: string }) => {
+      startTransition(() => {
+        router.replace(buildHref(next), { scroll: false });
+      });
+    },
+    [buildHref, router]
+  );
+
+  const handleSearchChange = (value: string) => {
+    setSearch(value);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      navigate({ search: value, page: 1 });
+    }, 300);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []);
 
   const handleConfirmDeleteInvoice = async () => {
     if (!deletingInvoice) return;
     const targetId = deletingInvoice.id;
     setDeletingInvoice(null);
-    setInvoicesList((prev) => prev.filter((inv) => inv.id !== targetId));
+    setOptimisticRemoved((prev) => new Set(prev).add(targetId));
 
     const res = await deleteInvoiceAction(targetId);
     if (res.error) {
       toast.error(`Gagal menghapus: ${res.error}`);
+      setOptimisticRemoved((prev) => {
+        const next = new Set(prev);
+        next.delete(targetId);
+        return next;
+      });
       router.refresh();
     } else {
       toast.success(res.message || "Invoice berhasil dihapus");
@@ -102,13 +176,16 @@ export function InvoiceListTable({ initialInvoices = [], role, company }: Invoic
     if (!voidingInvoice) return;
     const targetId = voidingInvoice.id;
     setVoidingInvoice(null);
-    setInvoicesList((prev) =>
-      prev.map((inv) => (inv.id === targetId ? { ...inv, status: "VOID", remainingBalance: 0 } : inv))
-    );
+    setOptimisticVoided((prev) => new Set(prev).add(targetId));
 
     const res = await voidInvoiceAction(targetId);
     if (res.error) {
       toast.error(`Gagal membatalkan: ${res.error}`);
+      setOptimisticVoided((prev) => {
+        const next = new Set(prev);
+        next.delete(targetId);
+        return next;
+      });
       router.refresh();
     } else {
       toast.success(res.message || "Invoice berhasil dibatalkan");
@@ -118,22 +195,19 @@ export function InvoiceListTable({ initialInvoices = [], role, company }: Invoic
 
   const handleDownload = async (inv: Invoice) => {
     setDownloadingId(inv.id);
-    await handleDownloadInvoicePdf(inv, company);
-    setDownloadingId(null);
+    try {
+      // List rows never carry items; fetch full detail only when needed.
+      const detail = inv.items.length > 0 ? inv : await getInvoiceByIdAction(inv.id);
+      // Load the PDF renderer only when a download is actually requested.
+      const { handleDownloadInvoicePdf } = await import("./invoice-pdf-download");
+      await handleDownloadInvoicePdf(detail ?? inv, company);
+    } finally {
+      setDownloadingId(null);
+    }
   };
 
-  const filtered = invoicesList.filter((inv) => {
-    const matchSearch =
-      inv.customerName.toLowerCase().includes(search.toLowerCase()) ||
-      (inv.invoiceNumber ?? "")
-        .toLowerCase()
-        .includes(search.toLowerCase());
-    const matchStatus =
-      statusFilter === "ALL" || inv.status === statusFilter;
-    return matchSearch && matchStatus;
-  });
-  const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
-  const pageRows = filtered.slice((page - 1) * pageSize, page * pageSize);
+  const getMarginValue = (inv: Invoice) =>
+    inv.marginValue ?? calculateInvoiceMarginValue(inv.items);
 
   const renderInvoiceActions = (inv: Invoice) => (
     <DropdownMenu>
@@ -201,6 +275,9 @@ export function InvoiceListTable({ initialInvoices = [], role, company }: Invoic
     </DropdownMenu>
   );
 
+  const shownFrom = total === 0 ? 0 : (page - 1) * pageSize + 1;
+  const shownTo = Math.min(page * pageSize, total);
+
   return (
     <section className="erp-surface overflow-hidden" aria-label="Daftar invoice">
       {/* Toolbar */}
@@ -211,10 +288,11 @@ export function InvoiceListTable({ initialInvoices = [], role, company }: Invoic
             <Input
               placeholder="Cari nomor invoice atau restoran..."
               value={search}
-              onChange={(event) => { setSearch(event.target.value); setPage(1); }}
+              onChange={(event) => handleSearchChange(event.target.value)}
               className="h-10 w-full pl-9"
             />
           </div>
+          {isNavigating && <Loader2 className="size-4 animate-spin text-muted-foreground" />}
         </div>
 
         {/* Status filter tabs */}
@@ -222,7 +300,9 @@ export function InvoiceListTable({ initialInvoices = [], role, company }: Invoic
           {STATUS_FILTERS.map((f) => (
             <button
               key={f.value}
-              onClick={() => { setStatusFilter(f.value); setPage(1); }}
+              onClick={() => {
+                navigate({ status: f.value, page: 1 });
+              }}
               className={`min-h-9 px-3.5 py-2 text-xs rounded-xl font-semibold whitespace-nowrap transition-colors flex-shrink-0 ${
                 statusFilter === f.value
                   ? "bg-primary text-primary-foreground shadow-sm"
@@ -232,7 +312,7 @@ export function InvoiceListTable({ initialInvoices = [], role, company }: Invoic
               {f.label}
               {f.value !== "ALL" && (
                 <span className="ml-1.5 opacity-60">
-                  {invoicesList.filter((i) => i.status === f.value).length}
+                  {statusCounts[f.value] ?? 0}
                 </span>
               )}
             </button>
@@ -241,7 +321,7 @@ export function InvoiceListTable({ initialInvoices = [], role, company }: Invoic
       </div>
 
       {/* Table */}
-      {filtered.length === 0 ? (
+      {rows.length === 0 ? (
         <EmptyState
           icon={FileText}
           title="Tidak ada invoice"
@@ -266,8 +346,8 @@ export function InvoiceListTable({ initialInvoices = [], role, company }: Invoic
               </TableRow>
             </TableHeader>
             <TableBody>
-              {pageRows.map((inv) => {
-                const marginValue = calculateInvoiceMarginValue(inv.items);
+              {rows.map((inv) => {
+                const marginValue = getMarginValue(inv);
                 return (
                 <TableRow key={inv.id} className="hover:bg-muted/20">
                   <TableCell>
@@ -338,8 +418,8 @@ export function InvoiceListTable({ initialInvoices = [], role, company }: Invoic
           </Table>
         </div>
         <div className="divide-y divide-border lg:hidden">
-          {pageRows.map((inv) => {
-            const marginValue = calculateInvoiceMarginValue(inv.items);
+          {rows.map((inv) => {
+            const marginValue = getMarginValue(inv);
             return (
             <article key={inv.id} className="space-y-3 p-4 sm:p-5">
               <div className="flex items-start justify-between gap-3">
@@ -370,14 +450,14 @@ export function InvoiceListTable({ initialInvoices = [], role, company }: Invoic
       {/* Footer */}
       <div className="flex items-center justify-between gap-3 border-t border-border px-4 py-3 sm:px-5">
         <p className="text-xs text-muted-foreground">
-          {filtered.length} dari {invoicesList.length} invoice
+          {shownFrom}–{shownTo} dari {total} invoice
         </p>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="px-2.5 sm:px-3" disabled={page <= 1} onClick={() => setPage((value) => Math.max(1, value - 1))} aria-label="Halaman sebelumnya">
+          <Button variant="outline" size="sm" className="px-2.5 sm:px-3" disabled={page <= 1 || isNavigating} onClick={() => navigate({ page: page - 1 })} aria-label="Halaman sebelumnya">
             <ChevronLeft className="size-4 sm:mr-1" /><span className="hidden sm:inline">Sebelumnya</span>
           </Button>
           <span className="text-xs text-muted-foreground">{page}/{pageCount}</span>
-          <Button variant="outline" size="sm" className="px-2.5 sm:px-3" disabled={page >= pageCount} onClick={() => setPage((value) => Math.min(pageCount, value + 1))} aria-label="Halaman berikutnya">
+          <Button variant="outline" size="sm" className="px-2.5 sm:px-3" disabled={page >= pageCount || isNavigating} onClick={() => navigate({ page: page + 1 })} aria-label="Halaman berikutnya">
             <span className="hidden sm:inline">Berikutnya</span><ChevronRight className="size-4 sm:ml-1" />
           </Button>
         </div>
@@ -386,7 +466,7 @@ export function InvoiceListTable({ initialInvoices = [], role, company }: Invoic
       {selectedPaymentInvoiceId && (
         <RecordPaymentDialog
           defaultInvoiceId={selectedPaymentInvoiceId}
-          invoices={invoicesList}
+          invoices={rows}
           open={!!selectedPaymentInvoiceId}
           onOpenChange={(open) => {
             if (!open) setSelectedPaymentInvoiceId(null);

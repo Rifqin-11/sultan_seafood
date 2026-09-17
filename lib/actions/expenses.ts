@@ -34,6 +34,30 @@ export async function deleteExpenseAction(id: string) {
   catch (error) { return { error: normalizeActionError(error, "Gagal menghapus pengeluaran.") }; }
 }
 
+export interface ExpenseDailyTotal {
+  expenseDate: string;
+  total: number;
+}
+
+/**
+ * Aggregated operating expenses per day, computed in the database over ALL
+ * matching rows. Use this for summaries so totals never get truncated by a
+ * row limit.
+ */
+export async function getExpenseDailyTotalsAction(startDate?: string, endDate?: string): Promise<ExpenseDailyTotal[]> {
+  await requireRole(["OWNER", "FINANCE"]);
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("get_expense_daily_totals", {
+    p_start_date: startDate ?? null,
+    p_end_date: endDate ?? null,
+  });
+  if (error) throw new Error(error.message);
+  return ((data ?? []) as Array<{ expense_date: string; total: number | string }>).map((row) => ({
+    expenseDate: String(row.expense_date),
+    total: Number(row.total ?? 0),
+  }));
+}
+
 export async function getExpensesAction(startDate?: string, endDate?: string, limit = 500): Promise<Expense[]> {
   await requireRole(["OWNER", "FINANCE"]); const supabase = await createClient();
   let query = supabase.from("expenses").select("id,category,description,amount,expense_date,recorded_by,created_at").order("expense_date", { ascending: false }).limit(Math.max(1, Math.min(limit, 5000)));

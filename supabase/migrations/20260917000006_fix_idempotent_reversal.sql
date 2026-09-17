@@ -23,7 +23,9 @@ SET search_path = public
 AS $$
 DECLARE item_row RECORD; balance_row public.stock_balances%ROWTYPE; requested NUMERIC; available NUMERIC; product_name_value TEXT; actor_name TEXT; direction TEXT;
 BEGIN
-  IF NEW.invoice_type IN ('FACTORY_LOAD', 'REJECT_STOCK_SALE') THEN RETURN NEW; END IF;
+  -- Portable check: this repository's migrations do not define invoice_type,
+  -- while some deployed databases add it. to_jsonb keeps both working.
+  IF COALESCE(to_jsonb(NEW)->>'invoice_type', '') IN ('FACTORY_LOAD', 'REJECT_STOCK_SALE') THEN RETURN NEW; END IF;
   IF TG_OP = 'INSERT' AND NEW.status IN ('ISSUED', 'PARTIALLY_PAID', 'PAID', 'OVERDUE') THEN direction := 'OUT';
   ELSIF TG_OP = 'UPDATE' AND OLD.status = 'DRAFT' AND NEW.status IN ('ISSUED', 'PARTIALLY_PAID', 'PAID', 'OVERDUE') THEN direction := 'OUT';
   ELSIF TG_OP = 'UPDATE' AND NEW.status = 'VOID' AND OLD.status NOT IN ('DRAFT', 'VOID') THEN direction := 'RETURN';

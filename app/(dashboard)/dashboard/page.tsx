@@ -20,8 +20,8 @@ import { ReportPeriodTabs } from "@/components/reports/report-period-tabs";
 import { formatCurrency, formatPercent } from "@/lib/utils";
 import { getDashboardDataAction } from "@/lib/actions/dashboard";
 import { normalizeReportPeriod } from "@/lib/report-period";
-import { getInventoryAction } from "@/lib/actions/inventory";
-import { calculateInventoryValueFromBatches } from "@/lib/domain/inventory";
+import { getDashboardStockSummaryAction } from "@/lib/actions/inventory";
+import { requireApprovedUser } from "@/lib/security/auth";
 
 export const metadata: Metadata = {
   title: "Dashboard",
@@ -36,10 +36,16 @@ export default async function DashboardPage({
   const activePeriod = normalizeReportPeriod(typeof params.period === "string" ? params.period : undefined);
   const customStartDate = typeof params.startDate === "string" ? params.startDate : undefined;
   const customEndDate = typeof params.endDate === "string" ? params.endDate : undefined;
-  const { periodInvoices, metrics: m, salesData, profitData, internalCosts, periodLabel, user, startDate, endDate } = await getDashboardDataAction(activePeriod, customStartDate, customEndDate);
+  const user = await requireApprovedUser();
   const canViewInternal = user.role !== "STAFF";
-  const inventory = canViewInternal ? await getInventoryAction() : null;
-  const totalStockValue = inventory ? calculateInventoryValueFromBatches(inventory.balances, inventory.batches) : 0;
+  // Dashboard metrics and the stock summary are independent, so they run in
+  // parallel. The stock summary returns one small aggregate instead of loading
+  // the whole inventory snapshot.
+  const [{ periodInvoices, metrics: m, salesData, profitData, internalCosts, periodLabel, startDate, endDate }, stockSummary] = await Promise.all([
+    getDashboardDataAction(activePeriod, customStartDate, customEndDate),
+    canViewInternal ? getDashboardStockSummaryAction() : Promise.resolve({ totalStockValue: 0, activeProductCount: 0, totalQuantity: 0 }),
+  ]);
+  const totalStockValue = stockSummary.totalStockValue;
 
   return (
     <div className="space-y-6">
