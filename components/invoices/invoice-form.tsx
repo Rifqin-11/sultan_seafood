@@ -244,7 +244,7 @@ export function InvoiceForm({ customers = [], products = [], customerPrices = []
     }];
   });
   const [quantityDrafts, setQuantityDrafts] = useState<Record<string, string>>({});
-  const [marginDrafts, setMarginDrafts] = useState<Record<string, string>>({});
+  const [arrivalWeightDrafts, setArrivalWeightDrafts] = useState<Record<string, string>>({});
   const [marginEditors, setMarginEditors] = useState<Record<string, boolean>>({});
   const [costs, setCosts] = useState<DirectCostRow[]>(() => {
     if (initialData?.costs?.length) {
@@ -296,7 +296,7 @@ export function InvoiceForm({ customers = [], products = [], customerPrices = []
       delete next[id];
       return next;
     });
-    setMarginDrafts((prev) => {
+    setArrivalWeightDrafts((prev) => {
       const next = { ...prev };
       delete next[id];
       return next;
@@ -334,12 +334,16 @@ export function InvoiceForm({ customers = [], products = [], customerPrices = []
     const normalized = rawValue.replace(",", ".");
     if (normalized === "" || normalized === ".") {
       updateItem(id, "quantity", 0);
+      const arrivalWeight = Number((arrivalWeightDrafts[id] ?? "").replace(",", "."));
+      if (Number.isFinite(arrivalWeight)) updateItem(id, "marginQuantity", Number(Math.max(arrivalWeight, 0).toFixed(3)));
       return;
     }
 
     const quantity = Number(normalized);
     if (Number.isFinite(quantity) && quantity >= 0) {
       updateItem(id, "quantity", quantity);
+      const arrivalWeight = Number((arrivalWeightDrafts[id] ?? "").replace(",", "."));
+      if (Number.isFinite(arrivalWeight)) updateItem(id, "marginQuantity", Number(Math.max(arrivalWeight - quantity, 0).toFixed(3)));
     }
   };
 
@@ -350,6 +354,8 @@ export function InvoiceForm({ customers = [], products = [], customerPrices = []
     const quantity = Number(rawValue.replace(",", "."));
     const nextQuantity = Number.isFinite(quantity) && quantity >= 0 ? quantity : 0;
     updateItem(item.id, "quantity", nextQuantity);
+    const arrivalWeight = Number((arrivalWeightDrafts[item.id] ?? "").replace(",", "."));
+    if (Number.isFinite(arrivalWeight)) updateItem(item.id, "marginQuantity", Number(Math.max(arrivalWeight - nextQuantity, 0).toFixed(3)));
     setQuantityDrafts((prev) => {
       const next = { ...prev };
       delete next[item.id];
@@ -357,23 +363,40 @@ export function InvoiceForm({ customers = [], products = [], customerPrices = []
     });
   };
 
-  const updateMargin = (id: string, rawValue: string) => {
-    const normalized = rawValue.replace(",", ".");
-    setMarginDrafts((prev) => ({ ...prev, [id]: rawValue }));
-    if (normalized === "" || normalized === "." || normalized === "0.") {
-      updateItem(id, "marginQuantity", normalized === "0." ? 0 : 0);
-      return;
-    }
-    const margin = Number(normalized);
-    if (Number.isFinite(margin) && margin >= 0) updateItem(id, "marginQuantity", margin);
+  const getBeforeDepartureWeight = (item: InvoiceItemRow) => {
+    const draft = quantityDrafts[item.id];
+    if (draft === undefined) return item.quantity;
+    const parsed = Number(draft.replace(",", "."));
+    return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
   };
 
-  const commitMargin = (item: InvoiceItemRow) => {
-    const rawValue = marginDrafts[item.id];
+  const getAtPlaceWeight = (item: InvoiceItemRow) => {
+    const draft = arrivalWeightDrafts[item.id];
+    if (draft !== undefined) {
+      const parsed = Number(draft.replace(",", "."));
+      if (Number.isFinite(parsed) && parsed >= 0) return parsed;
+    }
+    return item.quantity + item.marginQuantity;
+  };
+
+  const updateArrivalWeight = (item: InvoiceItemRow, rawValue: string) => {
+    setArrivalWeightDrafts((prev) => ({ ...prev, [item.id]: rawValue }));
+    const arrivalWeight = Number(rawValue.replace(",", "."));
+    const beforeDepartureWeight = getBeforeDepartureWeight(item);
+    if (Number.isFinite(arrivalWeight) && arrivalWeight >= 0) {
+      updateItem(item.id, "marginQuantity", Number(Math.max(arrivalWeight - beforeDepartureWeight, 0).toFixed(3)));
+    } else {
+      updateItem(item.id, "marginQuantity", 0);
+    }
+  };
+
+  const commitArrivalWeight = (item: InvoiceItemRow) => {
+    const rawValue = arrivalWeightDrafts[item.id];
     if (rawValue === undefined) return;
-    const margin = Number(rawValue.replace(",", "."));
-    updateItem(item.id, "marginQuantity", Number.isFinite(margin) && margin >= 0 ? Number(margin.toFixed(3)) : 0);
-    setMarginDrafts((prev) => {
+    const arrivalWeight = Number(rawValue.replace(",", "."));
+    const beforeDepartureWeight = getBeforeDepartureWeight(item);
+    updateItem(item.id, "marginQuantity", Number.isFinite(arrivalWeight) && arrivalWeight >= beforeDepartureWeight ? Number((arrivalWeight - beforeDepartureWeight).toFixed(3)) : 0);
+    setArrivalWeightDrafts((prev) => {
       const next = { ...prev };
       delete next[item.id];
       return next;
@@ -774,10 +797,10 @@ export function InvoiceForm({ customers = [], products = [], customerPrices = []
                       </td>
                       <td className="px-2 py-3">
                         <div className="flex items-center justify-center gap-1">
-                          <button type="button" onClick={() => setMarginEditors((current) => ({ ...current, [item.id]: !current[item.id] }))} className={`flex size-8 items-center justify-center rounded-lg transition-colors ${item.marginQuantity > 0 ? "bg-sky-50 text-sky-700" : "text-stone-400 hover:bg-sky-50 hover:text-sky-700"}`} aria-label="Atur margin kilogram"><Scale className="size-3.5" /></button>
+                          <button type="button" onClick={() => setMarginEditors((current) => ({ ...current, [item.id]: !current[item.id] }))} className={`flex size-8 items-center justify-center rounded-lg transition-colors ${item.marginQuantity > 0 ? "bg-sky-50 text-sky-700" : "text-stone-400 hover:bg-sky-50 hover:text-sky-700"}`} aria-label="Atur timbangan margin"><Scale className="size-3.5" /></button>
                           <button type="button" onClick={() => removeItem(item.id)} className="flex size-8 items-center justify-center rounded-lg text-stone-400 transition-colors hover:bg-red-50 hover:text-red-600" aria-label="Hapus item"><Trash2 className="size-3.5" /></button>
                         </div>
-                        {marginEditors[item.id] && <div className="mt-2 w-28"><label className="sr-only" htmlFor={`margin-${item.id}`}>Margin kg</label><input id={`margin-${item.id}`} type="text" inputMode="decimal" value={marginDrafts[item.id] ?? (item.marginQuantity > 0 ? String(item.marginQuantity) : "")} onChange={(event) => updateMargin(item.id, event.target.value)} onBlur={() => commitMargin(item)} placeholder="Margin kg" className="h-8 w-full rounded-lg border border-sky-200 bg-sky-50 px-2 text-right text-xs tabular-nums text-sky-900 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200" /></div>}
+                         {marginEditors[item.id] && <div className="mt-2 w-56 space-y-2 rounded-xl border border-sky-200 bg-sky-50/70 p-2"><div className="grid grid-cols-2 gap-2"><label className="space-y-1 text-left"><span className="block text-[9px] font-semibold leading-tight text-sky-700">Sebelum berangkat</span><input type="text" inputMode="decimal" value={quantityDrafts[item.id] ?? String(item.quantity)} onChange={(event) => updateQuantity(item.id, event.target.value)} onBlur={() => commitQuantity(item)} placeholder="0,00" className="h-8 w-full rounded-lg border border-sky-200 bg-white px-2 text-right text-xs tabular-nums text-sky-900 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200" /></label><label className="space-y-1 text-left"><span className="block text-[9px] font-semibold leading-tight text-sky-700">Di tempat</span><input type="text" inputMode="decimal" value={arrivalWeightDrafts[item.id] ?? (item.marginQuantity > 0 ? String(Number((item.quantity + item.marginQuantity).toFixed(3))) : "")} onChange={(event) => updateArrivalWeight(item, event.target.value)} onBlur={() => commitArrivalWeight(item)} placeholder="0,00" className="h-8 w-full rounded-lg border border-sky-200 bg-white px-2 text-right text-xs tabular-nums text-sky-900 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200" /></label></div><p className="text-right text-[10px] font-semibold text-sky-800">Margin: {formatQuantity(Math.max(getAtPlaceWeight(item) - getBeforeDepartureWeight(item), 0))} {item.unit}</p></div>}
                       </td>
                     </tr>
                   ))}
@@ -794,7 +817,7 @@ export function InvoiceForm({ customers = [], products = [], customerPrices = []
                   <div key={item.id} className="space-y-4 px-4 py-5">
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] font-semibold uppercase tracking-wider text-stone-400">Item {index + 1}</span>
-                      <div className="flex items-center gap-1"><button type="button" onClick={() => setMarginEditors((current) => ({ ...current, [item.id]: !current[item.id] }))} className={`flex h-9 items-center gap-1.5 rounded-xl px-2.5 text-xs font-medium transition-colors ${item.marginQuantity > 0 ? "bg-sky-50 text-sky-700" : "text-stone-400 hover:bg-sky-50 hover:text-sky-700"}`} aria-label={`Atur margin item ${index + 1}`}><Scale className="size-3.5" /> Margin</button><button type="button" onClick={() => removeItem(item.id)} className="flex h-9 items-center gap-1.5 rounded-xl px-2.5 text-xs font-medium text-stone-400 transition-colors hover:bg-red-50 hover:text-red-600" aria-label={`Hapus item ${index + 1}`}><Trash2 className="size-3.5" /> Hapus</button></div>
+                      <div className="flex items-center gap-1"><button type="button" onClick={() => setMarginEditors((current) => ({ ...current, [item.id]: !current[item.id] }))} className={`flex h-9 items-center gap-1.5 rounded-xl px-2.5 text-xs font-medium transition-colors ${item.marginQuantity > 0 ? "bg-sky-50 text-sky-700" : "text-stone-400 hover:bg-sky-50 hover:text-sky-700"}`} aria-label={`Atur timbangan margin item ${index + 1}`}><Scale className="size-3.5" /> Timbangan</button><button type="button" onClick={() => removeItem(item.id)} className="flex h-9 items-center gap-1.5 rounded-xl px-2.5 text-xs font-medium text-stone-400 transition-colors hover:bg-red-50 hover:text-red-600" aria-label={`Hapus item ${index + 1}`}><Trash2 className="size-3.5" /> Hapus</button></div>
                     </div>
                       <div>
                         <label className="mb-2 block text-xs font-semibold text-stone-600">Produk</label>
@@ -847,7 +870,7 @@ export function InvoiceForm({ customers = [], products = [], customerPrices = []
                         <p className="mt-1.5 text-[10px] leading-relaxed text-stone-500">Khusus invoice ini. Harga default tetap.</p>
                       </div>
                     </div>
-                     {marginEditors[item.id] && <div className="rounded-xl border border-sky-200 bg-sky-50/70 p-3"><label htmlFor={`margin-mobile-${item.id}`} className="mb-2 flex items-center gap-1 text-xs font-semibold text-sky-700"><Scale className="size-3" /> Margin tagihan ({item.unit})</label><input id={`margin-mobile-${item.id}`} type="text" inputMode="decimal" value={marginDrafts[item.id] ?? (item.marginQuantity > 0 ? String(item.marginQuantity) : "")} onChange={(event) => updateMargin(item.id, event.target.value)} onBlur={() => commitMargin(item)} placeholder="Contoh: 0.5" className="h-10 w-full rounded-xl border border-sky-200 bg-white px-3 text-right text-sm font-semibold tabular-nums text-sky-900 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200" /><p className="mt-1.5 text-[10px] leading-relaxed text-sky-700/80">Margin menambah qty tagihan, tetapi tidak mengurangi stok.</p></div>}
+                      {marginEditors[item.id] && <div className="rounded-xl border border-sky-200 bg-sky-50/70 p-3"><div className="mb-2 flex items-center gap-1 text-xs font-semibold text-sky-700"><Scale className="size-3" /> Timbangan ({item.unit})</div><div className="grid grid-cols-2 gap-3"><label className="space-y-1.5"><span className="block text-[11px] font-semibold text-sky-800">Sebelum berangkat</span><input type="text" inputMode="decimal" value={quantityDrafts[item.id] ?? String(item.quantity)} onChange={(event) => updateQuantity(item.id, event.target.value)} onBlur={() => commitQuantity(item)} placeholder="Contoh: 0,09" className="h-10 w-full rounded-xl border border-sky-200 bg-white px-3 text-right text-sm font-semibold tabular-nums text-sky-900 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200" /></label><label className="space-y-1.5"><span className="block text-[11px] font-semibold text-sky-800">Berat di tempat</span><input type="text" inputMode="decimal" value={arrivalWeightDrafts[item.id] ?? (item.marginQuantity > 0 ? String(Number((item.quantity + item.marginQuantity).toFixed(3))) : "")} onChange={(event) => updateArrivalWeight(item, event.target.value)} onBlur={() => commitArrivalWeight(item)} placeholder="Contoh: 0,10" className="h-10 w-full rounded-xl border border-sky-200 bg-white px-3 text-right text-sm font-semibold tabular-nums text-sky-900 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200" /></label></div><p className="mt-2 text-right text-xs font-semibold text-sky-800">Margin timbangan: {formatQuantity(Math.max(getAtPlaceWeight(item) - getBeforeDepartureWeight(item), 0))} {item.unit}</p><p className="mt-1.5 text-[10px] leading-relaxed text-sky-700/80">Margin dihitung otomatis dari berat di tempat dikurangi berat sebelum berangkat dan menambah qty tagihan.</p></div>}
                      <div className="flex items-end justify-between border-t border-dashed border-stone-200 pt-3">
                       <div>
                         <p className="text-[10px] font-semibold uppercase tracking-wider text-stone-400">Ukuran</p>
