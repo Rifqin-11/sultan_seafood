@@ -443,6 +443,10 @@ export function InvoiceForm({ customers = [], products = [], customerPrices = []
     costs.map((c) => ({ amount: c.amount })),
     discount
   );
+  const totalMarginQuantity = items.reduce((sum, item) => sum + Math.max(item.marginQuantity, 0), 0);
+  const marginRevenue = items.reduce((sum, item) => sum + Math.max(item.marginQuantity, 0) * Math.max(item.sellingPrice, 0), 0);
+  const marginUnits = [...new Set(items.map((item) => item.unit).filter(Boolean))];
+  const marginUnitLabel = marginUnits.length === 1 ? marginUnits[0] : "unit";
   const marginProgress = Math.min(100, Math.max(0, calc.transactionMargin));
 
   const router = useRouter();
@@ -1141,6 +1145,22 @@ export function InvoiceForm({ customers = [], products = [], customerPrices = []
             </div>
 
             <div className="space-y-2.5 px-1">
+              <div className="rounded-xl border border-sky-200 bg-sky-50/70 p-3 text-sky-900">
+                <div className="flex items-center justify-between gap-4">
+                  <span className="flex items-center gap-1.5 text-xs font-semibold">
+                    <Scale className="size-3.5 text-sky-700" />
+                    Margin timbangan
+                    <Lock className="size-3 text-sky-500" />
+                  </span>
+                  <span className="font-bold tabular-nums text-sky-800">
+                    +{formatQuantity(totalMarginQuantity)} {marginUnitLabel}
+                  </span>
+                </div>
+                <div className="mt-2 flex items-center justify-between gap-4 border-t border-sky-200/80 pt-2 text-[11px] text-sky-700">
+                  <span>Tambahan nilai tagihan</span>
+                  <span className="font-semibold tabular-nums">{formatCurrency(marginRevenue)}</span>
+                </div>
+              </div>
               <div className="flex justify-between gap-4 text-muted-foreground">
                 <span className="flex items-center gap-1">
                   HPP Produk
