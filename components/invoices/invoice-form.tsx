@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import {
   AlertCircle,
   CalendarDays,
   CheckCircle,
+  Check,
+  ChevronsUpDown,
   Eye,
   FileText,
   Loader2,
@@ -13,6 +15,7 @@ import {
   PencilLine,
   Plus,
   ReceiptText,
+  Search,
   Scale,
   Save,
   Send,
@@ -23,6 +26,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CurrencyInput } from "@/components/ui/currency-input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "sonner";
 import {
   Select,
@@ -114,6 +118,95 @@ interface InvoiceFormProps {
   customerPrices?: CustomerPrice[];
   canViewInternal?: boolean;
   initialData?: InitialInvoiceData;
+}
+
+interface ProductComboboxProps {
+  products: Product[];
+  value: string;
+  onChange: (value: string) => void;
+}
+
+function ProductCombobox({ products, value, onChange }: ProductComboboxProps) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const listboxId = useId();
+  const selectedProduct = products.find((product) => product.id === value);
+  const normalizedQuery = query.trim().toLowerCase();
+  const filteredProducts = products.filter((product) => {
+    if (!normalizedQuery) return true;
+    return [product.name, product.size, product.defaultUnit]
+      .filter(Boolean)
+      .some((text) => text!.toLowerCase().includes(normalizedQuery));
+  });
+
+  const close = () => {
+    setOpen(false);
+    setQuery("");
+  };
+
+  return (
+    <Popover open={open} onOpenChange={(nextOpen) => {
+      setOpen(nextOpen);
+      if (!nextOpen) setQuery("");
+    }}>
+      <PopoverTrigger
+        render={<button type="button" role="combobox" aria-expanded={open} aria-controls={listboxId} />}
+        className="h-10 w-full min-w-0 rounded-xl border-stone-200 bg-white px-3 text-left text-xs hover:bg-stone-50"
+      >
+        <span className="min-w-0 flex-1 truncate">
+          {selectedProduct ? (
+            <>
+              <span className="font-semibold text-stone-900">{selectedProduct.name}</span>
+              <span className="ml-1.5 text-stone-400">
+                {selectedProduct.size ? `[${selectedProduct.size}]` : `· ${selectedProduct.defaultUnit}`}
+              </span>
+            </>
+          ) : (
+            <span className="text-muted-foreground">Pilih produk...</span>
+          )}
+        </span>
+        <ChevronsUpDown className="size-3.5 shrink-0 text-stone-400" />
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-[min(28rem,calc(100vw-2rem))] p-2">
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-stone-400" />
+          <input
+            autoFocus
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Cari nama, ukuran, atau satuan..."
+            aria-label="Cari produk"
+            className="h-9 w-full rounded-lg border border-stone-200 bg-stone-50 pl-9 pr-3 text-xs text-stone-900 outline-none placeholder:text-stone-400 focus:border-stone-400 focus:ring-3 focus:ring-stone-200/70"
+          />
+        </div>
+        <div id={listboxId} role="listbox" aria-label="Daftar produk" className="mt-2 max-h-64 overflow-y-auto">
+          {filteredProducts.length > 0 ? filteredProducts.map((product) => (
+            <button
+              key={product.id}
+              type="button"
+              role="option"
+              aria-selected={product.id === value}
+              onClick={() => {
+                onChange(product.id);
+                close();
+              }}
+              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left transition-colors hover:bg-stone-100 aria-selected:bg-stone-50"
+            >
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-xs font-semibold text-stone-900">{product.name}</span>
+                <span className="mt-0.5 block truncate text-[10px] text-stone-500">
+                  {product.size ? `Ukuran ${product.size} · ` : ""}Stok {product.stockQuantity ?? 0} {product.defaultUnit}
+                </span>
+              </span>
+              {product.id === value && <Check className="size-3.5 shrink-0 text-emerald-600" />}
+            </button>
+          )) : (
+            <p className="px-2.5 py-5 text-center text-xs text-stone-500">Produk tidak ditemukan.</p>
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
 }
 
 export function InvoiceForm({ customers = [], products = [], customerPrices = [], canViewInternal = false, initialData }: InvoiceFormProps) {
@@ -585,10 +678,10 @@ export function InvoiceForm({ customers = [], products = [], customerPrices = []
             </div>
           ) : (
             <div className="erp-table-wrap hidden md:block">
-              <table className="erp-table min-w-[760px] w-full text-sm">
+              <table className="erp-table min-w-[900px] w-full text-sm">
                 <thead>
                   <tr className="border-b border-stone-200 bg-stone-50/80">
-                    <th className="min-w-[180px] px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-stone-500">
+                    <th className="min-w-[280px] px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-stone-500">
                       Produk
                     </th>
                     <th className="w-24 px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-stone-500">
@@ -618,30 +711,11 @@ export function InvoiceForm({ customers = [], products = [], customerPrices = []
                   {items.map((item) => (
                     <tr key={item.id} className="transition-colors hover:bg-stone-50/60">
                       <td className="px-5 py-3">
-                        <Select
+                        <ProductCombobox
+                          products={productsList.filter((product) => product.status === "ACTIVE")}
                           value={item.productId}
-                          onValueChange={(v) =>
-                            updateItem(item.id, "productId", v || "")
-                          }
-                        >
-                          <SelectTrigger className="h-9 w-full rounded-xl border-stone-200 bg-white text-xs">
-                            <SelectValue placeholder="Pilih produk...">
-                              {(() => {
-                                const p = productsList.find((prod) => prod.id === item.productId);
-                                return p ? p.name : undefined;
-                              })()}
-                            </SelectValue>
-                          </SelectTrigger>
-                          <SelectContent>
-                            {productsList
-                              .filter((p) => p.status === "ACTIVE")
-                              .map((p) => (
-                                <SelectItem key={p.id} value={p.id}>
-                                  {p.name} {p.size ? `[${p.size}]` : ""} · stok {p.stockQuantity ?? 0} {p.defaultUnit}
-                                </SelectItem>
-                              ))}
-                          </SelectContent>
-                        </Select>
+                          onChange={(value) => updateItem(item.id, "productId", value)}
+                        />
                       </td>
                       <td className="px-3 py-3 text-xs">
                         {(() => {
@@ -722,20 +796,13 @@ export function InvoiceForm({ customers = [], products = [], customerPrices = []
                       <span className="text-[10px] font-semibold uppercase tracking-wider text-stone-400">Item {index + 1}</span>
                       <div className="flex items-center gap-1"><button type="button" onClick={() => setMarginEditors((current) => ({ ...current, [item.id]: !current[item.id] }))} className={`flex h-9 items-center gap-1.5 rounded-xl px-2.5 text-xs font-medium transition-colors ${item.marginQuantity > 0 ? "bg-sky-50 text-sky-700" : "text-stone-400 hover:bg-sky-50 hover:text-sky-700"}`} aria-label={`Atur margin item ${index + 1}`}><Scale className="size-3.5" /> Margin</button><button type="button" onClick={() => removeItem(item.id)} className="flex h-9 items-center gap-1.5 rounded-xl px-2.5 text-xs font-medium text-stone-400 transition-colors hover:bg-red-50 hover:text-red-600" aria-label={`Hapus item ${index + 1}`}><Trash2 className="size-3.5" /> Hapus</button></div>
                     </div>
-                    <div>
-                      <label className="mb-2 block text-xs font-semibold text-stone-600">Produk</label>
-                      <Select value={item.productId} onValueChange={(value) => updateItem(item.id, "productId", value || "")}>
-                        <SelectTrigger className="h-10 w-full rounded-xl border-stone-200 bg-stone-50/60 text-xs">
-                          <SelectValue placeholder="Pilih produk...">{selectedProduct?.name}</SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                          {productsList.filter((product) => product.status === "ACTIVE").map((product) => (
-                            <SelectItem key={product.id} value={product.id}>
-                              {product.name} {product.size ? `[${product.size}]` : ""} · stok {product.stockQuantity ?? 0} {product.defaultUnit}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <div>
+                        <label className="mb-2 block text-xs font-semibold text-stone-600">Produk</label>
+                      <ProductCombobox
+                        products={productsList.filter((product) => product.status === "ACTIVE")}
+                        value={item.productId}
+                        onChange={(value) => updateItem(item.id, "productId", value)}
+                      />
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
