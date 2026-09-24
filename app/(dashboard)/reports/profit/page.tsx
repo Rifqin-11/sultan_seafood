@@ -91,29 +91,27 @@ export default async function ProfitReportPage({
         <MetricCard accent="emerald" title="Laba Kotor" value={totalRevenue - totalHPP} isCurrency internal />
         <MetricCard accent="orange" title="Biaya Langsung" value={totalDirectCost} isCurrency internal />
         <MetricCard accent="red" title="Pengeluaran" value={totalOperatingExpenses} isCurrency internal />
-        <div className="rounded-[18px] border border-violet-200 bg-card p-4 shadow-card sm:p-5 lg:col-span-3">
-          <div className="mb-4 flex items-center justify-between gap-3">
+        <div className="min-h-[154px] rounded-[18px] border border-violet-200 bg-card p-4 shadow-card sm:p-5">
+          <div className="mb-3 flex items-center justify-between gap-3">
             <div className="flex items-center gap-1.5">
               <p className="text-xs font-semibold text-muted-foreground">Laba Bersih</p>
               <span className="rounded-md border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[9px] font-semibold text-amber-700">Internal</span>
             </div>
             <Lock className="size-4 text-amber-500" />
           </div>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-0">
-            <div className="sm:border-r sm:border-border sm:pr-5">
-              <p className="text-xs text-muted-foreground">Laba</p>
-              <p className="mt-1 text-xl font-bold tracking-[-0.035em] text-foreground tabular-nums">{formatCurrency(netProfitBeforeScaleMargin)}</p>
-              <p className="mt-1 text-[11px] text-muted-foreground">Setelah pengeluaran operasional</p>
+          <div className="grid grid-cols-3 divide-x divide-border">
+            <div className="min-w-0 pr-2">
+              <p className="truncate text-[10px] text-muted-foreground">Laba</p>
+              <p className="mt-1 truncate text-sm font-bold tracking-[-0.035em] text-foreground tabular-nums">{formatCurrency(netProfitBeforeScaleMargin)}</p>
             </div>
-            <div className="sm:pl-5">
-              <p className="text-xs text-muted-foreground">Tonjolan Bobot</p>
-              <p className="mt-1 text-xl font-bold tracking-[-0.035em] text-sky-700 tabular-nums">{formatCurrency(totalScaleMargin)}</p>
-              <p className="mt-1 text-[11px] text-muted-foreground">Tambahan dari selisih timbangan</p>
+            <div className="min-w-0 px-2">
+              <p className="truncate text-[10px] text-muted-foreground">Tonjolan Bobot</p>
+              <p className="mt-1 truncate text-sm font-bold tracking-[-0.035em] text-sky-700 tabular-nums">{formatCurrency(totalScaleMargin)}</p>
             </div>
-          </div>
-          <div className="mt-4 flex items-center justify-between gap-4 border-t border-violet-200 pt-3">
-            <span className="text-sm font-semibold text-violet-900">Total</span>
-            <span className="text-xl font-bold tracking-[-0.035em] text-violet-800 tabular-nums">{formatCurrency(netProfitBeforeScaleMargin + totalScaleMargin)}</span>
+            <div className="min-w-0 pl-2">
+              <p className="truncate text-[10px] text-violet-700">Total</p>
+              <p className="mt-1 truncate text-sm font-bold tracking-[-0.035em] text-violet-800 tabular-nums">{formatCurrency(netProfitBeforeScaleMargin + totalScaleMargin)}</p>
+            </div>
           </div>
         </div>
       </div>
