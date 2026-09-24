@@ -268,7 +268,7 @@ export default async function InvoiceDetailPage(props: PageProps<"/invoices/[id]
                         colSpan={6}
                         className="px-5 py-2.5 text-right text-xs font-medium text-sky-700"
                       >
-                        Nilai margin tagihan
+                        Total tonjolan bobot
                       </td>
                       <td className="px-5 py-2.5 text-right text-sm font-semibold tabular-nums text-sky-700">
                         {formatCurrency(marginValue)}
@@ -503,7 +503,6 @@ export default async function InvoiceDetailPage(props: PageProps<"/invoices/[id]
                   <div className="flex items-center justify-between gap-4">
                     <div>
                       <p className="text-xs font-semibold text-sky-800">Margin Tagihan</p>
-                      <p className="mt-0.5 text-[10px] text-sky-700/80">+{formatQuantity(totalMarginQuantity)} unit dari selisih timbangan</p>
                     </div>
                     <p className="text-base font-bold tabular-nums text-sky-800">{formatCurrency(marginValue)}</p>
                   </div>
