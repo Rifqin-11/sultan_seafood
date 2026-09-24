@@ -5,7 +5,7 @@ const statusStyles: Record<InvoiceStatus, string> = {
   DRAFT:
     "bg-neutral-100 text-neutral-600 border-neutral-200",
   ISSUED:
-    "bg-blue-50 text-blue-700 border-blue-200",
+    "bg-orange-50 text-orange-700 border-orange-200",
   PARTIALLY_PAID:
     "bg-orange-50 text-orange-700 border-orange-200",
   PAID:
@@ -18,7 +18,7 @@ const statusStyles: Record<InvoiceStatus, string> = {
 
 const statusDot: Record<InvoiceStatus, string> = {
   DRAFT: "bg-neutral-400",
-  ISSUED: "bg-blue-500",
+  ISSUED: "bg-orange-500",
   PARTIALLY_PAID: "bg-orange-500",
   PAID: "bg-emerald-500",
   OVERDUE: "bg-red-500",

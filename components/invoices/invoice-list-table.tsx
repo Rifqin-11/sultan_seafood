@@ -59,7 +59,7 @@ import { toast } from "sonner";
 const STATUS_FILTERS: { label: string; value: InvoiceStatus | "ALL" }[] = [
   { label: "Semua", value: "ALL" },
   { label: "Draft", value: "DRAFT" },
-  { label: "Diterbitkan", value: "ISSUED" },
+  { label: "Belum Dibayar", value: "ISSUED" },
   { label: "Dibayar Sebagian", value: "PARTIALLY_PAID" },
   { label: "Lunas", value: "PAID" },
   { label: "Jatuh Tempo", value: "OVERDUE" },

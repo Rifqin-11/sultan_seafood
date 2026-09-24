@@ -125,7 +125,7 @@ export function calculateInvoice(
 export function getInvoiceStatusLabel(status: InvoiceStatus): string {
   const map: Record<InvoiceStatus, string> = {
     DRAFT: "Draft",
-    ISSUED: "Diterbitkan",
+    ISSUED: "Belum Dibayar",
     PARTIALLY_PAID: "Dibayar Sebagian",
     PAID: "Lunas",
     OVERDUE: "Jatuh Tempo",
