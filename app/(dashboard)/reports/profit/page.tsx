@@ -106,13 +106,13 @@ export default async function ProfitReportPage({
               <p className="mt-1 text-[11px] text-muted-foreground">Setelah pengeluaran operasional</p>
             </div>
             <div className="sm:pl-5">
-              <p className="text-xs text-muted-foreground">Margin timbangan</p>
+              <p className="text-xs text-muted-foreground">Tonjolan Bobot</p>
               <p className="mt-1 text-xl font-bold tracking-[-0.035em] text-sky-700 tabular-nums">{formatCurrency(totalScaleMargin)}</p>
               <p className="mt-1 text-[11px] text-muted-foreground">Tambahan dari selisih timbangan</p>
             </div>
           </div>
           <div className="mt-4 flex items-center justify-between gap-4 border-t border-violet-200 pt-3">
-            <span className="text-sm font-semibold text-violet-900">Total laba + margin timbangan</span>
+            <span className="text-sm font-semibold text-violet-900">Total</span>
             <span className="text-xl font-bold tracking-[-0.035em] text-violet-800 tabular-nums">{formatCurrency(netProfitBeforeScaleMargin + totalScaleMargin)}</span>
           </div>
         </div>
@@ -183,7 +183,7 @@ export default async function ProfitReportPage({
                     <th className="px-3 py-3">Restoran</th>
                     <th className="px-3 py-3">Tanggal</th>
                     <th className="px-3 py-3 text-right">Laba</th>
-                    <th className="px-3 py-3 text-right">Margin timbangan</th>
+                    <th className="px-3 py-3 text-right">Tonjolan Bobot</th>
                     <th className="px-5 py-3 text-right">Total</th>
                   </tr>
                 </thead>
@@ -220,7 +220,7 @@ export default async function ProfitReportPage({
                     </div>
                     <div className="grid grid-cols-2 gap-2 rounded-xl bg-muted/45 p-3 text-xs">
                       <div><p className="text-muted-foreground">Laba</p><p className="mt-1 font-semibold tabular-nums text-emerald-700">{formatCurrency(invoiceProfit)}</p></div>
-                      <div className="border-l border-border pl-3"><p className="text-muted-foreground">Margin timbangan</p><p className="mt-1 font-semibold tabular-nums text-sky-700">{formatCurrency(scaleMargin)}</p></div>
+                      <div className="border-l border-border pl-3"><p className="text-muted-foreground">Tonjolan Bobot</p><p className="mt-1 font-semibold tabular-nums text-sky-700">{formatCurrency(scaleMargin)}</p></div>
                     </div>
                   </article>
                 );
