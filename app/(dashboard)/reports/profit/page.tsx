@@ -89,9 +89,8 @@ export default async function ProfitReportPage({
         <MetricCard accent="sky" title="Omzet" value={totalRevenue} isCurrency />
         <MetricCard accent="amber" title="HPP Produk" value={totalHPP} isCurrency internal />
         <MetricCard accent="emerald" title="Laba Kotor" value={totalRevenue - totalHPP} isCurrency internal />
-        <MetricCard accent="orange" title="Biaya Langsung" value={totalDirectCost} isCurrency internal />
         <MetricCard accent="red" title="Pengeluaran" value={totalOperatingExpenses} isCurrency internal />
-        <div className="min-h-[154px] rounded-[18px] border border-violet-200 bg-card p-4 shadow-card sm:p-5">
+        <div className="min-h-[154px] rounded-[18px] border border-violet-200 bg-card p-4 shadow-card sm:col-span-2 sm:p-5 lg:col-span-2">
           <div className="mb-3 flex items-center justify-between gap-3">
             <div className="flex items-center gap-1.5">
               <p className="text-xs font-semibold text-muted-foreground">Laba Bersih</p>
