@@ -61,6 +61,17 @@ export default async function ProfitReportPage({
   const totalScaleMargin = issuedInvoices.reduce((sum, invoice) => sum + (invoice.marginValue ?? calculateInvoiceMarginValue(invoice.items)), 0);
   const netProfitBeforeScaleMargin = netProfit - totalScaleMargin;
   const avgMargin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
+  const paidInvoices = issuedInvoices.filter((invoice) => invoice.totalPaid > 0);
+  const paidProfit = paidInvoices.reduce((sum, invoice) => {
+    const paidRatio = invoice.total > 0 ? Math.min(invoice.totalPaid / invoice.total, 1) : 0;
+    return sum + invoice.transactionProfit * paidRatio;
+  }, 0);
+  const paidScaleMargin = paidInvoices.reduce((sum, invoice) => {
+    const paidRatio = invoice.total > 0 ? Math.min(invoice.totalPaid / invoice.total, 1) : 0;
+    return sum + (invoice.marginValue ?? calculateInvoiceMarginValue(invoice.items)) * paidRatio;
+  }, 0);
+  const paidNetProfit = paidProfit - totalOperatingExpenses;
+  const paidNetProfitBeforeScaleMargin = paidNetProfit - paidScaleMargin;
 
   // Build internal costs breakdown from real invoices
   const costCategoryMap: Record<string, number> = {};
@@ -85,34 +96,43 @@ export default async function ProfitReportPage({
         <ReportPeriodTabs path="/reports/profit" activePeriod={period} startDate={customStartDate} endDate={customEndDate} />
       </PageHeader>
 
-      <div className="grid grid-cols-1 gap-3 min-[430px]:grid-cols-2 lg:grid-cols-3 lg:gap-4">
+      <div className="grid grid-cols-1 gap-3 min-[430px]:grid-cols-2 lg:grid-cols-4 lg:gap-4">
         <MetricCard accent="sky" title="Omzet" value={totalRevenue} isCurrency />
         <MetricCard accent="amber" title="HPP Produk" value={totalHPP} isCurrency internal />
         <MetricCard accent="emerald" title="Laba Kotor" value={totalRevenue - totalHPP} isCurrency internal />
         <MetricCard accent="red" title="Pengeluaran" value={totalOperatingExpenses} isCurrency internal />
-        <div className="min-h-[154px] rounded-[18px] border border-violet-200 bg-card p-4 shadow-card sm:col-span-2 sm:p-5 lg:col-span-2">
-          <div className="mb-3 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-1.5">
-              <p className="text-xs font-semibold text-muted-foreground">Laba Bersih</p>
-              <span className="rounded-md border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[9px] font-semibold text-amber-700">Internal</span>
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 min-[700px]:grid-cols-2 lg:gap-4">
+        {[
+          { title: "Laba Bersih · Sudah Dibayar", description: "Estimasi laba dari pembayaran yang sudah tercatat", profit: paidNetProfitBeforeScaleMargin, margin: paidScaleMargin, total: paidNetProfit, accent: "emerald" },
+          { title: "Laba Bersih · Invoice Terbit", description: "Potensi laba dari seluruh invoice yang diterbitkan", profit: netProfitBeforeScaleMargin, margin: totalScaleMargin, total: netProfit, accent: "violet" },
+        ].map((card) => (
+          <div key={card.title} className={`min-h-[154px] rounded-[18px] border bg-card p-4 shadow-card sm:p-5 ${card.accent === "emerald" ? "border-emerald-200" : "border-violet-200"}`}>
+            <div className="mb-1 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-1.5">
+                <p className="text-xs font-semibold text-muted-foreground">{card.title}</p>
+                <span className="rounded-md border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[9px] font-semibold text-amber-700">Internal</span>
+              </div>
+              <Lock className="size-4 shrink-0 text-amber-500" />
             </div>
-            <Lock className="size-4 text-amber-500" />
+            <p className="mb-3 text-[10px] text-muted-foreground">{card.description}</p>
+            <div className="grid grid-cols-3 divide-x divide-border">
+              <div className="min-w-0 pr-2">
+                <p className="truncate text-[10px] text-muted-foreground">Laba</p>
+                <p className="mt-1 truncate text-sm font-bold tracking-[-0.035em] text-foreground tabular-nums">{formatCurrency(card.profit)}</p>
+              </div>
+              <div className="min-w-0 px-2">
+                <p className="truncate text-[10px] text-muted-foreground">Tonjolan Bobot</p>
+                <p className="mt-1 truncate text-sm font-bold tracking-[-0.035em] text-sky-700 tabular-nums">{formatCurrency(card.margin)}</p>
+              </div>
+              <div className="min-w-0 pl-2">
+                <p className={`truncate text-[10px] ${card.accent === "emerald" ? "text-emerald-700" : "text-violet-700"}`}>Total</p>
+                <p className={`mt-1 truncate text-sm font-bold tracking-[-0.035em] tabular-nums ${card.accent === "emerald" ? "text-emerald-800" : "text-violet-800"}`}>{formatCurrency(card.total)}</p>
+              </div>
+            </div>
           </div>
-          <div className="grid grid-cols-3 divide-x divide-border">
-            <div className="min-w-0 pr-2">
-              <p className="truncate text-[10px] text-muted-foreground">Laba</p>
-              <p className="mt-1 truncate text-sm font-bold tracking-[-0.035em] text-foreground tabular-nums">{formatCurrency(netProfitBeforeScaleMargin)}</p>
-            </div>
-            <div className="min-w-0 px-2">
-              <p className="truncate text-[10px] text-muted-foreground">Tonjolan Bobot</p>
-              <p className="mt-1 truncate text-sm font-bold tracking-[-0.035em] text-sky-700 tabular-nums">{formatCurrency(totalScaleMargin)}</p>
-            </div>
-            <div className="min-w-0 pl-2">
-              <p className="truncate text-[10px] text-violet-700">Total</p>
-              <p className="mt-1 truncate text-sm font-bold tracking-[-0.035em] text-violet-800 tabular-nums">{formatCurrency(netProfitBeforeScaleMargin + totalScaleMargin)}</p>
-            </div>
-          </div>
-        </div>
+        ))}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -135,8 +155,10 @@ export default async function ProfitReportPage({
             { label: "Biaya Langsung", value: formatCurrency(totalDirectCost), internal: true },
             { label: "Laba Produk", value: formatCurrency(totalRevenue - totalHPP), internal: true },
             { label: "Laba Transaksi", value: formatCurrency(totalProfit), internal: true },
+            { label: "Laba Transaksi · Sudah Dibayar", value: formatCurrency(paidProfit), internal: true },
             { label: "Pengeluaran Operasional", value: formatCurrency(totalOperatingExpenses), internal: true },
             { label: "Laba Bersih", value: formatCurrency(netProfit), internal: true, highlight: true },
+            { label: "Laba Bersih · Sudah Dibayar", value: formatCurrency(paidNetProfit), internal: true, highlight: true },
             { label: "Margin Bersih", value: formatPercent(avgMargin), internal: true, highlight: true },
           ].map((row) => (
             <div key={row.label}>
