@@ -212,61 +212,61 @@ export function InvoiceListTable({
   const renderInvoiceActions = (inv: Invoice) => (
     <DropdownMenu>
       <DropdownMenuTrigger
-        className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        className="inline-flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         aria-label={`Aksi invoice ${inv.invoiceNumber || "draft"}`}
       >
-        <MoreHorizontal className="h-4 w-4" />
+        <MoreHorizontal className="size-4" />
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-48">
-        <DropdownMenuItem>
-          <Link href={`/invoices/${inv.id}`} className="flex w-full items-center">
-            <Eye className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
+      <DropdownMenuContent align="end" className="w-64 p-1.5">
+        <DropdownMenuItem className="min-h-11 gap-3 px-3 py-2 text-[15px] font-medium">
+          <Link href={`/invoices/${inv.id}`} className="flex min-h-11 w-full items-center gap-3">
+            <Eye className="size-[18px] text-muted-foreground" />
             Lihat Detail
           </Link>
         </DropdownMenuItem>
         {role !== "STAFF" && inv.status !== "VOID" && inv.status !== "DRAFT" && (
-          <DropdownMenuItem>
-            <Link href={`/invoices/${inv.id}/edit`} className="flex w-full items-center">
-              <Pencil className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
+          <DropdownMenuItem className="min-h-11 gap-3 px-3 py-2 text-[15px] font-medium">
+            <Link href={`/invoices/${inv.id}/edit`} className="flex min-h-11 w-full items-center gap-3">
+              <Pencil className="size-[18px] text-muted-foreground" />
               Edit Invoice
             </Link>
           </DropdownMenuItem>
         )}
         {inv.status !== "DRAFT" && (
-          <DropdownMenuItem>
+          <DropdownMenuItem className="min-h-11 gap-3 px-3 py-2 text-[15px] font-medium">
             {inv.publicToken ? (
-              <Link href={`/preview/invoices/${inv.publicToken}`} target="_blank" rel="noopener noreferrer" className="flex w-full items-center">
-                <FileText className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
+              <Link href={`/preview/invoices/${inv.publicToken}`} target="_blank" rel="noopener noreferrer" className="flex min-h-11 w-full items-center gap-3">
+                <FileText className="size-[18px] text-muted-foreground" />
                 Lihat Invoice Digital
               </Link>
             ) : (
-              <span className="flex w-full cursor-not-allowed items-center text-muted-foreground/50" title="Token publik invoice belum tersedia">
-                <FileText className="mr-2 h-3.5 w-3.5" />
+              <span className="flex min-h-11 w-full cursor-not-allowed items-center gap-3 text-muted-foreground/50" title="Token publik invoice belum tersedia">
+                <FileText className="size-[18px]" />
                 Invoice Digital Belum Tersedia
               </span>
             )}
           </DropdownMenuItem>
         )}
-        <DropdownMenuItem onClick={() => handleDownload(inv)} disabled={downloadingId === inv.id} className="cursor-pointer">
-          {downloadingId === inv.id ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <Download className="mr-2 h-3.5 w-3.5 text-muted-foreground" />}
+        <DropdownMenuItem onClick={() => handleDownload(inv)} disabled={downloadingId === inv.id} className="min-h-11 gap-3 px-3 py-2 text-[15px] font-medium">
+          {downloadingId === inv.id ? <Loader2 className="size-[18px] animate-spin" /> : <Download className="size-[18px] text-muted-foreground" />}
           {downloadingId === inv.id ? "Menyiapkan PDF..." : "Download PDF"}
         </DropdownMenuItem>
         {role !== "STAFF" && (inv.status === "ISSUED" || inv.status === "PARTIALLY_PAID" || inv.status === "OVERDUE") && (
-          <DropdownMenuItem className="cursor-pointer" onClick={() => setSelectedPaymentInvoiceId(inv.id)}>
-            <CreditCard className="mr-2 h-3.5 w-3.5" /> Catat Pembayaran
+          <DropdownMenuItem className="min-h-11 gap-3 px-3 py-2 text-[15px] font-medium" onClick={() => setSelectedPaymentInvoiceId(inv.id)}>
+            <CreditCard className="size-[18px]" /> Catat Pembayaran
           </DropdownMenuItem>
         )}
         <DropdownMenuSeparator />
         {role === "OWNER" && inv.status !== "VOID" && inv.status !== "DRAFT" && inv.totalPaid === 0 && (
-          <DropdownMenuItem className="cursor-pointer text-amber-600 focus:text-amber-600" onClick={() => setVoidingInvoice(inv)}>
-            <Ban className="mr-2 h-3.5 w-3.5 text-amber-600" /> Batalkan Invoice
+          <DropdownMenuItem className="min-h-11 gap-3 px-3 py-2 text-[15px] font-medium text-amber-600 focus:text-amber-600" onClick={() => setVoidingInvoice(inv)}>
+            <Ban className="size-[18px] text-amber-600" /> Batalkan Invoice
           </DropdownMenuItem>
         )}
         {role === "OWNER" && inv.status !== "VOID" && (
           <>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="cursor-pointer font-medium text-red-600 focus:text-red-600" onClick={() => setDeletingInvoice(inv)}>
-              <Trash2 className="mr-2 h-3.5 w-3.5 text-red-600" />
+            <DropdownMenuItem className="min-h-11 gap-3 px-3 py-2 text-[15px] font-medium text-red-600 focus:text-red-600" onClick={() => setDeletingInvoice(inv)}>
+              <Trash2 className="size-[18px] text-red-600" />
               {inv.status === "DRAFT" ? "Hapus Draft" : "Hapus Invoice"}
             </DropdownMenuItem>
           </>

@@ -191,27 +191,27 @@ export function ProductTable({ initialProducts = [], canManage = false }: Produc
                       {canManage && <TableCell>
                         <DropdownMenu>
                           <DropdownMenuTrigger
-                            className="inline-flex items-center justify-center h-9 w-9 rounded-xl hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                            className="inline-flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                             aria-label="Aksi produk"
                           >
                             {loadingId === product.id ? (
-                              <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                              <Loader2 className="size-4 animate-spin text-muted-foreground" />
                             ) : (
-                              <MoreHorizontal className="w-4 h-4" />
+                              <MoreHorizontal className="size-4" />
                             )}
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-44">
-                            <DropdownMenuItem className="cursor-pointer" onClick={() => setEditingProduct(product)}>
-                              <Edit className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
+                          <DropdownMenuContent align="end" className="w-64 p-1.5">
+                            <DropdownMenuItem className="min-h-11 gap-3 px-3 py-2 text-[15px] font-medium" onClick={() => setEditingProduct(product)}>
+                              <Edit className="size-[18px] text-muted-foreground" />
                               Edit Produk
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem className="cursor-pointer" onClick={() => handleToggleStatus(product)}>
-                              <Power className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
+                            <DropdownMenuItem className="min-h-11 gap-3 px-3 py-2 text-[15px] font-medium" onClick={() => handleToggleStatus(product)}>
+                              <Power className="size-[18px] text-muted-foreground" />
                               {product.status === "ACTIVE" ? "Nonaktifkan" : "Aktifkan"}
                             </DropdownMenuItem>
-                            <DropdownMenuItem className="cursor-pointer text-red-600 focus:text-red-600" onClick={() => setDeletingProduct(product)}>
-                              <Trash2 className="w-3.5 h-3.5 mr-2 text-red-600" />
+                            <DropdownMenuItem className="min-h-11 gap-3 px-3 py-2 text-[15px] font-medium text-red-600 focus:text-red-600" onClick={() => setDeletingProduct(product)}>
+                              <Trash2 className="size-[18px] text-red-600" />
                               Hapus Produk
                             </DropdownMenuItem>
                           </DropdownMenuContent>
@@ -269,27 +269,27 @@ export function ProductTable({ initialProducts = [], canManage = false }: Produc
                   {canManage && (
                     <DropdownMenu>
                       <DropdownMenuTrigger
-                        className="inline-flex items-center justify-center h-9 w-9 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer shrink-0"
+                        className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                         aria-label="Aksi produk"
                       >
                         {loadingId === product.id ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <Loader2 className="size-4 animate-spin" />
                         ) : (
-                          <MoreHorizontal className="w-5 h-5" />
+                          <MoreHorizontal className="size-4" />
                         )}
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-44">
-                        <DropdownMenuItem className="cursor-pointer" onClick={() => setEditingProduct(product)}>
-                          <Edit className="w-4 h-4 mr-2 text-muted-foreground" />
+                      <DropdownMenuContent align="end" className="w-64 p-1.5">
+                        <DropdownMenuItem className="min-h-11 gap-3 px-3 py-2 text-[15px] font-medium" onClick={() => setEditingProduct(product)}>
+                          <Edit className="size-[18px] text-muted-foreground" />
                           Edit Produk
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem className="cursor-pointer" onClick={() => handleToggleStatus(product)}>
-                          <Power className="w-4 h-4 mr-2 text-muted-foreground" />
+                        <DropdownMenuItem className="min-h-11 gap-3 px-3 py-2 text-[15px] font-medium" onClick={() => handleToggleStatus(product)}>
+                          <Power className="size-[18px] text-muted-foreground" />
                           {product.status === "ACTIVE" ? "Nonaktifkan" : "Aktifkan"}
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="cursor-pointer text-red-600 focus:text-red-600" onClick={() => setDeletingProduct(product)}>
-                          <Trash2 className="w-4 h-4 mr-2 text-red-600" />
+                        <DropdownMenuItem className="min-h-11 gap-3 px-3 py-2 text-[15px] font-medium text-red-600 focus:text-red-600" onClick={() => setDeletingProduct(product)}>
+                          <Trash2 className="size-[18px] text-red-600" />
                           Hapus Produk
                         </DropdownMenuItem>
                       </DropdownMenuContent>

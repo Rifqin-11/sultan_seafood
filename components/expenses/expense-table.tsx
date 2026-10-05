@@ -58,22 +58,22 @@ export function ExpenseTable({ expenses, totalExpenses }: ExpenseTableProps) {
   const renderActions = (expense: Expense) => (
     <DropdownMenu>
       <DropdownMenuTrigger
-        className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-stone-100 hover:text-foreground"
+        className="inline-flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         aria-label={`Aksi untuk pengeluaran ${expense.description}`}
       >
-        {loadingId === expense.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <MoreHorizontal className="h-4 w-4" />}
+        {loadingId === expense.id ? <Loader2 className="size-4 animate-spin" /> : <MoreHorizontal className="size-4" />}
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-44">
-        <DropdownMenuItem className="cursor-pointer" onClick={() => setEditingExpense(expense)}>
-          <Edit className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
+      <DropdownMenuContent align="end" className="w-64 p-1.5">
+        <DropdownMenuItem className="min-h-11 gap-3 px-3 py-2 text-[15px] font-medium" onClick={() => setEditingExpense(expense)}>
+          <Edit className="size-[18px] text-muted-foreground" />
           Edit Data
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
-          className="cursor-pointer text-red-600 focus:text-red-600"
+          className="min-h-11 gap-3 px-3 py-2 text-[15px] font-medium text-red-600 focus:text-red-600"
           onClick={() => setDeletingExpense(expense)}
         >
-          <Trash2 className="mr-2 h-3.5 w-3.5 text-red-600" />
+          <Trash2 className="size-[18px] text-red-600" />
           Hapus Data
         </DropdownMenuItem>
       </DropdownMenuContent>

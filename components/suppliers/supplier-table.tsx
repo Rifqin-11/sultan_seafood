@@ -80,36 +80,36 @@ export function SupplierTable({ suppliers, canManage = false }: SupplierTablePro
     return (
       <DropdownMenu>
         <DropdownMenuTrigger
-          className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-stone-100 hover:text-foreground"
+          className="inline-flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           aria-label={`Aksi untuk ${supplier.name}`}
         >
           {loadingId === supplier.id ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
+            <Loader2 className="size-4 animate-spin" />
           ) : (
-            <MoreHorizontal className="h-4 w-4" />
+            <MoreHorizontal className="size-4" />
           )}
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-48">
-          <DropdownMenuItem className="cursor-pointer" onClick={() => setEditingSupplier(supplier)}>
-            <Edit className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
+        <DropdownMenuContent align="end" className="w-64 p-1.5">
+          <DropdownMenuItem className="min-h-11 gap-3 px-3 py-2 text-[15px] font-medium" onClick={() => setEditingSupplier(supplier)}>
+            <Edit className="size-[18px] text-muted-foreground" />
             Edit Supplier
           </DropdownMenuItem>
-          <DropdownMenuItem className="cursor-pointer">
-            <Link href="/pricing/purchase" className="flex w-full items-center">
-              <DollarSign className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
+          <DropdownMenuItem className="min-h-11 gap-3 px-3 py-2 text-[15px] font-medium">
+            <Link href="/pricing/purchase" className="flex min-h-11 w-full items-center gap-3">
+              <DollarSign className="size-[18px] text-muted-foreground" />
               Riwayat Harga
             </Link>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem className="cursor-pointer" onClick={() => handleToggleStatus(supplier)}>
-            <Power className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
+          <DropdownMenuItem className="min-h-11 gap-3 px-3 py-2 text-[15px] font-medium" onClick={() => handleToggleStatus(supplier)}>
+            <Power className="size-[18px] text-muted-foreground" />
             {supplier.status === "ACTIVE" ? "Nonaktifkan" : "Aktifkan"}
           </DropdownMenuItem>
           <DropdownMenuItem
-            className="cursor-pointer text-red-600 focus:text-red-600"
+            className="min-h-11 gap-3 px-3 py-2 text-[15px] font-medium text-red-600 focus:text-red-600"
             onClick={() => setDeletingSupplier(supplier)}
           >
-            <Trash2 className="mr-2 h-3.5 w-3.5 text-red-600" />
+            <Trash2 className="size-[18px] text-red-600" />
             Hapus Supplier
           </DropdownMenuItem>
         </DropdownMenuContent>
