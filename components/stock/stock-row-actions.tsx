@@ -5,8 +5,7 @@ import { Calculator, ClipboardPenLine, Edit, MoreHorizontal, Power, Trash2, Truc
 import { AdjustStockDialog } from "@/components/stock/adjust-stock-dialog";
 import { AdjustProductCostDialog } from "@/components/stock/adjust-product-cost-dialog";
 import { ProductSupplierPurchasesSheet } from "@/components/stock/product-supplier-purchases-sheet";
-import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { RowActionMenu, RowActionMenuContent, RowActionMenuItem, RowActionMenuTrigger } from "@/components/ui/row-action-menu";
 import type { StockBalance } from "@/types";
 import type { Product } from "@/types";
 import { EditProductDialog } from "@/components/products/edit-product-dialog";
@@ -38,17 +37,17 @@ export function StockRowActions({ balance, product }: { balance: StockBalance; p
     if ("error" in result && result.error) toast.error(`Gagal: ${result.error}`); else { toast.success("message" in result ? result.message : "Produk berhasil dihapus."); router.refresh(); }
   };
   return <>
-    <DropdownMenu>
-    <DropdownMenuTrigger render={<Button type="button" variant="ghost" size="icon" className="size-9 rounded-lg" aria-label={`Aksi ${balance.productName}`} />}>
+    <RowActionMenu>
+    <RowActionMenuTrigger label={`Aksi ${balance.productName}`}>
       <MoreHorizontal className="size-4" />
-    </DropdownMenuTrigger>
-    <DropdownMenuContent align="end" className="w-64 p-1.5">
-      <DropdownMenuItem onClick={() => setPurchasesOpen(true)} className="min-h-11 gap-3 px-3 py-2 text-[15px] font-medium"><Truck className="size-[18px]" /> Lihat pembelian supplier</DropdownMenuItem>
-      <DropdownMenuItem onClick={() => setAdjustmentOpen(true)} className="min-h-11 gap-3 px-3 py-2 text-[15px] font-medium"><ClipboardPenLine className="size-[18px]" /> Sesuaikan stok</DropdownMenuItem>
-      <DropdownMenuItem onClick={() => setCostOpen(true)} className="min-h-11 gap-3 px-3 py-2 text-[15px] font-medium"><Calculator className="size-[18px]" /> Sesuaikan HPP</DropdownMenuItem>
-      {product && <><DropdownMenuItem onClick={() => setEditing(true)} className="min-h-11 gap-3 px-3 py-2 text-[15px] font-medium"><Edit className="size-[18px]" /> Edit produk</DropdownMenuItem><DropdownMenuItem onClick={toggleStatus} disabled={loading} className="min-h-11 gap-3 px-3 py-2 text-[15px] font-medium"><Power className="size-[18px]" /> {product.status === "ACTIVE" ? "Nonaktifkan produk" : "Aktifkan produk"}</DropdownMenuItem><DropdownMenuItem onClick={() => setDeleting(true)} className="min-h-11 gap-3 px-3 py-2 text-[15px] font-medium text-red-700 focus:text-red-700"><Trash2 className="size-[18px]" /> Hapus produk</DropdownMenuItem></>}
-    </DropdownMenuContent>
-    </DropdownMenu>
+    </RowActionMenuTrigger>
+    <RowActionMenuContent>
+      <RowActionMenuItem onClick={() => setPurchasesOpen(true)}><Truck className="size-[18px]" /> Lihat pembelian supplier</RowActionMenuItem>
+      <RowActionMenuItem onClick={() => setAdjustmentOpen(true)}><ClipboardPenLine className="size-[18px]" /> Sesuaikan stok</RowActionMenuItem>
+      <RowActionMenuItem onClick={() => setCostOpen(true)}><Calculator className="size-[18px]" /> Sesuaikan HPP</RowActionMenuItem>
+      {product && <><RowActionMenuItem onClick={() => setEditing(true)}><Edit className="size-[18px]" /> Edit produk</RowActionMenuItem><RowActionMenuItem onClick={toggleStatus} disabled={loading}><Power className="size-[18px]" /> {product.status === "ACTIVE" ? "Nonaktifkan produk" : "Aktifkan produk"}</RowActionMenuItem><RowActionMenuItem onClick={() => setDeleting(true)} className="text-red-700 focus:text-red-700"><Trash2 className="size-[18px]" /> Hapus produk</RowActionMenuItem></>}
+    </RowActionMenuContent>
+    </RowActionMenu>
     {purchasesOpen && <ProductSupplierPurchasesSheet balance={balance} open={purchasesOpen} onOpenChange={setPurchasesOpen} />}
     <AdjustStockDialog balance={balance} open={adjustmentOpen} onOpenChange={setAdjustmentOpen} />
     <AdjustProductCostDialog balance={balance} controlledOpen={costOpen} onOpenChange={setCostOpen} />

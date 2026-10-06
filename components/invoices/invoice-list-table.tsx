@@ -18,6 +18,7 @@ import {
   Pencil,
   ChevronLeft,
   ChevronRight,
+  AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,11 +32,8 @@ import {
 } from "@/components/ui/table";
 import {
   DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { RowActionMenuContent, RowActionMenuItem, RowActionMenuTrigger } from "@/components/ui/row-action-menu";
 import { InvoiceStatusBadge } from "./invoice-status-badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { calculateInvoiceMarginValue } from "@/lib/domain/invoices";
@@ -55,6 +53,7 @@ import { Trash2, Ban } from "lucide-react";
 
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { toast } from "sonner";
+import { InvoiceRejectDialog } from "@/components/invoices/invoice-reject-dialog";
 
 const STATUS_FILTERS: { label: string; value: InvoiceStatus | "ALL" }[] = [
   { label: "Semua", value: "ALL" },
@@ -103,6 +102,10 @@ export function InvoiceListTable({
   const [deletingInvoice, setDeletingInvoice] = useState<Invoice | null>(null);
   const [voidingInvoice, setVoidingInvoice] = useState<Invoice | null>(null);
   const [selectedPaymentInvoiceId, setSelectedPaymentInvoiceId] = useState<string | null>(null);
+  const [selectedRejectInvoice, setSelectedRejectInvoice] = useState<Invoice | null>(null);
+  const handleRejectDialogOpenChange = useCallback((open: boolean) => {
+    if (!open) setSelectedRejectInvoice(null);
+  }, []);
   const pageCount = Math.max(1, Math.ceil(total / pageSize));
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -211,29 +214,26 @@ export function InvoiceListTable({
 
   const renderInvoiceActions = (inv: Invoice) => (
     <DropdownMenu>
-      <DropdownMenuTrigger
-        className="inline-flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-        aria-label={`Aksi invoice ${inv.invoiceNumber || "draft"}`}
-      >
+      <RowActionMenuTrigger label={`Aksi invoice ${inv.invoiceNumber || "draft"}`}>
         <MoreHorizontal className="size-4" />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-64 p-1.5">
-        <DropdownMenuItem className="min-h-11 gap-3 px-3 py-2 text-[15px] font-medium">
+      </RowActionMenuTrigger>
+      <RowActionMenuContent>
+        <RowActionMenuItem>
           <Link href={`/invoices/${inv.id}`} className="flex min-h-11 w-full items-center gap-3">
             <Eye className="size-[18px] text-muted-foreground" />
             Lihat Detail
           </Link>
-        </DropdownMenuItem>
+        </RowActionMenuItem>
         {role !== "STAFF" && inv.status !== "VOID" && inv.status !== "DRAFT" && (
-          <DropdownMenuItem className="min-h-11 gap-3 px-3 py-2 text-[15px] font-medium">
+          <RowActionMenuItem>
             <Link href={`/invoices/${inv.id}/edit`} className="flex min-h-11 w-full items-center gap-3">
               <Pencil className="size-[18px] text-muted-foreground" />
               Edit Invoice
             </Link>
-          </DropdownMenuItem>
+          </RowActionMenuItem>
         )}
         {inv.status !== "DRAFT" && (
-          <DropdownMenuItem className="min-h-11 gap-3 px-3 py-2 text-[15px] font-medium">
+          <RowActionMenuItem>
             {inv.publicToken ? (
               <Link href={`/preview/invoices/${inv.publicToken}`} target="_blank" rel="noopener noreferrer" className="flex min-h-11 w-full items-center gap-3">
                 <FileText className="size-[18px] text-muted-foreground" />
@@ -245,33 +245,34 @@ export function InvoiceListTable({
                 Invoice Digital Belum Tersedia
               </span>
             )}
-          </DropdownMenuItem>
+          </RowActionMenuItem>
         )}
-        <DropdownMenuItem onClick={() => handleDownload(inv)} disabled={downloadingId === inv.id} className="min-h-11 gap-3 px-3 py-2 text-[15px] font-medium">
+        <RowActionMenuItem onClick={() => handleDownload(inv)} disabled={downloadingId === inv.id}>
           {downloadingId === inv.id ? <Loader2 className="size-[18px] animate-spin" /> : <Download className="size-[18px] text-muted-foreground" />}
           {downloadingId === inv.id ? "Menyiapkan PDF..." : "Download PDF"}
-        </DropdownMenuItem>
+        </RowActionMenuItem>
         {role !== "STAFF" && (inv.status === "ISSUED" || inv.status === "PARTIALLY_PAID" || inv.status === "OVERDUE") && (
-          <DropdownMenuItem className="min-h-11 gap-3 px-3 py-2 text-[15px] font-medium" onClick={() => setSelectedPaymentInvoiceId(inv.id)}>
+          <RowActionMenuItem onClick={() => setSelectedPaymentInvoiceId(inv.id)}>
             <CreditCard className="size-[18px]" /> Catat Pembayaran
-          </DropdownMenuItem>
+          </RowActionMenuItem>
         )}
-        <DropdownMenuSeparator />
+        {role !== "STAFF" && inv.status !== "DRAFT" && inv.status !== "VOID" && (
+          <RowActionMenuItem className="text-amber-700 focus:text-amber-700" onClick={() => setSelectedRejectInvoice(inv)}>
+            <AlertTriangle className="size-[18px] text-amber-700" /> Catat Produk Reject
+          </RowActionMenuItem>
+        )}
         {role === "OWNER" && inv.status !== "VOID" && inv.status !== "DRAFT" && inv.totalPaid === 0 && (
-          <DropdownMenuItem className="min-h-11 gap-3 px-3 py-2 text-[15px] font-medium text-amber-600 focus:text-amber-600" onClick={() => setVoidingInvoice(inv)}>
+          <RowActionMenuItem className="text-amber-600 focus:text-amber-600" onClick={() => setVoidingInvoice(inv)}>
             <Ban className="size-[18px] text-amber-600" /> Batalkan Invoice
-          </DropdownMenuItem>
+          </RowActionMenuItem>
         )}
         {role === "OWNER" && inv.status !== "VOID" && (
-          <>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="min-h-11 gap-3 px-3 py-2 text-[15px] font-medium text-red-600 focus:text-red-600" onClick={() => setDeletingInvoice(inv)}>
+            <RowActionMenuItem className="text-red-600 focus:text-red-600" onClick={() => setDeletingInvoice(inv)}>
               <Trash2 className="size-[18px] text-red-600" />
               {inv.status === "DRAFT" ? "Hapus Draft" : "Hapus Invoice"}
-            </DropdownMenuItem>
-          </>
+            </RowActionMenuItem>
         )}
-      </DropdownMenuContent>
+      </RowActionMenuContent>
     </DropdownMenu>
   );
 
@@ -471,6 +472,14 @@ export function InvoiceListTable({
           onOpenChange={(open) => {
             if (!open) setSelectedPaymentInvoiceId(null);
           }}
+        />
+      )}
+
+      {selectedRejectInvoice && (
+        <InvoiceRejectDialog
+          invoice={selectedRejectInvoice}
+          open={!!selectedRejectInvoice}
+          onOpenChange={handleRejectDialogOpenChange}
         />
       )}
 

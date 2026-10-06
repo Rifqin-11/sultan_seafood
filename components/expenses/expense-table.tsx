@@ -11,13 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { RowActionMenu, RowActionMenuContent, RowActionMenuItem, RowActionMenuTrigger } from "@/components/ui/row-action-menu";
 import { EmptyState } from "@/components/ui/empty-state";
 import { MoreHorizontal, Edit, Trash2, Loader2, Receipt } from "lucide-react";
 import { deleteExpenseAction } from "@/lib/actions/expenses";
@@ -56,28 +50,21 @@ export function ExpenseTable({ expenses, totalExpenses }: ExpenseTableProps) {
   };
 
   const renderActions = (expense: Expense) => (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        className="inline-flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-        aria-label={`Aksi untuk pengeluaran ${expense.description}`}
-      >
+    <RowActionMenu>
+      <RowActionMenuTrigger label={`Aksi untuk pengeluaran ${expense.description}`}>
         {loadingId === expense.id ? <Loader2 className="size-4 animate-spin" /> : <MoreHorizontal className="size-4" />}
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-64 p-1.5">
-        <DropdownMenuItem className="min-h-11 gap-3 px-3 py-2 text-[15px] font-medium" onClick={() => setEditingExpense(expense)}>
+      </RowActionMenuTrigger>
+      <RowActionMenuContent>
+        <RowActionMenuItem onClick={() => setEditingExpense(expense)}>
           <Edit className="size-[18px] text-muted-foreground" />
           Edit Data
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem
-          className="min-h-11 gap-3 px-3 py-2 text-[15px] font-medium text-red-600 focus:text-red-600"
-          onClick={() => setDeletingExpense(expense)}
-        >
+        </RowActionMenuItem>
+        <RowActionMenuItem className="text-red-600 focus:text-red-600" onClick={() => setDeletingExpense(expense)}>
           <Trash2 className="size-[18px] text-red-600" />
           Hapus Data
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+        </RowActionMenuItem>
+      </RowActionMenuContent>
+    </RowActionMenu>
   );
 
   return (

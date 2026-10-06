@@ -12,13 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { RowActionMenu, RowActionMenuContent, RowActionMenuItem, RowActionMenuTrigger } from "@/components/ui/row-action-menu";
 import { Input } from "@/components/ui/input";
 import {
   MoreHorizontal,
@@ -276,29 +270,28 @@ export function CustomerTable({ customers, canManage = false }: CustomerTablePro
                       </TableCell>
                       {canManage && (
                         <TableCell className="py-3">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger className="inline-flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground" aria-label="Aksi restoran">
+                          <RowActionMenu>
+                            <RowActionMenuTrigger label="Aksi restoran">
                               {loadingId === c.id ? <Loader2 className="size-4 animate-spin" /> : <MoreHorizontal className="size-4" />}
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-64 p-1.5">
-                              <DropdownMenuItem className="min-h-11 gap-3 px-3 py-2 text-[15px] font-medium" onClick={() => setEditingCustomer(c)}>
+                            </RowActionMenuTrigger>
+                            <RowActionMenuContent>
+                              <RowActionMenuItem onClick={() => setEditingCustomer(c)}>
                                 <Edit className="size-[18px] text-muted-foreground" /> Edit Data Restoran
-                              </DropdownMenuItem>
-                              <DropdownMenuItem className="min-h-11 gap-3 px-3 py-2 text-[15px] font-medium">
-                                <Link href="/pricing/selling" className="flex min-h-11 w-full items-center gap-3">
+                              </RowActionMenuItem>
+                              <RowActionMenuItem>
+                                <Link href="/pricing/selling" className="flex w-full items-center gap-3">
                                   <Tag className="size-[18px] text-muted-foreground" /> Atur Harga Khusus
                                 </Link>
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem className="min-h-11 gap-3 px-3 py-2 text-[15px] font-medium" onClick={() => handleToggleStatus(c)}>
+                              </RowActionMenuItem>
+                              <RowActionMenuItem onClick={() => handleToggleStatus(c)}>
                                 <Power className="size-[18px] text-muted-foreground" />
                                 {c.status === "ACTIVE" ? "Nonaktifkan Restoran" : "Aktifkan Restoran"}
-                              </DropdownMenuItem>
-                              <DropdownMenuItem className="min-h-11 gap-3 px-3 py-2 text-[15px] font-medium text-red-600 focus:text-red-600" onClick={() => setDeletingCustomer(c)}>
+                              </RowActionMenuItem>
+                              <RowActionMenuItem className="text-red-600 focus:text-red-600" onClick={() => setDeletingCustomer(c)}>
                                 <Trash2 className="size-[18px] text-red-600" /> Hapus Restoran
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                              </RowActionMenuItem>
+                            </RowActionMenuContent>
+                          </RowActionMenu>
                         </TableCell>
                       )}
                     </TableRow>
@@ -363,29 +356,28 @@ export function CustomerTable({ customers, canManage = false }: CustomerTablePro
                       </div>
                     </div>
                     {canManage && (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground" aria-label="Aksi restoran">
+                      <RowActionMenu>
+                        <RowActionMenuTrigger label="Aksi restoran">
                           {loadingId === c.id ? <Loader2 className="size-4 animate-spin" /> : <MoreHorizontal className="size-4" />}
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-64 p-1.5">
-                          <DropdownMenuItem className="min-h-11 gap-3 px-3 py-2 text-[15px] font-medium" onClick={() => setEditingCustomer(c)}>
+                        </RowActionMenuTrigger>
+                        <RowActionMenuContent>
+                          <RowActionMenuItem onClick={() => setEditingCustomer(c)}>
                             <Edit className="size-[18px] text-muted-foreground" /> Edit Data Restoran
-                          </DropdownMenuItem>
-                          <DropdownMenuItem className="min-h-11 gap-3 px-3 py-2 text-[15px] font-medium">
-                            <Link href="/pricing/selling" className="flex min-h-11 w-full items-center gap-3">
+                          </RowActionMenuItem>
+                          <RowActionMenuItem>
+                            <Link href="/pricing/selling" className="flex w-full items-center gap-3">
                               <Tag className="size-[18px] text-muted-foreground" /> Atur Harga Khusus
                             </Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem className="min-h-11 gap-3 px-3 py-2 text-[15px] font-medium" onClick={() => handleToggleStatus(c)}>
+                          </RowActionMenuItem>
+                          <RowActionMenuItem onClick={() => handleToggleStatus(c)}>
                             <Power className="size-[18px] text-muted-foreground" />
                             {c.status === "ACTIVE" ? "Nonaktifkan Restoran" : "Aktifkan Restoran"}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem className="min-h-11 gap-3 px-3 py-2 text-[15px] font-medium text-red-600 focus:text-red-600" onClick={() => setDeletingCustomer(c)}>
+                          </RowActionMenuItem>
+                          <RowActionMenuItem className="text-red-600 focus:text-red-600" onClick={() => setDeletingCustomer(c)}>
                             <Trash2 className="size-[18px] text-red-600" /> Hapus Restoran
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                          </RowActionMenuItem>
+                        </RowActionMenuContent>
+                      </RowActionMenu>
                     )}
                   </div>
                 );

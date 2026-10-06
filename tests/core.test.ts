@@ -118,6 +118,7 @@ test("stock adjustment requires a reason and movement labels stay readable", () 
   assert.match(validateStockAdjustment("p1", 1, "") ?? "", /Alasan/);
   assert.equal(validateStockAdjustment("p1", -2, "Stok opname"), null);
   assert.equal(getStockMovementLabel("SALE_OUT"), "Keluar untuk invoice");
+  assert.equal(getStockMovementLabel("INVOICE_REJECT_RETURN"), "Pengembalian produk reject");
 });
 
 test("stock receipt cancellation requires both a receipt and reason", () => {

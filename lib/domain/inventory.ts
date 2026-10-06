@@ -156,6 +156,7 @@ export function getStockMovementLabel(type: string) {
     PURCHASE_IN: "Barang masuk",
     SALE_OUT: "Keluar untuk invoice",
     INVOICE_VOID_RETURN: "Pengembalian invoice",
+    INVOICE_REJECT_RETURN: "Pengembalian produk reject",
     ADJUSTMENT_IN: "Penyesuaian masuk",
     ADJUSTMENT_OUT: "Penyesuaian keluar",
     RETURN_TO_SUPPLIER: "Retur ke supplier",

@@ -55,6 +55,7 @@ export type StockMovementType =
   | "ADJUSTMENT_OUT"
   | "RETURN_TO_SUPPLIER"
   | "CUSTOMER_RETURN_IN"
+  | "INVOICE_REJECT_RETURN"
   | "DAMAGED_OUT"
   | "EXPIRED_OUT"
   | "INTERNAL_USE_OUT";

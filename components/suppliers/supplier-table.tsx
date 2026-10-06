@@ -11,13 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { RowActionMenu, RowActionMenuContent, RowActionMenuItem, RowActionMenuTrigger } from "@/components/ui/row-action-menu";
 import { EmptyState } from "@/components/ui/empty-state";
 import { MoreHorizontal, Edit, Power, Trash2, Loader2, DollarSign, Users } from "lucide-react";
 import { toggleSupplierStatusAction, deleteSupplierAction } from "@/lib/actions/suppliers";
@@ -78,42 +72,35 @@ export function SupplierTable({ suppliers, canManage = false }: SupplierTablePro
     if (!canManage) return null;
 
     return (
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          className="inline-flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-          aria-label={`Aksi untuk ${supplier.name}`}
-        >
+      <RowActionMenu>
+        <RowActionMenuTrigger label={`Aksi untuk ${supplier.name}`}>
           {loadingId === supplier.id ? (
             <Loader2 className="size-4 animate-spin" />
           ) : (
             <MoreHorizontal className="size-4" />
           )}
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-64 p-1.5">
-          <DropdownMenuItem className="min-h-11 gap-3 px-3 py-2 text-[15px] font-medium" onClick={() => setEditingSupplier(supplier)}>
+        </RowActionMenuTrigger>
+        <RowActionMenuContent>
+          <RowActionMenuItem onClick={() => setEditingSupplier(supplier)}>
             <Edit className="size-[18px] text-muted-foreground" />
             Edit Supplier
-          </DropdownMenuItem>
-          <DropdownMenuItem className="min-h-11 gap-3 px-3 py-2 text-[15px] font-medium">
+          </RowActionMenuItem>
+          <RowActionMenuItem>
             <Link href="/pricing/purchase" className="flex min-h-11 w-full items-center gap-3">
               <DollarSign className="size-[18px] text-muted-foreground" />
               Riwayat Harga
             </Link>
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem className="min-h-11 gap-3 px-3 py-2 text-[15px] font-medium" onClick={() => handleToggleStatus(supplier)}>
+          </RowActionMenuItem>
+          <RowActionMenuItem onClick={() => handleToggleStatus(supplier)}>
             <Power className="size-[18px] text-muted-foreground" />
             {supplier.status === "ACTIVE" ? "Nonaktifkan" : "Aktifkan"}
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            className="min-h-11 gap-3 px-3 py-2 text-[15px] font-medium text-red-600 focus:text-red-600"
-            onClick={() => setDeletingSupplier(supplier)}
-          >
+          </RowActionMenuItem>
+          <RowActionMenuItem className="text-red-600 focus:text-red-600" onClick={() => setDeletingSupplier(supplier)}>
             <Trash2 className="size-[18px] text-red-600" />
             Hapus Supplier
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+          </RowActionMenuItem>
+        </RowActionMenuContent>
+      </RowActionMenu>
     );
   };
 

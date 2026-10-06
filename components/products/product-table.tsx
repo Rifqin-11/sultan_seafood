@@ -6,13 +6,7 @@ import type { Product } from "@/types";
 import { Search, MoreHorizontal, Edit, Power, Trash2, Loader2, Package } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { RowActionMenu, RowActionMenuContent, RowActionMenuItem, RowActionMenuTrigger } from "@/components/ui/row-action-menu";
 import {
   Table,
   TableBody,
@@ -189,33 +183,29 @@ export function ProductTable({ initialProducts = [], canManage = false }: Produc
                         </Badge>
                       </TableCell>
                       {canManage && <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger
-                            className="inline-flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                            aria-label="Aksi produk"
-                          >
+                        <RowActionMenu>
+                          <RowActionMenuTrigger label="Aksi produk">
                             {loadingId === product.id ? (
                               <Loader2 className="size-4 animate-spin text-muted-foreground" />
                             ) : (
                               <MoreHorizontal className="size-4" />
                             )}
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-64 p-1.5">
-                            <DropdownMenuItem className="min-h-11 gap-3 px-3 py-2 text-[15px] font-medium" onClick={() => setEditingProduct(product)}>
+                          </RowActionMenuTrigger>
+                          <RowActionMenuContent>
+                            <RowActionMenuItem onClick={() => setEditingProduct(product)}>
                               <Edit className="size-[18px] text-muted-foreground" />
                               Edit Produk
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem className="min-h-11 gap-3 px-3 py-2 text-[15px] font-medium" onClick={() => handleToggleStatus(product)}>
+                            </RowActionMenuItem>
+                            <RowActionMenuItem onClick={() => handleToggleStatus(product)}>
                               <Power className="size-[18px] text-muted-foreground" />
                               {product.status === "ACTIVE" ? "Nonaktifkan" : "Aktifkan"}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem className="min-h-11 gap-3 px-3 py-2 text-[15px] font-medium text-red-600 focus:text-red-600" onClick={() => setDeletingProduct(product)}>
+                            </RowActionMenuItem>
+                            <RowActionMenuItem className="text-red-600 focus:text-red-600" onClick={() => setDeletingProduct(product)}>
                               <Trash2 className="size-[18px] text-red-600" />
                               Hapus Produk
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                            </RowActionMenuItem>
+                          </RowActionMenuContent>
+                        </RowActionMenu>
                       </TableCell>}
                     </TableRow>
                   ))}
@@ -267,33 +257,29 @@ export function ProductTable({ initialProducts = [], canManage = false }: Produc
                     </div>
                   </div>
                   {canManage && (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger
-                        className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                        aria-label="Aksi produk"
-                      >
+                    <RowActionMenu>
+                      <RowActionMenuTrigger label="Aksi produk">
                         {loadingId === product.id ? (
                           <Loader2 className="size-4 animate-spin" />
                         ) : (
                           <MoreHorizontal className="size-4" />
                         )}
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-64 p-1.5">
-                        <DropdownMenuItem className="min-h-11 gap-3 px-3 py-2 text-[15px] font-medium" onClick={() => setEditingProduct(product)}>
+                      </RowActionMenuTrigger>
+                      <RowActionMenuContent>
+                        <RowActionMenuItem onClick={() => setEditingProduct(product)}>
                           <Edit className="size-[18px] text-muted-foreground" />
                           Edit Produk
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem className="min-h-11 gap-3 px-3 py-2 text-[15px] font-medium" onClick={() => handleToggleStatus(product)}>
+                        </RowActionMenuItem>
+                        <RowActionMenuItem onClick={() => handleToggleStatus(product)}>
                           <Power className="size-[18px] text-muted-foreground" />
                           {product.status === "ACTIVE" ? "Nonaktifkan" : "Aktifkan"}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="min-h-11 gap-3 px-3 py-2 text-[15px] font-medium text-red-600 focus:text-red-600" onClick={() => setDeletingProduct(product)}>
+                        </RowActionMenuItem>
+                        <RowActionMenuItem className="text-red-600 focus:text-red-600" onClick={() => setDeletingProduct(product)}>
                           <Trash2 className="size-[18px] text-red-600" />
                           Hapus Produk
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                        </RowActionMenuItem>
+                      </RowActionMenuContent>
+                    </RowActionMenu>
                   )}
                 </div>
               ))}

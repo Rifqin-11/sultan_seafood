@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { normalizeActionError, requireApprovedUser, requirePermission } from "@/lib/security/auth";
+import { normalizeActionError, requireApprovedUser, requirePermission, requireRole } from "@/lib/security/auth";
 import { isPublicInvoice, sanitizeInvoiceForRole } from "@/lib/domain/invoices";
 import type { DirectCostCategory, Invoice, PublicInvoice } from "@/types";
 
@@ -205,6 +205,56 @@ export async function voidInvoiceAction(id: string, reason?: string) {
     return { success: true, message: "Invoice berhasil dibatalkan tanpa menghapus riwayat." };
   } catch (error) {
     return { error: normalizeActionError(error, "Gagal membatalkan invoice.") };
+  }
+}
+
+export interface InvoiceRejectItemInput {
+  invoiceItemId: string;
+  quantity: number;
+  reason: string;
+}
+
+export async function getInvoiceRejectsAction(invoiceId: string) {
+  await requireRole(["OWNER", "FINANCE"]);
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("invoice_rejects")
+    .select("id, invoice_item_id, product_name_snapshot, unit, quantity, reason, return_to_stock, created_at")
+    .eq("invoice_id", invoiceId)
+    .order("created_at", { ascending: false });
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    invoiceItemId: row.invoice_item_id,
+    productName: row.product_name_snapshot,
+    unit: row.unit,
+    quantity: Number(row.quantity),
+    reason: row.reason,
+    returnToStock: row.return_to_stock,
+    createdAt: row.created_at,
+  }));
+}
+
+export async function recordInvoiceRejectAction(invoiceId: string, items: InvoiceRejectItemInput[], returnToStock: boolean) {
+  if (!invoiceId || !Array.isArray(items) || items.length === 0) return { error: "Pilih minimal satu produk yang direject." };
+  if (items.some((item) => !item.invoiceItemId || !Number.isFinite(item.quantity) || item.quantity <= 0 || !item.reason.trim())) {
+    return { error: "Berat dan alasan reject wajib diisi dengan benar." };
+  }
+  try {
+    await requireRole(["OWNER", "FINANCE"]);
+    const supabase = await createClient();
+    const { data, error } = await supabase.rpc("record_invoice_reject", {
+      p_invoice_id: invoiceId,
+      p_items: items,
+      p_return_to_stock: returnToStock,
+    });
+    if (error) throw error;
+    revalidatePath("/dashboard");
+    revalidatePath("/invoices");
+    revalidatePath(`/invoices/${invoiceId}`);
+    revalidatePath("/stock");
+    return { success: true, data, message: "Reject invoice berhasil dicatat." };
+  } catch (error) {
+    return { error: normalizeActionError(error, "Gagal mencatat reject invoice.") };
   }
 }
 

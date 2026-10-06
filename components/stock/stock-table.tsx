@@ -43,6 +43,7 @@ const movementStyles: Record<string, string> = {
   PURCHASE_IN: "border-emerald-200 bg-emerald-50 text-emerald-700",
   SALE_OUT: "border-orange-200 bg-orange-50 text-orange-700",
   INVOICE_VOID_RETURN: "border-sky-200 bg-sky-50 text-sky-700",
+  INVOICE_REJECT_RETURN: "border-violet-200 bg-violet-50 text-violet-700",
   ADJUSTMENT_IN: "border-emerald-200 bg-emerald-50 text-emerald-700",
   ADJUSTMENT_OUT: "border-red-200 bg-red-50 text-red-700",
 };
