@@ -72,8 +72,11 @@ export function InvoiceRejectDialog({ invoice, open, onOpenChange }: InvoiceReje
           };
         }));
       })
-      .catch(() => {
-        if (!cancelled) toast.error("Gagal memuat detail produk invoice.");
+      .catch((error: unknown) => {
+        if (!cancelled) {
+          const message = error instanceof Error ? error.message : "Kesalahan tidak diketahui.";
+          toast.error(`Gagal memuat data reject: ${message}`);
+        }
       })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
