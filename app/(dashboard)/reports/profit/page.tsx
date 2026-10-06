@@ -203,6 +203,7 @@ export default async function ProfitReportPage({
                     <th className="px-3 py-3">Tanggal</th>
                     <th className="px-3 py-3 text-right">Laba</th>
                     <th className="px-3 py-3 text-right">Tonjolan Bobot</th>
+                    <th className="px-3 py-3 text-right">Sudah Dibayar</th>
                     <th className="px-5 py-3 text-right">Total</th>
                   </tr>
                 </thead>
@@ -217,6 +218,7 @@ export default async function ProfitReportPage({
                         <td className="px-3 py-3 text-sm text-muted-foreground">{formatDateShort(invoice.issueDate)}</td>
                         <td className="px-3 py-3 text-right font-semibold tabular-nums text-emerald-700">{formatCurrency(invoiceProfit)}</td>
                         <td className="px-3 py-3 text-right font-semibold tabular-nums text-sky-700">{formatCurrency(scaleMargin)}</td>
+                        <td className="px-3 py-3 text-right font-semibold tabular-nums text-foreground">{formatCurrency(invoice.totalPaid)}</td>
                         <td className="px-5 py-3 text-right font-bold tabular-nums text-violet-800">{formatCurrency(invoiceProfit + scaleMargin)}</td>
                       </tr>
                     );
@@ -240,6 +242,8 @@ export default async function ProfitReportPage({
                     <div className="grid grid-cols-2 gap-2 rounded-xl bg-muted/45 p-3 text-xs">
                       <div><p className="text-muted-foreground">Laba</p><p className="mt-1 font-semibold tabular-nums text-emerald-700">{formatCurrency(invoiceProfit)}</p></div>
                       <div className="border-l border-border pl-3"><p className="text-muted-foreground">Tonjolan Bobot</p><p className="mt-1 font-semibold tabular-nums text-sky-700">{formatCurrency(scaleMargin)}</p></div>
+                      <div className="border-t border-border pt-2"><p className="text-muted-foreground">Sudah Dibayar</p><p className="mt-1 font-semibold tabular-nums text-foreground">{formatCurrency(invoice.totalPaid)}</p></div>
+                      <div className="border-l border-t border-border pl-3 pt-2"><p className="text-muted-foreground">Sisa Tagihan</p><p className="mt-1 font-semibold tabular-nums text-foreground">{formatCurrency(invoice.remainingBalance)}</p></div>
                     </div>
                   </article>
                 );
